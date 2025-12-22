@@ -1,11 +1,19 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Upload, Palette, CreditCard, Shield, Zap, Globe, FileText, Check } from 'lucide-react';
+import { ArrowRight, Upload, Palette, CreditCard, Shield, Zap, Globe, FileText, Check, Sparkles, Store, Rocket, IndianRupee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const LandingPage = () => {
+  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+    e.preventDefault();
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background scroll-smooth">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -17,9 +25,34 @@ const LandingPage = () => {
           </Link>
           
           <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
-            <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">How It Works</a>
-            <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
+            <a 
+              href="#features" 
+              onClick={(e) => scrollToSection(e, 'features')}
+              className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              Features
+            </a>
+            <a 
+              href="#how-it-works" 
+              onClick={(e) => scrollToSection(e, 'how-it-works')}
+              className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              How It Works
+            </a>
+            <a 
+              href="#pricing" 
+              onClick={(e) => scrollToSection(e, 'pricing')}
+              className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              Pricing
+            </a>
+            <a 
+              href="#marketplace" 
+              onClick={(e) => scrollToSection(e, 'marketplace')}
+              className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              Marketplace
+            </a>
           </div>
 
           <div className="flex items-center gap-3">
@@ -46,9 +79,9 @@ const LandingPage = () => {
             transition={{ duration: 0.6 }}
             className="text-center max-w-4xl mx-auto"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent border border-border mb-6">
-              <Shield className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-foreground">India's Trust-First Digital Platform</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/30 mb-6">
+              <IndianRupee className="w-4 h-4 text-success" />
+              <span className="text-sm font-bold text-success">₹0 Setup Fee — Start Free Today!</span>
             </div>
             
             <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight mb-6">
@@ -73,14 +106,14 @@ const LandingPage = () => {
               </Button>
             </div>
 
-            <div className="flex items-center justify-center gap-6 mt-8 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center gap-6 mt-8 text-sm text-muted-foreground flex-wrap">
               <div className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-success" />
-                <span>No setup fees</span>
+                <span>Zero setup fees</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-success" />
-                <span>Instant payouts</span>
+                <span>Pay only when you earn</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-success" />
@@ -133,73 +166,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="py-20 px-4 bg-muted/30">
-        <div className="container mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Launch Your Store in 3 Simple Steps
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Get your digital products online and start earning in minutes, not days.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {[
-              {
-                icon: Upload,
-                title: 'Upload Your Products',
-                description: 'Add your digital products — PDFs, templates, code, designs. Set your price in INR.',
-                color: 'gradient-card-1',
-                step: '01',
-              },
-              {
-                icon: Palette,
-                title: 'Design Your Store',
-                description: 'Choose from beautiful pre-built themes. Your store is mobile-ready instantly.',
-                color: 'gradient-card-2',
-                step: '02',
-              },
-              {
-                icon: CreditCard,
-                title: 'Get Paid Instantly',
-                description: 'Accept UPI, cards, wallets. Auto GST invoicing. T+1 payouts to your bank.',
-                color: 'gradient-card-3',
-                step: '03',
-              },
-            ].map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="relative"
-              >
-                <div className="bg-card rounded-2xl p-8 border border-border shadow-md hover:shadow-lg transition-shadow h-full">
-                  <div className="absolute -top-4 -left-4 w-12 h-12 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-lg shadow-lg">
-                    {item.step}
-                  </div>
-                  <div className={`w-14 h-14 ${item.color} rounded-xl flex items-center justify-center mb-6 mt-4`}>
-                    <item.icon className="w-7 h-7 text-white" />
-                  </div>
-                  <h3 className="font-display text-xl font-bold text-foreground mb-3">{item.title}</h3>
-                  <p className="text-muted-foreground">{item.description}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section id="features" className="py-20 px-4">
+      {/* Features - Built for Indian Creators (FIRST) */}
+      <section id="features" className="py-20 px-4 scroll-mt-20">
         <div className="container mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -267,6 +235,285 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* How It Works (SECOND) */}
+      <section id="how-it-works" className="py-20 px-4 bg-muted/30 scroll-mt-20">
+        <div className="container mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Launch Your Store in 3 Simple Steps
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Get your digital products online and start earning in minutes, not days.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {[
+              {
+                icon: Upload,
+                title: 'Upload Your Products',
+                description: 'Add your digital products — PDFs, templates, code, designs. Set your price in INR.',
+                color: 'gradient-card-1',
+                step: '01',
+              },
+              {
+                icon: Palette,
+                title: 'Design Your Store',
+                description: 'Choose from beautiful pre-built themes. Your store is mobile-ready instantly.',
+                color: 'gradient-card-2',
+                step: '02',
+              },
+              {
+                icon: CreditCard,
+                title: 'Get Paid Instantly',
+                description: 'Accept UPI, cards, wallets. Auto GST invoicing. T+1 payouts to your bank.',
+                color: 'gradient-card-3',
+                step: '03',
+              },
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="relative"
+              >
+                <div className="bg-card rounded-2xl p-8 border border-border shadow-md hover:shadow-lg transition-shadow h-full">
+                  <div className="absolute -top-4 -left-4 w-12 h-12 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-lg shadow-lg">
+                    {item.step}
+                  </div>
+                  <div className={`w-14 h-14 ${item.color} rounded-xl flex items-center justify-center mb-6 mt-4`}>
+                    <item.icon className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="font-display text-xl font-bold text-foreground mb-3">{item.title}</h3>
+                  <p className="text-muted-foreground">{item.description}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section (THIRD) - HIGHLIGHTED USP */}
+      <section id="pricing" className="py-20 px-4 relative overflow-hidden scroll-mt-20">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-primary/5" />
+        <div className="absolute top-10 right-1/4 w-64 h-64 bg-success/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 left-1/4 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
+        
+        <div className="container mx-auto relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/30 mb-6">
+              <Sparkles className="w-4 h-4 text-success" />
+              <span className="text-sm font-bold text-success">Our USP — Zero Risk, Maximum Reward</span>
+            </div>
+            <h2 className="font-display text-3xl md:text-5xl font-bold text-foreground mb-4">
+              Start for <span className="text-success">₹0</span> — Pay Only When You Earn
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              No hidden fees. No monthly charges. We only succeed when you succeed.
+            </p>
+          </motion.div>
+
+          {/* Main Pricing Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="max-w-3xl mx-auto"
+          >
+            <div className="relative">
+              {/* Glow effect */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-primary via-success to-primary rounded-3xl blur-lg opacity-30 animate-pulse" />
+              
+              <div className="relative bg-card rounded-3xl border-2 border-success/50 shadow-2xl overflow-hidden">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-primary to-primary/80 px-8 py-6 text-center">
+                  <h3 className="font-display text-2xl font-bold text-primary-foreground mb-2">
+                    Creator Plan
+                  </h3>
+                  <p className="text-primary-foreground/80">Everything you need to start selling</p>
+                </div>
+
+                {/* Price */}
+                <div className="px-8 py-10 text-center border-b border-border">
+                  <div className="flex items-center justify-center gap-4 mb-4">
+                    <div className="text-center">
+                      <span className="text-6xl md:text-8xl font-display font-bold text-success">₹0</span>
+                      <p className="text-lg text-muted-foreground mt-2">Setup Fee</p>
+                    </div>
+                    <div className="w-px h-24 bg-border" />
+                    <div className="text-center">
+                      <span className="text-4xl md:text-5xl font-display font-bold text-foreground">25%</span>
+                      <p className="text-lg text-muted-foreground mt-2">Per Sale</p>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    You keep <span className="text-foreground font-bold">75%</span> of every sale. 
+                    We only earn when you earn — true partnership.
+                  </p>
+                </div>
+
+                {/* Features */}
+                <div className="px-8 py-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      'Unlimited products',
+                      'Unlimited sales',
+                      'Auto GST invoicing',
+                      'T+1 bank payouts',
+                      'UPI & card payments',
+                      'Professional storefront',
+                      'Secure file delivery',
+                      'Analytics dashboard',
+                      'KYC verification',
+                      'Customer support',
+                    ].map((feature, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <div className="w-5 h-5 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
+                          <Check className="w-3 h-3 text-success" />
+                        </div>
+                        <span className="text-foreground">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* CTA */}
+                <div className="px-8 pb-8">
+                  <Button 
+                    size="lg" 
+                    asChild 
+                    className="w-full h-14 text-lg gradient-primary hover:opacity-90 transition-opacity"
+                  >
+                    <Link to="/signup">
+                      <Rocket className="w-5 h-5 mr-2" />
+                      Start Selling — It's Free!
+                    </Link>
+                  </Button>
+                  <p className="text-center text-sm text-muted-foreground mt-4">
+                    No credit card required • Setup in under 5 minutes
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Trust indicators */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="mt-12 text-center"
+          >
+            <p className="text-muted-foreground mb-4">Trusted by creators across India</p>
+            <div className="flex items-center justify-center gap-8 flex-wrap">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-foreground">500+</p>
+                <p className="text-sm text-muted-foreground">Active Sellers</p>
+              </div>
+              <div className="w-px h-10 bg-border hidden md:block" />
+              <div className="text-center">
+                <p className="text-2xl font-bold text-foreground">₹10L+</p>
+                <p className="text-sm text-muted-foreground">GMV Processed</p>
+              </div>
+              <div className="w-px h-10 bg-border hidden md:block" />
+              <div className="text-center">
+                <p className="text-2xl font-bold text-foreground">10K+</p>
+                <p className="text-sm text-muted-foreground">Products Sold</p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Marketplace Section - Coming Soon */}
+      <section id="marketplace" className="py-20 px-4 bg-muted/30 scroll-mt-20">
+        <div className="container mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center max-w-3xl mx-auto"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-warning/10 border border-warning/30 mb-6">
+              <Store className="w-4 h-4 text-warning" />
+              <span className="text-sm font-bold text-warning">Coming Soon</span>
+            </div>
+            
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+              GenZaic Marketplace
+            </h2>
+            <p className="text-muted-foreground text-lg mb-8 max-w-xl mx-auto">
+              Discover and sell digital products in India's first creator-focused marketplace. 
+              Get discovered by millions of potential buyers.
+            </p>
+
+            <div className="bg-card rounded-2xl border border-border p-8 md:p-12">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {[
+                  {
+                    icon: Globe,
+                    title: 'Reach Millions',
+                    description: 'Get discovered by buyers searching for digital products.',
+                  },
+                  {
+                    icon: Sparkles,
+                    title: 'Featured Listings',
+                    description: 'Top products get featured on our homepage.',
+                  },
+                  {
+                    icon: CreditCard,
+                    title: 'Unified Payments',
+                    description: 'Same simple 25% fee, same fast payouts.',
+                  },
+                ].map((item, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="text-center"
+                  >
+                    <div className="w-14 h-14 rounded-xl bg-warning/10 flex items-center justify-center mx-auto mb-4">
+                      <item.icon className="w-7 h-7 text-warning" />
+                    </div>
+                    <h3 className="font-semibold text-foreground mb-2">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="mt-10 pt-8 border-t border-border">
+                <p className="text-muted-foreground mb-4">Be the first to know when we launch</p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    className="w-full sm:flex-1 px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <Button className="w-full sm:w-auto gradient-primary hover:opacity-90 transition-opacity">
+                    Notify Me
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 px-4">
         <div className="container mx-auto">
@@ -283,7 +530,8 @@ const LandingPage = () => {
                 Ready to Start Selling?
               </h2>
               <p className="text-white/80 text-lg max-w-xl mx-auto mb-8">
-                Join thousands of Indian creators who trust GenZaic for their digital business.
+                Join thousands of Indian creators who trust GenZaic for their digital business. 
+                <span className="font-bold text-white"> Zero setup fee — start today!</span>
               </p>
               <Button
                 size="lg"
