@@ -125,7 +125,7 @@ export default function OnboardingPage() {
       </header>
 
       {/* Progress Steps */}
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-6 py-8 pb-32">
         <div className="flex items-center justify-between mb-12">
           {steps.map((step, index) => (
             <React.Fragment key={step.id}>
@@ -472,24 +472,26 @@ export default function OnboardingPage() {
         </AnimatePresence>
 
         {/* Navigation Buttons */}
-        <div className="flex items-center justify-between mt-8">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            disabled={currentStep === 1}
-            className="gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Button>
-          <Button
-            onClick={handleNext}
-            disabled={!canProceed()}
-            className="gap-2 bg-gradient-primary hover:opacity-90"
-          >
-            {currentStep === 3 ? 'Continue to Plan' : 'Continue'}
-            <ArrowRight className="w-4 h-4" />
-          </Button>
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+          <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+            <Button
+              variant="outline"
+              onClick={handleBack}
+              disabled={currentStep === 1}
+              className="gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+            <Button
+              onClick={handleNext}
+              disabled={!canProceed()}
+              className="gap-2 bg-gradient-primary hover:opacity-90"
+            >
+              {currentStep === 3 ? 'Continue to Plan' : 'Next'}
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
