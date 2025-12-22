@@ -35,7 +35,7 @@ const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
                 a digital business
               </h2>
               <p className="text-white/70 text-lg mt-4 max-w-md">
-                Join 10,000+ Indian creators selling digital products with auto GST invoicing and instant payouts.
+                Sell digital products with auto GST invoicing and fast payouts. Zero setup fee to get started.
               </p>
             </motion.div>
 
@@ -43,33 +43,31 @@ const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="flex items-center gap-6"
+              className="flex flex-col gap-3"
             >
-              {[
-                { value: '₹50L+', label: 'Creator Earnings' },
-                { value: '10K+', label: 'Products Sold' },
-                { value: '5K+', label: 'Happy Creators' },
-              ].map((stat, i) => (
-                <div key={i} className="text-center">
-                  <div className="text-2xl font-bold text-white">{stat.value}</div>
-                  <div className="text-sm text-white/60">{stat.label}</div>
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                  <span className="text-white text-sm">✓</span>
                 </div>
-              ))}
+                <span className="text-white/80">Zero setup fee</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                  <span className="text-white text-sm">✓</span>
+                </div>
+                <span className="text-white/80">Auto GST invoicing</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                  <span className="text-white text-sm">✓</span>
+                </div>
+                <span className="text-white/80">UPI & card payments</span>
+              </div>
             </motion.div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex -space-x-2">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="w-8 h-8 rounded-full bg-white/20 border-2 border-white/40 backdrop-blur-sm"
-                />
-              ))}
-            </div>
-            <p className="text-sm text-white/70">
-              Trusted by creators across India
-            </p>
+          <div className="text-white/60 text-sm">
+            Made with ❤️ for Indian creators
           </div>
         </div>
       </div>

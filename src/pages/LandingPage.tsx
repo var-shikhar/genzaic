@@ -212,8 +212,18 @@ const LandingPage = () => {
               },
               {
                 icon: Check,
-                title: 'T+1 Payouts',
-                description: 'Fast payouts to your bank account within 24 hours.',
+                title: 'T+7 Bank Payouts',
+                description: 'Reliable payouts to your bank account within one week.',
+              },
+              {
+                icon: Globe,
+                title: 'Community Access',
+                description: 'Connect with fellow creators and grow together.',
+              },
+              {
+                icon: Sparkles,
+                title: 'Customer Reviews',
+                description: 'Build trust with ratings and reviews on your products.',
               },
             ].map((feature, i) => (
               <motion.div
@@ -346,21 +356,11 @@ const LandingPage = () => {
                 </div>
 
                 {/* Price */}
-                <div className="px-8 py-10 text-center border-b border-border">
-                  <div className="flex items-center justify-center gap-4 mb-4">
-                    <div className="text-center">
-                      <span className="text-6xl md:text-8xl font-display font-bold text-success">₹0</span>
-                      <p className="text-lg text-muted-foreground mt-2">Setup Fee</p>
-                    </div>
-                    <div className="w-px h-24 bg-border" />
-                    <div className="text-center">
-                      <span className="text-4xl md:text-5xl font-display font-bold text-foreground">25%</span>
-                      <p className="text-lg text-muted-foreground mt-2">Per Sale</p>
-                    </div>
-                  </div>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    You keep <span className="text-foreground font-bold">75%</span> of every sale. 
-                    We only earn when you earn — true partnership.
+                <div className="px-8 py-12 text-center border-b border-border">
+                  <span className="text-7xl md:text-9xl font-display font-bold text-success">₹0</span>
+                  <p className="text-xl text-muted-foreground mt-4">Setup Fee — Start Free Today!</p>
+                  <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+                    No upfront costs, no hidden fees. Pay only when you earn.
                   </p>
                 </div>
 
@@ -371,13 +371,13 @@ const LandingPage = () => {
                       'Unlimited products',
                       'Unlimited sales',
                       'Auto GST invoicing',
-                      'T+1 bank payouts',
+                      'T+7 bank payouts',
                       'UPI & card payments',
                       'Professional storefront',
                       'Secure file delivery',
                       'Analytics dashboard',
-                      'KYC verification',
-                      'Customer support',
+                      'Community access',
+                      'Customer reviews & ratings',
                     ].map((feature, i) => (
                       <div key={i} className="flex items-center gap-3">
                         <div className="w-5 h-5 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
@@ -409,32 +409,6 @@ const LandingPage = () => {
             </div>
           </motion.div>
 
-          {/* Trust indicators */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="mt-12 text-center"
-          >
-            <p className="text-muted-foreground mb-4">Trusted by creators across India</p>
-            <div className="flex items-center justify-center gap-8 flex-wrap">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-foreground">500+</p>
-                <p className="text-sm text-muted-foreground">Active Sellers</p>
-              </div>
-              <div className="w-px h-10 bg-border hidden md:block" />
-              <div className="text-center">
-                <p className="text-2xl font-bold text-foreground">₹10L+</p>
-                <p className="text-sm text-muted-foreground">GMV Processed</p>
-              </div>
-              <div className="w-px h-10 bg-border hidden md:block" />
-              <div className="text-center">
-                <p className="text-2xl font-bold text-foreground">10K+</p>
-                <p className="text-sm text-muted-foreground">Products Sold</p>
-              </div>
-            </div>
-          </motion.div>
         </div>
       </section>
 
@@ -476,7 +450,7 @@ const LandingPage = () => {
                   {
                     icon: CreditCard,
                     title: 'Unified Payments',
-                    description: 'Same simple 25% fee, same fast payouts.',
+                    description: 'Zero setup fee, same fast payouts.',
                   },
                 ].map((item, i) => (
                   <motion.div
@@ -530,7 +504,7 @@ const LandingPage = () => {
                 Ready to Start Selling?
               </h2>
               <p className="text-white/80 text-lg max-w-xl mx-auto mb-8">
-                Join thousands of Indian creators who trust GenZaic for their digital business. 
+                Start your digital business with GenZaic. 
                 <span className="font-bold text-white"> Zero setup fee — start today!</span>
               </p>
               <Button
@@ -560,6 +534,8 @@ const LandingPage = () => {
             </div>
             
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
+              <Link to="/about" className="hover:text-foreground transition-colors">About</Link>
+              <Link to="/disclaimer" className="hover:text-foreground transition-colors">Disclaimer</Link>
               <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
               <a href="#" className="hover:text-foreground transition-colors">Terms of Service</a>
               <a href="#" className="hover:text-foreground transition-colors">Contact</a>
