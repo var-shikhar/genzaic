@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Palette, CreditCard, ArrowRight, ArrowLeft, Check, Upload, X } from 'lucide-react';
+import { Package, Palette, Wallet, ArrowRight, ArrowLeft, Check, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,15 +10,31 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const steps = [
   { id: 1, title: 'Upload Product', icon: Package, description: 'Add your first digital product' },
-  { id: 2, title: 'Choose Theme', icon: Palette, description: 'Select your storefront style' },
-  { id: 3, title: 'Select Plan', icon: CreditCard, description: 'Pick the right plan for you' },
+  { id: 2, title: 'Setup Store', icon: Palette, description: 'Customize your storefront' },
+  { id: 3, title: 'Add Payment', icon: Wallet, description: 'Connect your payment method' },
 ];
 
 const themes = [
-  { id: 'minimal', name: 'Minimal', description: 'Clean and simple', color: 'from-slate-400 to-slate-600', preview: 'bg-slate-100' },
-  { id: 'modern', name: 'Modern', description: 'Bold and contemporary', color: 'from-primary to-secondary', preview: 'bg-primary/10' },
-  { id: 'creative', name: 'Creative', description: 'Colorful and vibrant', color: 'from-purple-500 to-pink-500', preview: 'bg-purple-100' },
-  { id: 'professional', name: 'Professional', description: 'Corporate and trustworthy', color: 'from-blue-600 to-cyan-500', preview: 'bg-blue-100' },
+  { id: 'minimal', name: 'Minimal', description: 'Clean and simple', color: 'from-slate-400 to-slate-600' },
+  { id: 'modern', name: 'Modern', description: 'Bold and contemporary', color: 'from-primary to-secondary' },
+  { id: 'creative', name: 'Creative', description: 'Colorful and vibrant', color: 'from-purple-500 to-pink-500' },
+  { id: 'professional', name: 'Professional', description: 'Corporate and trustworthy', color: 'from-blue-600 to-cyan-500' },
+];
+
+const colorOptions = [
+  { id: 'orange', name: 'Orange', color: 'bg-orange-500' },
+  { id: 'blue', name: 'Blue', color: 'bg-blue-500' },
+  { id: 'green', name: 'Green', color: 'bg-green-500' },
+  { id: 'purple', name: 'Purple', color: 'bg-purple-500' },
+  { id: 'pink', name: 'Pink', color: 'bg-pink-500' },
+  { id: 'teal', name: 'Teal', color: 'bg-teal-500' },
+];
+
+const fontOptions = [
+  { id: 'inter', name: 'Inter', style: 'font-sans' },
+  { id: 'poppins', name: 'Poppins', style: 'font-sans' },
+  { id: 'playfair', name: 'Playfair', style: 'font-serif' },
+  { id: 'roboto', name: 'Roboto', style: 'font-sans' },
 ];
 
 export default function OnboardingPage() {
@@ -32,8 +48,21 @@ export default function OnboardingPage() {
     seoTitle: '',
     seoKeywords: '',
   });
-  const [selectedTheme, setSelectedTheme] = useState('modern');
-  const [selectedPlan, setSelectedPlan] = useState('creator');
+  const [storeData, setStoreData] = useState({
+    storeName: '',
+    storeDescription: '',
+    logo: null as File | null,
+    selectedTheme: 'modern',
+    selectedColor: 'orange',
+    selectedFont: 'inter',
+  });
+  const [paymentData, setPaymentData] = useState({
+    paymentMethod: 'bank' as 'bank' | 'upi',
+    bankAccountName: '',
+    bankAccountNumber: '',
+    ifscCode: '',
+    upiId: '',
+  });
   const navigate = useNavigate();
   const { updateUser } = useAuth();
 
@@ -41,9 +70,8 @@ export default function OnboardingPage() {
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Complete onboarding
-      updateUser({ onboardingComplete: true });
-      navigate('/dashboard');
+      // Complete onboarding, go to plan selection
+      navigate('/plan-selection');
     }
   };
 
@@ -53,9 +81,28 @@ export default function OnboardingPage() {
     }
   };
 
+  const handleSkipStep = () => {
+    // Skip only the current step, move to next
+    if (currentStep < 3) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      // On last step, go to plan selection
+      navigate('/plan-selection');
+    }
+  };
+
   const canProceed = () => {
     if (currentStep === 1) {
       return productData.title && productData.price;
+    }
+    if (currentStep === 2) {
+      return storeData.storeName;
+    }
+    if (currentStep === 3) {
+      if (paymentData.paymentMethod === 'bank') {
+        return paymentData.bankAccountName && paymentData.bankAccountNumber && paymentData.ifscCode;
+      }
+      return paymentData.upiId;
     }
     return true;
   };
@@ -71,8 +118,8 @@ export default function OnboardingPage() {
             </div>
             <span className="font-bold text-xl text-foreground">GenZaic</span>
           </div>
-          <Button variant="ghost" onClick={() => navigate('/dashboard')}>
-            Skip for now
+          <Button variant="ghost" onClick={handleSkipStep}>
+            Skip this step
           </Button>
         </div>
       </header>
@@ -215,116 +262,209 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* Step 2: Choose Theme */}
+            {/* Step 2: Setup Store */}
             {currentStep === 2 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground mb-2">Choose Your Theme</h2>
-                  <p className="text-muted-foreground">Select a storefront style that matches your brand.</p>
+                  <h2 className="text-2xl font-bold text-foreground mb-2">Setup Your Store</h2>
+                  <p className="text-muted-foreground">Customize your storefront to match your brand.</p>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {themes.map((theme) => (
-                    <motion.button
-                      key={theme.id}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setSelectedTheme(theme.id)}
-                      className={`relative p-4 rounded-xl border-2 text-left transition-all ${
-                        selectedTheme === theme.id
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      {selectedTheme === theme.id && (
-                        <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                          <Check className="w-4 h-4 text-white" />
-                        </div>
-                      )}
-                      <div className={`h-24 rounded-lg bg-gradient-to-br ${theme.color} mb-4`} />
-                      <h3 className="font-semibold text-foreground">{theme.name}</h3>
-                      <p className="text-sm text-muted-foreground">{theme.description}</p>
-                    </motion.button>
-                  ))}
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="storeName">Store Name *</Label>
+                      <Input
+                        id="storeName"
+                        placeholder="e.g., Design Studio"
+                        value={storeData.storeName}
+                        onChange={(e) => setStoreData({ ...storeData, storeName: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="storeDescription">Store Description</Label>
+                      <Textarea
+                        id="storeDescription"
+                        placeholder="Tell customers what your store is about..."
+                        rows={3}
+                        value={storeData.storeDescription}
+                        onChange={(e) => setStoreData({ ...storeData, storeDescription: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Store Logo</Label>
+                      <div className="mt-2 border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                        <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          {storeData.logo ? storeData.logo.name : 'Upload your logo'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Theme Style</Label>
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        {themes.map((theme) => (
+                          <button
+                            key={theme.id}
+                            onClick={() => setStoreData({ ...storeData, selectedTheme: theme.id })}
+                            className={`relative p-3 rounded-lg border-2 text-left transition-all ${
+                              storeData.selectedTheme === theme.id
+                                ? 'border-primary bg-primary/5'
+                                : 'border-border hover:border-primary/50'
+                            }`}
+                          >
+                            {storeData.selectedTheme === theme.id && (
+                              <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                                <Check className="w-3 h-3 text-white" />
+                              </div>
+                            )}
+                            <div className={`h-8 rounded bg-gradient-to-br ${theme.color} mb-2`} />
+                            <p className="text-xs font-medium text-foreground">{theme.name}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Brand Color</Label>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {colorOptions.map((color) => (
+                          <button
+                            key={color.id}
+                            onClick={() => setStoreData({ ...storeData, selectedColor: color.id })}
+                            className={`w-10 h-10 rounded-lg ${color.color} flex items-center justify-center transition-all ${
+                              storeData.selectedColor === color.id
+                                ? 'ring-2 ring-offset-2 ring-primary'
+                                : 'hover:scale-110'
+                            }`}
+                          >
+                            {storeData.selectedColor === color.id && (
+                              <Check className="w-5 h-5 text-white" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Font Style</Label>
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        {fontOptions.map((font) => (
+                          <button
+                            key={font.id}
+                            onClick={() => setStoreData({ ...storeData, selectedFont: font.id })}
+                            className={`p-3 rounded-lg border-2 text-center transition-all ${font.style} ${
+                              storeData.selectedFont === font.id
+                                ? 'border-primary bg-primary/5'
+                                : 'border-border hover:border-primary/50'
+                            }`}
+                          >
+                            <span className="text-foreground font-medium">{font.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Step 3: Select Plan */}
+            {/* Step 3: Add Payment */}
             {currentStep === 3 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground mb-2">Select Your Plan</h2>
-                  <p className="text-muted-foreground">Choose the plan that fits your needs.</p>
+                  <h2 className="text-2xl font-bold text-foreground mb-2">Add Payment Method</h2>
+                  <p className="text-muted-foreground">Connect your payment method to receive payouts.</p>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  {/* Creator Plan */}
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setSelectedPlan('creator')}
-                    className={`relative p-6 rounded-xl border-2 text-left transition-all ${
-                      selectedPlan === 'creator'
+                {/* Payment Method Selection */}
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setPaymentData({ ...paymentData, paymentMethod: 'bank' })}
+                    className={`flex-1 p-4 rounded-xl border-2 text-center transition-all ${
+                      paymentData.paymentMethod === 'bank'
                         ? 'border-primary bg-primary/5'
                         : 'border-border hover:border-primary/50'
                     }`}
                   >
-                    {selectedPlan === 'creator' && (
-                      <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                        <Check className="w-4 h-4 text-white" />
-                      </div>
-                    )}
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-green to-green-600 flex items-center justify-center mb-4">
-                      <Package className="w-6 h-6 text-white" />
+                    <Wallet className="w-8 h-8 mx-auto mb-2 text-foreground" />
+                    <p className="font-semibold text-foreground">Bank Account</p>
+                    <p className="text-sm text-muted-foreground">Direct bank transfer</p>
+                  </button>
+                  <button
+                    onClick={() => setPaymentData({ ...paymentData, paymentMethod: 'upi' })}
+                    className={`flex-1 p-4 rounded-xl border-2 text-center transition-all ${
+                      paymentData.paymentMethod === 'upi'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="w-8 h-8 mx-auto mb-2 rounded-lg bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">UPI</span>
                     </div>
-                    <h3 className="text-xl font-bold text-foreground mb-1">Creator Plan</h3>
-                    <p className="text-3xl font-bold text-foreground mb-2">
-                      Free <span className="text-sm font-normal text-muted-foreground">+ 5% per sale</span>
-                    </p>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
-                      <li className="flex items-center gap-2">
-                        <Check className="w-4 h-4 text-accent-green" /> Unlimited products
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="w-4 h-4 text-accent-green" /> Basic storefront
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="w-4 h-4 text-accent-green" /> GST invoicing
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="w-4 h-4 text-accent-green" /> UPI payments
-                      </li>
-                    </ul>
-                  </motion.button>
+                    <p className="font-semibold text-foreground">UPI ID</p>
+                    <p className="text-sm text-muted-foreground">Instant UPI transfer</p>
+                  </button>
+                </div>
 
-                  {/* Startup Plan */}
-                  <div className="relative p-6 rounded-xl border-2 border-border bg-muted/30 text-left opacity-75">
-                    <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-accent-orange text-white text-xs font-semibold">
-                      Coming Soon
+                {/* Bank Account Form */}
+                {paymentData.paymentMethod === 'bank' && (
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="bankAccountName">Account Holder Name *</Label>
+                      <Input
+                        id="bankAccountName"
+                        placeholder="As per bank records"
+                        value={paymentData.bankAccountName}
+                        onChange={(e) => setPaymentData({ ...paymentData, bankAccountName: e.target.value })}
+                      />
                     </div>
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-purple to-purple-600 flex items-center justify-center mb-4">
-                      <CreditCard className="w-6 h-6 text-white" />
+                    <div>
+                      <Label htmlFor="bankAccountNumber">Account Number *</Label>
+                      <Input
+                        id="bankAccountNumber"
+                        placeholder="Enter account number"
+                        value={paymentData.bankAccountNumber}
+                        onChange={(e) => setPaymentData({ ...paymentData, bankAccountNumber: e.target.value })}
+                      />
                     </div>
-                    <h3 className="text-xl font-bold text-foreground mb-1">Startup Plan</h3>
-                    <p className="text-3xl font-bold text-foreground mb-2">
-                      ₹999<span className="text-sm font-normal text-muted-foreground">/month</span>
-                    </p>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
-                      <li className="flex items-center gap-2">
-                        <Check className="w-4 h-4" /> Everything in Creator
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="w-4 h-4" /> Custom domain
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="w-4 h-4" /> Advanced analytics
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="w-4 h-4" /> Priority support
-                      </li>
-                    </ul>
+                    <div>
+                      <Label htmlFor="ifscCode">IFSC Code *</Label>
+                      <Input
+                        id="ifscCode"
+                        placeholder="e.g., SBIN0001234"
+                        value={paymentData.ifscCode}
+                        onChange={(e) => setPaymentData({ ...paymentData, ifscCode: e.target.value.toUpperCase() })}
+                      />
+                    </div>
                   </div>
+                )}
+
+                {/* UPI Form */}
+                {paymentData.paymentMethod === 'upi' && (
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="upiId">UPI ID *</Label>
+                      <Input
+                        id="upiId"
+                        placeholder="yourname@upi"
+                        value={paymentData.upiId}
+                        onChange={(e) => setPaymentData({ ...paymentData, upiId: e.target.value })}
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Enter your UPI ID linked to any UPI app (Google Pay, PhonePe, Paytm, etc.)
+                    </p>
+                  </div>
+                )}
+
+                <div className="p-4 rounded-xl bg-accent-green/10 border border-accent-green/30">
+                  <p className="text-sm text-foreground">
+                    <span className="font-semibold">🔒 Secure & Verified:</span> Your payment details are encrypted and stored securely. Payouts are processed within T+7 days.
+                  </p>
                 </div>
               </div>
             )}
@@ -347,7 +487,7 @@ export default function OnboardingPage() {
             disabled={!canProceed()}
             className="gap-2 bg-gradient-primary hover:opacity-90"
           >
-            {currentStep === 3 ? 'Complete Setup' : 'Continue'}
+            {currentStep === 3 ? 'Continue to Plan' : 'Continue'}
             <ArrowRight className="w-4 h-4" />
           </Button>
         </div>

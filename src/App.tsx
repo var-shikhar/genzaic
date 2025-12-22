@@ -14,6 +14,7 @@ import SignupPage from "./pages/auth/SignupPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import VerifyEmailPage from "./pages/auth/VerifyEmailPage";
 import OnboardingPage from "./pages/onboarding/OnboardingPage";
+import PlanSelectionPage from "./pages/onboarding/PlanSelectionPage";
 import DashboardHome from "./pages/dashboard/DashboardHome";
 import ProductsPage from "./pages/dashboard/ProductsPage";
 import AddProductPage from "./pages/dashboard/AddProductPage";
@@ -74,6 +75,7 @@ const AppRoutes = () => (
     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
     <Route path="/verify-email" element={<VerifyEmailPage />} />
     <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+    <Route path="/plan-selection" element={<ProtectedRoute><PlanSelectionPage /></ProtectedRoute>} />
     <Route path="/dashboard" element={<ProtectedRoute><DashboardHome /></ProtectedRoute>} />
     <Route path="/dashboard/products" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
     <Route path="/dashboard/products/new" element={<ProtectedRoute><AddProductPage /></ProtectedRoute>} />
