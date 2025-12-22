@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Check, Bell, X, Sparkles, BarChart3, Users, Palette, TrendingUp, Heart, Megaphone } from 'lucide-react';
+import { Check, Bell, Sparkles, BarChart3, Users, Palette, TrendingUp, Heart, Megaphone, LayoutGrid, Plug, Globe, Boxes } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -66,9 +66,13 @@ export default function PlanSelectionPage() {
     { icon: BarChart3, text: 'Advanced Analytics' },
     { icon: Users, text: 'Team Access' },
     { icon: Palette, text: 'Storefront Customization' },
+    { icon: LayoutGrid, text: 'Drag & Drop Storefront' },
     { icon: TrendingUp, text: 'Sales Funnel' },
+    { icon: Megaphone, text: 'Marketing Tools' },
+    { icon: Plug, text: 'Integrations' },
+    { icon: Globe, text: 'Custom Domain' },
+    { icon: Boxes, text: 'Apps & Add-ons' },
     { icon: Heart, text: 'Loyalty Program' },
-    { icon: Megaphone, text: 'Ad Campaigns' },
     { icon: Check, text: 'Priority Support' },
   ];
 
@@ -86,7 +90,7 @@ export default function PlanSelectionPage() {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-6 py-8 pb-32">
         {/* Title */}
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -154,11 +158,11 @@ export default function PlanSelectionPage() {
               </div>
               <h2 className="text-2xl font-bold text-foreground mb-1">Startup Plan</h2>
               <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-4xl font-bold text-muted-foreground">₹999</span>
+                <span className="text-4xl font-bold text-muted-foreground">₹3X</span>
                 <span className="text-muted-foreground">/month</span>
               </div>
               <div className="inline-block px-3 py-1 rounded-full bg-muted text-muted-foreground text-sm font-semibold">
-                Lower Commission
+                2.5% Commission
               </div>
             </div>
 
@@ -184,23 +188,27 @@ export default function PlanSelectionPage() {
           </div>
         </div>
 
-        {/* Continue Button */}
-        <div className="flex justify-center">
+
+        {/* Info Text */}
+        <p className="text-center text-sm text-muted-foreground mt-6">
+          No credit card required.
+        </p>
+      </div>
+
+      {/* Sticky Continue Bar */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-center">
           <Button
             size="lg"
             onClick={handleContinue}
             disabled={!selectedPlan}
-            className="gap-2 bg-gradient-primary hover:opacity-90 px-12"
+            className="w-full sm:w-auto gap-2 bg-gradient-primary hover:opacity-90 px-12"
           >
-            {selectedPlan ? 'Start with Creator Plan' : 'Select a Plan to Continue'}
+            {selectedPlan ? 'Continue' : 'Select a Plan to Continue'}
           </Button>
         </div>
-
-        {/* Info Text */}
-        <p className="text-center text-sm text-muted-foreground mt-6">
-          No credit card required. You keep 75% of every sale.
-        </p>
       </div>
+
 
       {/* Notify Dialog */}
       <Dialog open={notifyDialogOpen} onOpenChange={setNotifyDialogOpen}>
