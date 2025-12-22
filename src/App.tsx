@@ -7,6 +7,8 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 // Pages
 import LandingPage from "./pages/LandingPage";
+import AboutPage from "./pages/AboutPage";
+import DisclaimerPage from "./pages/DisclaimerPage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
@@ -65,6 +67,8 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<LandingPage />} />
+    <Route path="/about" element={<AboutPage />} />
+    <Route path="/disclaimer" element={<DisclaimerPage />} />
     <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
     <Route path="/signup" element={<PublicRoute><SignupPage /></PublicRoute>} />
     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
