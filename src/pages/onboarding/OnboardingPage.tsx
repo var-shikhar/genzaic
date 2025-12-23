@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Palette, Wallet, ArrowRight, ArrowLeft, Check, Upload, X } from 'lucide-react';
+import { Package, Palette, Wallet, ArrowRight, ArrowLeft, Check, Upload, X, Pipette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const steps = [
   { id: 1, title: 'Upload Product', icon: Package, description: 'Add your first digital product' },
@@ -19,22 +21,40 @@ const themes = [
   { id: 'modern', name: 'Modern', description: 'Bold and contemporary', color: 'from-primary to-secondary' },
   { id: 'creative', name: 'Creative', description: 'Colorful and vibrant', color: 'from-purple-500 to-pink-500' },
   { id: 'professional', name: 'Professional', description: 'Corporate and trustworthy', color: 'from-blue-600 to-cyan-500' },
+  { id: 'elegant', name: 'Elegant', description: 'Refined and luxurious', color: 'from-amber-500 to-yellow-400' },
+  { id: 'nature', name: 'Nature', description: 'Fresh and organic', color: 'from-green-500 to-emerald-400' },
+  { id: 'sunset', name: 'Sunset', description: 'Warm and inviting', color: 'from-orange-500 to-red-400' },
+  { id: 'ocean', name: 'Ocean', description: 'Calm and serene', color: 'from-teal-500 to-blue-400' },
+  { id: 'midnight', name: 'Midnight', description: 'Dark and mysterious', color: 'from-indigo-600 to-purple-800' },
+  { id: 'candy', name: 'Candy', description: 'Playful and fun', color: 'from-pink-400 to-rose-500' },
 ];
 
 const colorOptions = [
-  { id: 'orange', name: 'Orange', color: 'bg-orange-500' },
-  { id: 'blue', name: 'Blue', color: 'bg-blue-500' },
-  { id: 'green', name: 'Green', color: 'bg-green-500' },
-  { id: 'purple', name: 'Purple', color: 'bg-purple-500' },
-  { id: 'pink', name: 'Pink', color: 'bg-pink-500' },
-  { id: 'teal', name: 'Teal', color: 'bg-teal-500' },
+  { id: 'orange', name: 'Orange', color: '#f97316' },
+  { id: 'blue', name: 'Blue', color: '#3b82f6' },
+  { id: 'green', name: 'Green', color: '#22c55e' },
+  { id: 'purple', name: 'Purple', color: '#a855f7' },
+  { id: 'pink', name: 'Pink', color: '#ec4899' },
+  { id: 'teal', name: 'Teal', color: '#14b8a6' },
+  { id: 'red', name: 'Red', color: '#ef4444' },
+  { id: 'yellow', name: 'Yellow', color: '#eab308' },
+  { id: 'indigo', name: 'Indigo', color: '#6366f1' },
+  { id: 'cyan', name: 'Cyan', color: '#06b6d4' },
+  { id: 'emerald', name: 'Emerald', color: '#10b981' },
+  { id: 'rose', name: 'Rose', color: '#f43f5e' },
 ];
 
 const fontOptions = [
-  { id: 'inter', name: 'Inter', style: 'font-sans' },
-  { id: 'poppins', name: 'Poppins', style: 'font-sans' },
-  { id: 'playfair', name: 'Playfair', style: 'font-serif' },
-  { id: 'roboto', name: 'Roboto', style: 'font-sans' },
+  { id: 'dm-sans', name: 'DM Sans', style: 'font-dm-sans' },
+  { id: 'montserrat', name: 'Montserrat', style: 'font-montserrat' },
+  { id: 'nunito', name: 'Nunito', style: 'font-nunito' },
+  { id: 'open-sans', name: 'Open Sans', style: 'font-open-sans' },
+  { id: 'outfit', name: 'Outfit', style: 'font-outfit' },
+  { id: 'quicksand', name: 'Quicksand', style: 'font-quicksand' },
+  { id: 'raleway', name: 'Raleway', style: 'font-raleway' },
+  { id: 'source-sans', name: 'Source Sans', style: 'font-source-sans' },
+  { id: 'space-grotesk', name: 'Space Grotesk', style: 'font-space-grotesk' },
+  { id: 'lora', name: 'Lora', style: 'font-lora' },
 ];
 
 export default function OnboardingPage() {
@@ -54,7 +74,8 @@ export default function OnboardingPage() {
     logo: null as File | null,
     selectedTheme: 'modern',
     selectedColor: 'orange',
-    selectedFont: 'inter',
+    customColor: '',
+    selectedFont: 'dm-sans',
   });
   const [paymentData, setPaymentData] = useState({
     paymentMethod: 'bank' as 'bank' | 'upi',
@@ -305,67 +326,115 @@ export default function OnboardingPage() {
                   <div className="space-y-4">
                     <div>
                       <Label>Theme Style</Label>
-                      <div className="mt-2 grid grid-cols-2 gap-2">
-                        {themes.map((theme) => (
-                          <button
-                            key={theme.id}
-                            onClick={() => setStoreData({ ...storeData, selectedTheme: theme.id })}
-                            className={`relative p-3 rounded-lg border-2 text-left transition-all ${
-                              storeData.selectedTheme === theme.id
-                                ? 'border-primary bg-primary/5'
-                                : 'border-border hover:border-primary/50'
-                            }`}
-                          >
-                            {storeData.selectedTheme === theme.id && (
-                              <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
-                                <Check className="w-3 h-3 text-white" />
-                              </div>
-                            )}
-                            <div className={`h-8 rounded bg-gradient-to-br ${theme.color} mb-2`} />
-                            <p className="text-xs font-medium text-foreground">{theme.name}</p>
-                          </button>
-                        ))}
-                      </div>
+                      <ScrollArea className="mt-2 w-full whitespace-nowrap">
+                        <div className="flex gap-2 pb-3">
+                          {themes.map((theme) => (
+                            <button
+                              key={theme.id}
+                              onClick={() => setStoreData({ ...storeData, selectedTheme: theme.id })}
+                              className={`relative flex-shrink-0 w-28 p-3 rounded-lg border-2 text-left transition-all ${
+                                storeData.selectedTheme === theme.id
+                                  ? 'border-primary bg-primary/5'
+                                  : 'border-border hover:border-primary/50'
+                              }`}
+                            >
+                              {storeData.selectedTheme === theme.id && (
+                                <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                                  <Check className="w-3 h-3 text-white" />
+                                </div>
+                              )}
+                              <div className={`h-8 rounded bg-gradient-to-br ${theme.color} mb-2`} />
+                              <p className="text-xs font-medium text-foreground truncate">{theme.name}</p>
+                            </button>
+                          ))}
+                        </div>
+                        <ScrollBar orientation="horizontal" />
+                      </ScrollArea>
                     </div>
 
                     <div>
                       <Label>Brand Color</Label>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {colorOptions.map((color) => (
-                          <button
-                            key={color.id}
-                            onClick={() => setStoreData({ ...storeData, selectedColor: color.id })}
-                            className={`w-10 h-10 rounded-lg ${color.color} flex items-center justify-center transition-all ${
-                              storeData.selectedColor === color.id
-                                ? 'ring-2 ring-offset-2 ring-primary'
-                                : 'hover:scale-110'
-                            }`}
-                          >
-                            {storeData.selectedColor === color.id && (
-                              <Check className="w-5 h-5 text-white" />
-                            )}
-                          </button>
-                        ))}
-                      </div>
+                      <ScrollArea className="mt-2 w-full whitespace-nowrap">
+                        <div className="flex gap-2 pb-3">
+                          {colorOptions.map((colorOpt) => (
+                            <button
+                              key={colorOpt.id}
+                              onClick={() => setStoreData({ ...storeData, selectedColor: colorOpt.id, customColor: '' })}
+                              style={{ backgroundColor: colorOpt.color }}
+                              className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
+                                storeData.selectedColor === colorOpt.id && !storeData.customColor
+                                  ? 'ring-2 ring-offset-2 ring-primary'
+                                  : 'hover:scale-110'
+                              }`}
+                            >
+                              {storeData.selectedColor === colorOpt.id && !storeData.customColor && (
+                                <Check className="w-5 h-5 text-white" />
+                              )}
+                            </button>
+                          ))}
+                          {/* Custom Color Picker */}
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                className={`flex-shrink-0 w-10 h-10 rounded-lg border-2 border-dashed flex items-center justify-center transition-all ${
+                                  storeData.customColor
+                                    ? 'ring-2 ring-offset-2 ring-primary border-solid'
+                                    : 'border-border hover:border-primary/50'
+                                }`}
+                                style={storeData.customColor ? { backgroundColor: storeData.customColor, borderColor: storeData.customColor } : {}}
+                              >
+                                {storeData.customColor ? (
+                                  <Check className="w-5 h-5 text-white" />
+                                ) : (
+                                  <Pipette className="w-4 h-4 text-muted-foreground" />
+                                )}
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-3" align="start">
+                              <div className="space-y-2">
+                                <Label className="text-xs">Custom Color</Label>
+                                <div className="flex gap-2 items-center">
+                                  <input
+                                    type="color"
+                                    value={storeData.customColor || '#000000'}
+                                    onChange={(e) => setStoreData({ ...storeData, customColor: e.target.value, selectedColor: '' })}
+                                    className="w-10 h-10 rounded-lg cursor-pointer border-0 p-0"
+                                  />
+                                  <Input
+                                    value={storeData.customColor}
+                                    onChange={(e) => setStoreData({ ...storeData, customColor: e.target.value, selectedColor: '' })}
+                                    placeholder="#000000"
+                                    className="w-24 h-8 text-xs"
+                                  />
+                                </div>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        <ScrollBar orientation="horizontal" />
+                      </ScrollArea>
                     </div>
 
                     <div>
                       <Label>Font Style</Label>
-                      <div className="mt-2 grid grid-cols-2 gap-2">
-                        {fontOptions.map((font) => (
-                          <button
-                            key={font.id}
-                            onClick={() => setStoreData({ ...storeData, selectedFont: font.id })}
-                            className={`p-3 rounded-lg border-2 text-center transition-all ${font.style} ${
-                              storeData.selectedFont === font.id
-                                ? 'border-primary bg-primary/5'
-                                : 'border-border hover:border-primary/50'
-                            }`}
-                          >
-                            <span className="text-foreground font-medium">{font.name}</span>
-                          </button>
-                        ))}
-                      </div>
+                      <ScrollArea className="mt-2 w-full whitespace-nowrap">
+                        <div className="flex gap-2 pb-3">
+                          {fontOptions.map((font) => (
+                            <button
+                              key={font.id}
+                              onClick={() => setStoreData({ ...storeData, selectedFont: font.id })}
+                              className={`flex-shrink-0 px-4 py-3 rounded-lg border-2 text-center transition-all ${font.style} ${
+                                storeData.selectedFont === font.id
+                                  ? 'border-primary bg-primary/5'
+                                  : 'border-border hover:border-primary/50'
+                              }`}
+                            >
+                              <span className="text-foreground font-medium whitespace-nowrap">{font.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                        <ScrollBar orientation="horizontal" />
+                      </ScrollArea>
                     </div>
                   </div>
                 </div>
