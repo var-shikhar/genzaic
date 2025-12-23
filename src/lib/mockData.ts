@@ -58,16 +58,31 @@ export interface Order {
   id: string;
   productId: string;
   productTitle: string;
+  productThumbnail?: string;
+  productDescription?: string;
   buyerEmail: string;
   buyerName: string;
+  buyerPhone?: string;
+  buyerGstin?: string;
   amount: number;
   gstAmount: number;
   totalAmount: number;
   status: 'completed' | 'pending' | 'refunded';
+  paymentMethod?: string;
   downloadCount: number;
   maxDownloads: number;
   downloadLink: string;
   createdAt: string;
+}
+
+export interface DownloadLog {
+  id: string;
+  orderId: string;
+  productTitle: string;
+  buyerName: string;
+  buyerEmail: string;
+  downloadedAt: string;
+  ipAddress?: string;
 }
 
 export interface Invoice {
@@ -78,6 +93,7 @@ export interface Invoice {
   sellerGstin?: string;
   buyerName: string;
   buyerEmail: string;
+  buyerGstin?: string;
   productTitle: string;
   amount: number;
   gstAmount: number;
@@ -272,46 +288,161 @@ export const mockOrders: Order[] = [
     id: 'order-1',
     productId: 'prod-1',
     productTitle: 'Ultimate React Component Library',
-    buyerEmail: 'buyer1@example.com',
+    productThumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400',
+    productDescription: 'A comprehensive collection of 100+ React components with TypeScript support.',
+    buyerEmail: 'priya.patel@example.com',
     buyerName: 'Priya Patel',
+    buyerPhone: '+91 98765 43210',
     amount: 1999,
     gstAmount: 360,
     totalAmount: 2359,
     status: 'completed',
+    paymentMethod: 'UPI',
     downloadCount: 2,
     maxDownloads: 5,
     downloadLink: 'https://download.genzaic.com/abc123',
-    createdAt: '2025-01-21',
+    createdAt: '2025-01-21T10:30:00Z',
   },
   {
     id: 'order-2',
     productId: 'prod-2',
     productTitle: 'Startup Business Plan Template',
-    buyerEmail: 'buyer2@example.com',
+    productThumbnail: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400',
+    productDescription: 'Professional business plan template used by 500+ startups.',
+    buyerEmail: 'amit.kumar@example.com',
     buyerName: 'Amit Kumar',
+    buyerPhone: '+91 98765 12345',
+    buyerGstin: '29ABCDE1234F1Z5',
     amount: 499,
     gstAmount: 90,
     totalAmount: 589,
     status: 'completed',
+    paymentMethod: 'Card',
     downloadCount: 1,
     maxDownloads: 5,
     downloadLink: 'https://download.genzaic.com/def456',
-    createdAt: '2025-01-20',
+    createdAt: '2025-01-20T14:45:00Z',
   },
   {
     id: 'order-3',
     productId: 'prod-1',
     productTitle: 'Ultimate React Component Library',
-    buyerEmail: 'buyer3@example.com',
+    productThumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400',
+    productDescription: 'A comprehensive collection of 100+ React components with TypeScript support.',
+    buyerEmail: 'sneha.gupta@example.com',
     buyerName: 'Sneha Gupta',
     amount: 1999,
     gstAmount: 360,
     totalAmount: 2359,
     status: 'completed',
+    paymentMethod: 'UPI',
     downloadCount: 3,
     maxDownloads: 5,
     downloadLink: 'https://download.genzaic.com/ghi789',
-    createdAt: '2025-01-19',
+    createdAt: '2025-01-19T09:15:00Z',
+  },
+  {
+    id: 'order-4',
+    productId: 'prod-4',
+    productTitle: 'Complete JavaScript Course',
+    productThumbnail: 'https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=400',
+    productDescription: 'Master JavaScript from basics to advanced concepts with 50+ hours of content.',
+    buyerEmail: 'raj.malhotra@example.com',
+    buyerName: 'Raj Malhotra',
+    amount: 3999,
+    gstAmount: 720,
+    totalAmount: 4719,
+    status: 'pending',
+    paymentMethod: 'Net Banking',
+    downloadCount: 0,
+    maxDownloads: 5,
+    downloadLink: 'https://download.genzaic.com/jkl012',
+    createdAt: '2025-01-22T16:20:00Z',
+  },
+  {
+    id: 'order-5',
+    productId: 'prod-5',
+    productTitle: 'Personal Finance eBook',
+    productThumbnail: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400',
+    productDescription: 'Learn to manage your money effectively with practical tips and strategies.',
+    buyerEmail: 'neha.sharma@example.com',
+    buyerName: 'Neha Sharma',
+    amount: 299,
+    gstAmount: 54,
+    totalAmount: 353,
+    status: 'completed',
+    paymentMethod: 'Wallet',
+    downloadCount: 1,
+    maxDownloads: 5,
+    downloadLink: 'https://download.genzaic.com/mno345',
+    createdAt: '2025-01-18T11:00:00Z',
+  },
+];
+
+// Mock download logs
+export const mockDownloadLogs: DownloadLog[] = [
+  {
+    id: 'dl-1',
+    orderId: 'order-1',
+    productTitle: 'Ultimate React Component Library',
+    buyerName: 'Priya Patel',
+    buyerEmail: 'priya.patel@example.com',
+    downloadedAt: '2025-01-21T10:35:00Z',
+    ipAddress: '103.25.xx.xx',
+  },
+  {
+    id: 'dl-2',
+    orderId: 'order-1',
+    productTitle: 'Ultimate React Component Library',
+    buyerName: 'Priya Patel',
+    buyerEmail: 'priya.patel@example.com',
+    downloadedAt: '2025-01-21T15:20:00Z',
+    ipAddress: '103.25.xx.xx',
+  },
+  {
+    id: 'dl-3',
+    orderId: 'order-2',
+    productTitle: 'Startup Business Plan Template',
+    buyerName: 'Amit Kumar',
+    buyerEmail: 'amit.kumar@example.com',
+    downloadedAt: '2025-01-20T14:50:00Z',
+    ipAddress: '49.36.xx.xx',
+  },
+  {
+    id: 'dl-4',
+    orderId: 'order-3',
+    productTitle: 'Ultimate React Component Library',
+    buyerName: 'Sneha Gupta',
+    buyerEmail: 'sneha.gupta@example.com',
+    downloadedAt: '2025-01-19T09:20:00Z',
+    ipAddress: '122.161.xx.xx',
+  },
+  {
+    id: 'dl-5',
+    orderId: 'order-3',
+    productTitle: 'Ultimate React Component Library',
+    buyerName: 'Sneha Gupta',
+    buyerEmail: 'sneha.gupta@example.com',
+    downloadedAt: '2025-01-19T14:30:00Z',
+    ipAddress: '122.161.xx.xx',
+  },
+  {
+    id: 'dl-6',
+    orderId: 'order-3',
+    productTitle: 'Ultimate React Component Library',
+    buyerName: 'Sneha Gupta',
+    buyerEmail: 'sneha.gupta@example.com',
+    downloadedAt: '2025-01-20T10:15:00Z',
+    ipAddress: '122.161.xx.xx',
+  },
+  {
+    id: 'dl-7',
+    orderId: 'order-5',
+    productTitle: 'Personal Finance eBook',
+    buyerName: 'Neha Sharma',
+    buyerEmail: 'neha.sharma@example.com',
+    downloadedAt: '2025-01-18T11:05:00Z',
+    ipAddress: '59.88.xx.xx',
   },
 ];
 
@@ -324,7 +455,7 @@ export const mockInvoices: Invoice[] = [
     sellerName: 'Rahul Sharma',
     sellerGstin: '29ABCDE1234F1Z5',
     buyerName: 'Priya Patel',
-    buyerEmail: 'buyer1@example.com',
+    buyerEmail: 'priya.patel@example.com',
     productTitle: 'Ultimate React Component Library',
     amount: 1999,
     gstAmount: 360,
@@ -338,12 +469,41 @@ export const mockInvoices: Invoice[] = [
     sellerName: 'Rahul Sharma',
     sellerGstin: '29ABCDE1234F1Z5',
     buyerName: 'Amit Kumar',
-    buyerEmail: 'buyer2@example.com',
+    buyerEmail: 'amit.kumar@example.com',
+    buyerGstin: '29ABCDE1234F1Z5',
     productTitle: 'Startup Business Plan Template',
     amount: 499,
     gstAmount: 90,
     totalAmount: 589,
     createdAt: '2025-01-20',
+  },
+  {
+    id: 'inv-3',
+    invoiceNumber: 'GENZAIC/2025/00003',
+    orderId: 'order-3',
+    sellerName: 'Rahul Sharma',
+    sellerGstin: '29ABCDE1234F1Z5',
+    buyerName: 'Sneha Gupta',
+    buyerEmail: 'sneha.gupta@example.com',
+    productTitle: 'Ultimate React Component Library',
+    amount: 1999,
+    gstAmount: 360,
+    totalAmount: 2359,
+    createdAt: '2025-01-19',
+  },
+  {
+    id: 'inv-4',
+    invoiceNumber: 'GENZAIC/2025/00004',
+    orderId: 'order-5',
+    sellerName: 'Rahul Sharma',
+    sellerGstin: '29ABCDE1234F1Z5',
+    buyerName: 'Neha Sharma',
+    buyerEmail: 'neha.sharma@example.com',
+    productTitle: 'Personal Finance eBook',
+    amount: 299,
+    gstAmount: 54,
+    totalAmount: 353,
+    createdAt: '2025-01-18',
   },
 ];
 
@@ -385,11 +545,12 @@ export const mockKYCData: KYCData = {
 
 // Dashboard stats
 export const dashboardStats = {
-  totalSales: 7307,
-  totalOrders: 3,
-  totalProducts: 3,
-  pendingPayout: 2948,
-  completedPayout: 4500,
+  totalSales: 10439,
+  totalOrders: 5,
+  totalProducts: 6,
+  pendingPayout: 4719,
+  completedPayout: 5660,
+  monthlyRevenue: 10439,
 };
 
 // Mock sellers for admin
@@ -442,4 +603,21 @@ export const generateInvoiceNumber = (): string => {
   const year = new Date().getFullYear();
   const count = mockInvoices.length + 1;
   return `GENZAIC/${year}/${count.toString().padStart(5, '0')}`;
+};
+
+// Helper to generate order ID
+export const generateOrderId = (): string => {
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `ORD-${timestamp}-${random}`;
+};
+
+// Helper to get product by ID
+export const getProductById = (id: string): Product | undefined => {
+  return mockProducts.find(p => p.id === id);
+};
+
+// Helper to get order by ID
+export const getOrderById = (id: string): Order | undefined => {
+  return mockOrders.find(o => o.id === id);
 };
