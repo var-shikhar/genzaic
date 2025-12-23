@@ -22,7 +22,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 
 export default function PlanSelectionPage() {
-  const [selectedPlan, setSelectedPlan] = useState<'creator' | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<'creator' | null>('creator');
   const [notifyDialogOpen, setNotifyDialogOpen] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
