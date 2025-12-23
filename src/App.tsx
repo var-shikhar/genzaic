@@ -25,6 +25,7 @@ import KYCPage from "./pages/dashboard/KYCPage";
 import SettingsPage from "./pages/dashboard/SettingsPage";
 import DeliveryPage from "./pages/dashboard/DeliveryPage";
 import AdminPanel from "./pages/admin/AdminPanel";
+import PublicStorefront from "./pages/store/PublicStorefront";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -177,6 +178,7 @@ const AppRoutes = () => (
       }
     />
     <Route path="/admin" element={<AdminPanel />} />
+    <Route path="/store/:storeUrl" element={<PublicStorefront />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

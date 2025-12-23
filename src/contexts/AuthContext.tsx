@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, mockCurrentUser } from '@/lib/mockData';
+import { User, mockCurrentUser, StorefrontSettings } from '@/lib/mockData';
 
 interface AuthContextType {
   user: User | null;
@@ -9,6 +9,7 @@ interface AuthContextType {
   signup: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
+  updateStorefrontSettings: (settings: Partial<StorefrontSettings>) => void;
   verifyOTP: (otp: string) => Promise<boolean>;
 }
 
@@ -57,6 +58,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         kycStatus: 'not_submitted',
         planType: 'creator',
         onboardingComplete: false,
+        followers: 0,
+        rating: 0,
+        storefrontSettings: {
+          themeId: 'modern',
+          primaryColor: '#073f7c',
+          fontFamily: 'Inter',
+          tagline: `Digital products by ${name}`,
+          isPublished: false,
+        },
       };
       setUser(newUser);
       localStorage.setItem('genzaic_user', JSON.stringify(newUser));
@@ -80,6 +90,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateStorefrontSettings = (settings: Partial<StorefrontSettings>) => {
+    if (user) {
+      const updatedSettings = { ...user.storefrontSettings, ...settings } as StorefrontSettings;
+      const updatedUser = { ...user, storefrontSettings: updatedSettings };
+      setUser(updatedUser);
+      localStorage.setItem('genzaic_user', JSON.stringify(updatedUser));
+    }
+  };
+
   const verifyOTP = async (otp: string): Promise<boolean> => {
     await new Promise(resolve => setTimeout(resolve, 500));
     // Mock OTP verification - accept any 6-digit code
@@ -96,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signup,
         logout,
         updateUser,
+        updateStorefrontSettings,
         verifyOTP,
       }}
     >

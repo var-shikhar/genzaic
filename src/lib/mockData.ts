@@ -1,5 +1,21 @@
 // GenZaic Mock Data Store
 
+export interface StorefrontSettings {
+  profileImage?: string;
+  coverImage?: string;
+  tagline?: string;
+  themeId: string;
+  primaryColor: string;
+  fontFamily: string;
+  socialLinks?: {
+    instagram?: string;
+    twitter?: string;
+    youtube?: string;
+    website?: string;
+  };
+  isPublished?: boolean;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -10,7 +26,12 @@ export interface User {
   kycStatus: 'not_submitted' | 'pending' | 'verified' | 'rejected';
   planType: 'creator' | 'startup';
   onboardingComplete: boolean;
+  storefrontSettings?: StorefrontSettings;
+  followers?: number;
+  rating?: number;
 }
+
+export type ProductCategory = 'ebook' | 'template' | 'app' | 'course' | 'graphics' | 'audio' | 'other';
 
 export interface Product {
   id: string;
@@ -18,6 +39,7 @@ export interface Product {
   title: string;
   description: string;
   price: number;
+  originalPrice?: number;
   fileUrl?: string;
   thumbnailUrl?: string;
   seoTitle?: string;
@@ -25,6 +47,11 @@ export interface Product {
   status: 'draft' | 'published';
   downloads: number;
   createdAt: string;
+  category?: ProductCategory;
+  rating?: number;
+  reviewCount?: number;
+  isFeatured?: boolean;
+  hasDiscount?: boolean;
 }
 
 export interface Order {
@@ -134,9 +161,18 @@ export const mockCurrentUser: User = {
   kycStatus: 'not_submitted',
   planType: 'creator',
   onboardingComplete: true,
+  followers: 125,
+  rating: 4.8,
+  storefrontSettings: {
+    themeId: 'modern',
+    primaryColor: '#073f7c',
+    fontFamily: 'Inter',
+    tagline: 'Digital products by Rahul Sharma',
+    isPublished: true,
+  },
 };
 
-// Mock products
+// Mock products with categories
 export const mockProducts: Product[] = [
   {
     id: 'prod-1',
@@ -144,10 +180,16 @@ export const mockProducts: Product[] = [
     title: 'Ultimate React Component Library',
     description: 'A comprehensive collection of 100+ React components with TypeScript support.',
     price: 1999,
+    originalPrice: 2999,
     thumbnailUrl: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400',
     status: 'published',
     downloads: 145,
     createdAt: '2025-01-20',
+    category: 'template',
+    rating: 4.9,
+    reviewCount: 45,
+    isFeatured: true,
+    hasDiscount: true,
   },
   {
     id: 'prod-2',
@@ -159,6 +201,9 @@ export const mockProducts: Product[] = [
     status: 'published',
     downloads: 89,
     createdAt: '2025-01-18',
+    category: 'template',
+    rating: 4.7,
+    reviewCount: 32,
   },
   {
     id: 'prod-3',
@@ -170,6 +215,54 @@ export const mockProducts: Product[] = [
     status: 'draft',
     downloads: 0,
     createdAt: '2025-01-22',
+    category: 'graphics',
+    rating: 0,
+    reviewCount: 0,
+  },
+  {
+    id: 'prod-4',
+    userId: 'user-1',
+    title: 'Complete JavaScript Course',
+    description: 'Master JavaScript from basics to advanced concepts with 50+ hours of content.',
+    price: 3999,
+    originalPrice: 5999,
+    thumbnailUrl: 'https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=400',
+    status: 'published',
+    downloads: 234,
+    createdAt: '2025-01-10',
+    category: 'course',
+    rating: 4.8,
+    reviewCount: 78,
+    isFeatured: true,
+    hasDiscount: true,
+  },
+  {
+    id: 'prod-5',
+    userId: 'user-1',
+    title: 'Personal Finance eBook',
+    description: 'Learn to manage your money effectively with practical tips and strategies.',
+    price: 299,
+    thumbnailUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400',
+    status: 'published',
+    downloads: 156,
+    createdAt: '2025-01-05',
+    category: 'ebook',
+    rating: 4.5,
+    reviewCount: 23,
+  },
+  {
+    id: 'prod-6',
+    userId: 'user-1',
+    title: 'Mobile App UI Kit',
+    description: 'Beautiful mobile app UI kit with 200+ screens for iOS and Android.',
+    price: 1499,
+    thumbnailUrl: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400',
+    status: 'published',
+    downloads: 67,
+    createdAt: '2025-01-12',
+    category: 'app',
+    rating: 4.6,
+    reviewCount: 19,
   },
 ];
 
