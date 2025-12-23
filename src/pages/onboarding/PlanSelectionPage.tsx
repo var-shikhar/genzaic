@@ -149,7 +149,7 @@ export default function PlanSelectionPage() {
 
               <ul className="space-y-3">
                 {creatorBenefits.map((benefit, index) => (
-                  <li key={index} className="flex items-center gap-3 text-foreground">
+                  <li key={index} className="flex items-center gap-2 text-foreground">
                     <div className="w-5 h-5 rounded-full bg-accent-green/20 flex items-center justify-center flex-shrink-0">
                       <benefit.icon className="w-3 h-3 text-accent-green" />
                     </div>
@@ -158,13 +158,13 @@ export default function PlanSelectionPage() {
                       <TooltipTrigger asChild>
                         <button 
                           type="button" 
-                          className="p-1 rounded-full hover:bg-muted transition-colors"
+                          className="p-0.5 rounded-full hover:bg-muted transition-colors"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <Info className="w-4 h-4 text-muted-foreground" />
+                          <Info className="w-3.5 h-3.5 text-muted-foreground" />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs">
+                      <TooltipContent side="left" align="center" className="max-w-xs">
                         <p>{benefit.tooltip}</p>
                       </TooltipContent>
                     </Tooltip>
@@ -174,15 +174,16 @@ export default function PlanSelectionPage() {
             </motion.div>
 
             {/* Startup Plan - Coming Soon */}
-            <div className="relative p-6 rounded-2xl border-2 border-border bg-card/50 overflow-hidden">
-              {/* Coming Soon Overlay */}
-              <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="inline-block px-6 py-3 rounded-full bg-accent-purple text-white text-lg font-bold shadow-lg">
-                    Coming Soon
-                  </div>
+            <div className="relative p-6 rounded-2xl border-2 border-border bg-card overflow-hidden">
+              {/* Coming Soon Badge at Top Center */}
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
+                <div className="px-4 py-1.5 rounded-full bg-accent-purple text-white text-sm font-bold shadow-lg">
+                  Coming Soon
                 </div>
               </div>
+              
+              {/* Light Overlay - Less Blurry */}
+              <div className="absolute inset-0 bg-background/30 z-10 pointer-events-none" />
               
               <div className="mb-6">
                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent-purple to-purple-600 flex items-center justify-center mb-4">
@@ -198,23 +199,23 @@ export default function PlanSelectionPage() {
                 </div>
               </div>
 
-              <ul className="space-y-3 mb-6">
+              <ul className="space-y-3 mb-6 mt-8">
                 {startupBenefits.map((benefit, index) => (
-                  <li key={index} className="flex items-center gap-3 text-muted-foreground">
-                    <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                      <benefit.icon className="w-3 h-3" />
+                  <li key={index} className="flex items-center gap-2 text-foreground/70">
+                    <div className="w-5 h-5 rounded-full bg-accent-purple/20 flex items-center justify-center flex-shrink-0">
+                      <benefit.icon className="w-3 h-3 text-accent-purple" />
                     </div>
                     <span className="flex-1">{benefit.text}</span>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button 
                           type="button" 
-                          className="p-1 rounded-full hover:bg-muted transition-colors"
+                          className="p-0.5 rounded-full hover:bg-muted transition-colors relative z-20"
                         >
-                          <Info className="w-4 h-4 text-muted-foreground/50" />
+                          <Info className="w-3.5 h-3.5 text-muted-foreground" />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs">
+                      <TooltipContent side="left" align="center" className="max-w-xs">
                         <p>{benefit.tooltip}</p>
                       </TooltipContent>
                     </Tooltip>
@@ -270,7 +271,7 @@ export default function PlanSelectionPage() {
                     size="lg"
                     onClick={handleContinue}
                     disabled={!selectedPlan}
-                    className="w-full sm:w-auto gap-2 bg-gradient-primary hover:opacity-90 px-12 disabled:opacity-50"
+                    className="w-full sm:w-auto gap-2 px-12 bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-primary/40 disabled:text-primary-foreground/60 disabled:cursor-not-allowed"
                   >
                     {selectedPlan ? 'Continue to Dashboard' : 'Select a Plan to Continue'}
                   </Button>
