@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         storeUrl: name.toLowerCase().replace(/\s+/g, '-'),
         createdAt: new Date().toISOString(),
-        kycStatus: 'pending',
+        kycStatus: 'not_submitted',
         planType: 'creator',
         onboardingComplete: false,
       };
