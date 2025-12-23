@@ -228,6 +228,28 @@ export default function KYCPage() {
     return parts.join(' ');
   };
 
+  const resetToUploadFlow = () => {
+    setIsSubmitting(false);
+    setIsPennyDropping(false);
+    setPennyDropResult(null);
+    setKycData({
+      documentType: 'pan',
+      panNumber: '',
+      aadhaarNumber: '',
+      documentFile: null,
+      accountHolderName: '',
+      accountNumber: '',
+      confirmAccountNumber: '',
+      ifscCode: '',
+      bankName: '',
+    });
+    updateUser({ kycStatus: 'not_submitted' });
+    toast({
+      title: 'Upload form opened',
+      description: 'You can upload your documents again now.',
+    });
+  };
+
   if (user?.kycStatus === 'verified') {
     return (
       <DashboardLayout>
@@ -314,6 +336,15 @@ export default function KYCPage() {
             </p>
             <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
               <p>💡 You can continue selling while we verify your documents.</p>
+            </div>
+
+            <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+              <Button type="button" variant="outline" onClick={resetToUploadFlow}>
+                Upload / edit documents
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => toast({ title: 'All set', description: 'We’ll notify you when verification is complete.' })}>
+                Okay, I’ll wait
+              </Button>
             </div>
           </motion.div>
         ) : (
