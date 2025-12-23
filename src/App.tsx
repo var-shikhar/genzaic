@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Pages
 import LandingPage from "./pages/LandingPage";
@@ -35,7 +35,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
@@ -53,7 +53,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
@@ -70,21 +70,112 @@ const AppRoutes = () => (
     <Route path="/" element={<LandingPage />} />
     <Route path="/about" element={<AboutPage />} />
     <Route path="/disclaimer" element={<DisclaimerPage />} />
-    <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-    <Route path="/signup" element={<PublicRoute><SignupPage /></PublicRoute>} />
+    <Route
+      path="/login"
+      element={
+        <PublicRoute>
+          <LoginPage />
+        </PublicRoute>
+      }
+    />
+    <Route
+      path="/signup"
+      element={
+        <PublicRoute>
+          <SignupPage />
+        </PublicRoute>
+      }
+    />
     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
     <Route path="/verify-email" element={<VerifyEmailPage />} />
-    <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
-    <Route path="/plan-selection" element={<ProtectedRoute><PlanSelectionPage /></ProtectedRoute>} />
-    <Route path="/dashboard" element={<ProtectedRoute><DashboardHome /></ProtectedRoute>} />
-    <Route path="/dashboard/products" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
-    <Route path="/dashboard/products/new" element={<ProtectedRoute><AddProductPage /></ProtectedRoute>} />
-    <Route path="/dashboard/storefront" element={<ProtectedRoute><StorefrontPage /></ProtectedRoute>} />
-    <Route path="/dashboard/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
-    <Route path="/dashboard/payouts" element={<ProtectedRoute><PayoutsPage /></ProtectedRoute>} />
-    <Route path="/dashboard/kyc" element={<ProtectedRoute><KYCPage /></ProtectedRoute>} />
-    <Route path="/dashboard/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-    <Route path="/dashboard/delivery" element={<ProtectedRoute><DeliveryPage /></ProtectedRoute>} />
+    <Route
+      path="/onboarding"
+      element={
+        <ProtectedRoute>
+          <OnboardingPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/plan-selection"
+      element={
+        <ProtectedRoute>
+          <PlanSelectionPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard"
+      element={
+        <ProtectedRoute>
+          <DashboardHome />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/products"
+      element={
+        <ProtectedRoute>
+          <ProductsPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/products/new"
+      element={
+        <ProtectedRoute>
+          <AddProductPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/storefront"
+      element={
+        <ProtectedRoute>
+          <StorefrontPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/invoices"
+      element={
+        <ProtectedRoute>
+          <InvoicesPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/payouts"
+      element={
+        <ProtectedRoute>
+          <PayoutsPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/kyc"
+      element={
+        <ProtectedRoute>
+          <KYCPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/settings"
+      element={
+        <ProtectedRoute>
+          <SettingsPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/delivery"
+      element={
+        <ProtectedRoute>
+          <DeliveryPage />
+        </ProtectedRoute>
+      }
+    />
     <Route path="/admin" element={<AdminPanel />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
@@ -93,12 +184,10 @@ const AppRoutes = () => (
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <Toaster />
+      <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <Toaster />
-          <Sonner />
-          <AppRoutes />
-        </AuthProvider>
+        <AppRoutes />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
