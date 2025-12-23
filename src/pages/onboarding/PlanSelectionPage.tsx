@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Check, Bell, Sparkles, BarChart3, Users, Palette, TrendingUp, Heart, Megaphone, LayoutGrid, Plug, Globe, Boxes } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Check, Bell, Sparkles, BarChart3, Users, Palette, TrendingUp, Heart, Megaphone, LayoutGrid, Plug, Globe, Boxes, Info, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,12 +13,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 
 export default function PlanSelectionPage() {
   const [selectedPlan, setSelectedPlan] = useState<'creator' | null>(null);
   const [notifyDialogOpen, setNotifyDialogOpen] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
   const { updateUser } = useAuth();
   const { toast } = useToast();
@@ -27,8 +34,13 @@ export default function PlanSelectionPage() {
     setSelectedPlan('creator');
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (selectedPlan === 'creator') {
+      setIsProcessing(true);
+      
+      // Simulate processing time
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      
       updateUser({ onboardingComplete: true });
       toast({
         title: "Welcome to GenZaic!",
@@ -51,197 +63,260 @@ export default function PlanSelectionPage() {
   };
 
   const creatorBenefits = [
-    { icon: Check, text: 'Unlimited Products' },
-    { icon: Check, text: 'Unlimited Sales' },
-    { icon: Check, text: 'T+7 Bank Payouts' },
-    { icon: Check, text: 'GST Invoicing' },
-    { icon: Check, text: 'Community Access' },
-    { icon: Check, text: 'Customer Reviews & Ratings' },
-    { icon: Check, text: 'Basic Analytics' },
-    { icon: Check, text: 'UPI & Bank Payments' },
+    { icon: Check, text: 'Unlimited Products', tooltip: 'List as many digital products as you want with no restrictions' },
+    { icon: Check, text: 'Unlimited Sales', tooltip: 'Sell without any caps or limits on your earnings' },
+    { icon: Check, text: 'T+7 Bank Payouts', tooltip: 'Receive your earnings directly to your bank account within 7 days of each sale' },
+    { icon: Check, text: 'GST Invoicing', tooltip: 'Automated GST-compliant invoices with calculated GST and TDS for every transaction' },
+    { icon: Check, text: 'Community Access', tooltip: 'Join our creator community to connect, learn, and grow together' },
+    { icon: Check, text: 'Customer Reviews & Ratings', tooltip: 'Build trust with customer reviews and ratings on your products' },
+    { icon: Check, text: 'Basic Analytics', tooltip: 'Track your sales, views, and customer insights' },
+    { icon: Check, text: 'UPI & Bank Payments', tooltip: 'Accept payments via UPI and direct bank transfers from your customers' },
   ];
 
   const startupBenefits = [
-    { icon: Sparkles, text: 'Everything in Creator' },
-    { icon: BarChart3, text: 'Advanced Analytics' },
-    { icon: Users, text: 'Team Access' },
-    { icon: Palette, text: 'Storefront Customization' },
-    { icon: LayoutGrid, text: 'Drag & Drop Storefront' },
-    { icon: TrendingUp, text: 'Sales Funnel' },
-    { icon: Megaphone, text: 'Marketing Tools' },
-    { icon: Plug, text: 'Integrations' },
-    { icon: Globe, text: 'Custom Domain' },
-    { icon: Boxes, text: 'Apps & Add-ons' },
-    { icon: Heart, text: 'Loyalty Program' },
-    { icon: Check, text: 'Priority Support' },
+    { icon: Sparkles, text: 'Everything in Creator', tooltip: 'All features from the Creator plan included' },
+    { icon: BarChart3, text: 'Advanced Analytics', tooltip: 'Deep insights into customer behavior, conversion rates, and revenue trends' },
+    { icon: Users, text: 'Team Access', tooltip: 'Invite team members to help manage your store' },
+    { icon: Palette, text: 'Storefront Customization', tooltip: 'Advanced design options to match your brand identity' },
+    { icon: LayoutGrid, text: 'Drag & Drop Storefront', tooltip: 'Easily build and customize your store with drag and drop' },
+    { icon: TrendingUp, text: 'Sales Funnel', tooltip: 'Create optimized sales funnels to maximize conversions' },
+    { icon: Megaphone, text: 'Marketing Tools', tooltip: 'Built-in email marketing, discount codes, and promotional tools' },
+    { icon: Plug, text: 'Integrations', tooltip: 'Connect with popular tools and services' },
+    { icon: Globe, text: 'Custom Domain', tooltip: 'Use your own domain name for your store' },
+    { icon: Boxes, text: 'Apps & Add-ons', tooltip: 'Extend functionality with apps and add-ons' },
+    { icon: Heart, text: 'Loyalty Program', tooltip: 'Reward your repeat customers with loyalty points' },
+    { icon: Check, text: 'Priority Support', tooltip: 'Get faster responses from our support team' },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
-      {/* Header */}
-      <header className="p-6">
-        <div className="max-w-4xl mx-auto flex items-center justify-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center">
-              <span className="text-white font-bold">G</span>
+    <TooltipProvider delayDuration={200}>
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
+        {/* Header */}
+        <header className="p-6">
+          <div className="max-w-4xl mx-auto flex items-center justify-center">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center">
+                <span className="text-white font-bold">G</span>
+              </div>
+              <span className="font-bold text-xl text-foreground">GenZaic</span>
             </div>
-            <span className="font-bold text-xl text-foreground">GenZaic</span>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-8 pb-32">
-        {/* Title */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Choose Your Plan
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Start with zero upfront cost. Pay only when you earn.
-          </p>
-        </div>
+        <div className="max-w-4xl mx-auto px-6 py-8 pb-32">
+          {/* Title */}
+          <div className="text-center mb-12">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Choose Your Plan
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Start with zero upfront cost. Pay only when you earn.
+            </p>
+          </div>
 
-        {/* Plans Grid */}
-        <div className="grid gap-6 md:grid-cols-2 mb-8">
-          {/* Creator Plan */}
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleSelectCreator}
-            className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${
-              selectedPlan === 'creator'
-                ? 'border-primary bg-primary/5 shadow-lg'
-                : 'border-border hover:border-primary/50 bg-card'
-            }`}
-          >
-            {selectedPlan === 'creator' && (
-              <div className="absolute top-4 right-4 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                <Check className="w-5 h-5 text-white" />
-              </div>
-            )}
-            
-            <div className="mb-6">
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent-green to-green-600 flex items-center justify-center mb-4">
-                <Sparkles className="w-7 h-7 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold text-foreground mb-1">Creator Plan</h2>
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-4xl font-bold text-foreground">₹0</span>
-                <span className="text-muted-foreground">Setup Fee</span>
-              </div>
-              <div className="inline-block px-3 py-1 rounded-full bg-accent-orange/10 text-accent-orange text-sm font-semibold">
-                25% Per Sale
-              </div>
-            </div>
-
-            <ul className="space-y-3">
-              {creatorBenefits.map((benefit, index) => (
-                <li key={index} className="flex items-center gap-3 text-foreground">
-                  <div className="w-5 h-5 rounded-full bg-accent-green/20 flex items-center justify-center">
-                    <benefit.icon className="w-3 h-3 text-accent-green" />
-                  </div>
-                  <span>{benefit.text}</span>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-
-          {/* Startup Plan - Coming Soon */}
-          <div className="relative p-6 rounded-2xl border-2 border-border bg-card/50">
-            <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-accent-purple text-white text-xs font-semibold">
-              Coming Soon
-            </div>
-            
-            <div className="mb-6">
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent-purple to-purple-600 flex items-center justify-center mb-4">
-                <TrendingUp className="w-7 h-7 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold text-foreground mb-1">Startup Plan</h2>
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-4xl font-bold text-muted-foreground">₹XXX</span>
-                <span className="text-muted-foreground">/month</span>
-              </div>
-              <div className="inline-block px-3 py-1 rounded-full bg-muted text-muted-foreground text-sm font-semibold">
-                2.5% Commission
-              </div>
-            </div>
-
-            <ul className="space-y-3 mb-6">
-              {startupBenefits.map((benefit, index) => (
-                <li key={index} className="flex items-center gap-3 text-muted-foreground">
-                  <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
-                    <benefit.icon className="w-3 h-3" />
-                  </div>
-                  <span>{benefit.text}</span>
-                </li>
-              ))}
-            </ul>
-
-            <Button
-              variant="outline"
-              className="w-full gap-2"
-              onClick={() => setNotifyDialogOpen(true)}
+          {/* Plans Grid */}
+          <div className="grid gap-6 md:grid-cols-2 mb-8">
+            {/* Creator Plan */}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleSelectCreator}
+              className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${
+                selectedPlan === 'creator'
+                  ? 'border-primary bg-primary/5 shadow-lg'
+                  : 'border-border hover:border-primary/50 bg-card'
+              }`}
             >
-              <Bell className="w-4 h-4" />
-              Notify Me When Available
-            </Button>
+              {selectedPlan === 'creator' && (
+                <div className="absolute top-4 right-4 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                  <Check className="w-5 h-5 text-white" />
+                </div>
+              )}
+              
+              <div className="mb-6">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent-green to-green-600 flex items-center justify-center mb-4">
+                  <Sparkles className="w-7 h-7 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-foreground mb-1">Creator Plan</h2>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="text-4xl font-bold text-foreground">₹0</span>
+                  <span className="text-muted-foreground">Setup Fee</span>
+                </div>
+                <div className="inline-block px-3 py-1 rounded-full bg-accent-orange/10 text-accent-orange text-sm font-semibold">
+                  25% Per Sale
+                </div>
+              </div>
+
+              <ul className="space-y-3">
+                {creatorBenefits.map((benefit, index) => (
+                  <li key={index} className="flex items-center gap-3 text-foreground">
+                    <div className="w-5 h-5 rounded-full bg-accent-green/20 flex items-center justify-center flex-shrink-0">
+                      <benefit.icon className="w-3 h-3 text-accent-green" />
+                    </div>
+                    <span className="flex-1">{benefit.text}</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button 
+                          type="button" 
+                          className="p-1 rounded-full hover:bg-muted transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Info className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p>{benefit.tooltip}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            {/* Startup Plan - Coming Soon */}
+            <div className="relative p-6 rounded-2xl border-2 border-border bg-card/50 overflow-hidden">
+              {/* Coming Soon Overlay */}
+              <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="inline-block px-6 py-3 rounded-full bg-accent-purple text-white text-lg font-bold shadow-lg">
+                    Coming Soon
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent-purple to-purple-600 flex items-center justify-center mb-4">
+                  <TrendingUp className="w-7 h-7 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-foreground mb-1">Startup Plan</h2>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="text-4xl font-bold text-muted-foreground">₹XXX</span>
+                  <span className="text-muted-foreground">/month</span>
+                </div>
+                <div className="inline-block px-3 py-1 rounded-full bg-muted text-muted-foreground text-sm font-semibold">
+                  2.5% Commission
+                </div>
+              </div>
+
+              <ul className="space-y-3 mb-6">
+                {startupBenefits.map((benefit, index) => (
+                  <li key={index} className="flex items-center gap-3 text-muted-foreground">
+                    <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                      <benefit.icon className="w-3 h-3" />
+                    </div>
+                    <span className="flex-1">{benefit.text}</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button 
+                          type="button" 
+                          className="p-1 rounded-full hover:bg-muted transition-colors"
+                        >
+                          <Info className="w-4 h-4 text-muted-foreground/50" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p>{benefit.tooltip}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </li>
+                ))}
+              </ul>
+
+              <Button
+                variant="outline"
+                className="w-full gap-2 relative z-20"
+                onClick={() => setNotifyDialogOpen(true)}
+              >
+                <Bell className="w-4 h-4" />
+                Notify Me When Available
+              </Button>
+            </div>
+          </div>
+
+          {/* Continue Button & Info */}
+          <div className="flex flex-col items-center gap-4">
+            <AnimatePresence mode="wait">
+              {isProcessing ? (
+                <motion.div
+                  key="processing"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="flex flex-col items-center gap-3 py-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    <span className="text-lg font-medium text-foreground">
+                      We're getting things ready for you...
+                    </span>
+                  </div>
+                  <div className="w-64 h-2 bg-muted rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-primary"
+                      initial={{ width: '0%' }}
+                      animate={{ width: '100%' }}
+                      transition={{ duration: 2.5, ease: 'easeInOut' }}
+                    />
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="button"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  <Button
+                    size="lg"
+                    onClick={handleContinue}
+                    disabled={!selectedPlan}
+                    className="w-full sm:w-auto gap-2 bg-gradient-primary hover:opacity-90 px-12 disabled:opacity-50"
+                  >
+                    {selectedPlan ? 'Continue to Dashboard' : 'Select a Plan to Continue'}
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            <p className="text-sm text-muted-foreground">
+              No credit card required.
+            </p>
           </div>
         </div>
 
-
-        {/* Info Text */}
-        <p className="text-center text-sm text-muted-foreground mt-6">
-          No credit card required.
-        </p>
+        {/* Notify Dialog */}
+        <Dialog open={notifyDialogOpen} onOpenChange={setNotifyDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Get Notified</DialogTitle>
+              <DialogDescription>
+                Enter your email to be notified when the Startup plan becomes available.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleNotifySubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="notify-email">Email Address</Label>
+                <Input
+                  id="notify-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={notifyEmail}
+                  onChange={(e) => setNotifyEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button type="button" variant="outline" onClick={() => setNotifyDialogOpen(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button type="submit" className="flex-1 bg-gradient-primary">
+                  Notify Me
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* Sticky Continue Bar */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-center">
-          <Button
-            size="lg"
-            onClick={handleContinue}
-            disabled={!selectedPlan}
-            className="w-full sm:w-auto gap-2 bg-gradient-primary hover:opacity-90 px-12"
-          >
-            {selectedPlan ? 'Continue' : 'Select a Plan to Continue'}
-          </Button>
-        </div>
-      </div>
-
-
-      {/* Notify Dialog */}
-      <Dialog open={notifyDialogOpen} onOpenChange={setNotifyDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Get Notified</DialogTitle>
-            <DialogDescription>
-              Enter your email to be notified when the Startup plan becomes available.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleNotifySubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="notify-email">Email Address</Label>
-              <Input
-                id="notify-email"
-                type="email"
-                placeholder="you@example.com"
-                value={notifyEmail}
-                onChange={(e) => setNotifyEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="flex gap-3">
-              <Button type="button" variant="outline" onClick={() => setNotifyDialogOpen(false)} className="flex-1">
-                Cancel
-              </Button>
-              <Button type="submit" className="flex-1 bg-gradient-primary">
-                Notify Me
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
+    </TooltipProvider>
   );
 }
