@@ -158,7 +158,7 @@ export default function PlanSelectionPage() {
               </div>
               <h2 className="text-2xl font-bold text-foreground mb-1">Startup Plan</h2>
               <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-4xl font-bold text-muted-foreground">₹3X</span>
+                <span className="text-4xl font-bold text-muted-foreground">₹XXX</span>
                 <span className="text-muted-foreground">/month</span>
               </div>
               <div className="inline-block px-3 py-1 rounded-full bg-muted text-muted-foreground text-sm font-semibold">
