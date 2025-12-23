@@ -7,7 +7,7 @@ export interface User {
   avatar?: string;
   storeUrl: string;
   createdAt: string;
-  kycStatus: 'pending' | 'verified' | 'rejected';
+  kycStatus: 'not_submitted' | 'pending' | 'verified' | 'rejected';
   planType: 'creator' | 'startup';
   onboardingComplete: boolean;
 }
@@ -131,7 +131,7 @@ export const mockCurrentUser: User = {
   email: 'rahul@example.com',
   storeUrl: 'rahul-store',
   createdAt: '2025-01-15',
-  kycStatus: 'verified',
+  kycStatus: 'not_submitted',
   planType: 'creator',
   onboardingComplete: true,
 };
