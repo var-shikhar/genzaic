@@ -19,7 +19,9 @@ import DashboardHome from "./pages/dashboard/DashboardHome";
 import ProductsPage from "./pages/dashboard/ProductsPage";
 import AddProductPage from "./pages/dashboard/AddProductPage";
 import StorefrontPage from "./pages/dashboard/StorefrontPage";
-import InvoicesPage from "./pages/dashboard/InvoicesPage";
+import SalesPage from "./pages/dashboard/SalesPage";
+import CheckoutPage from "./pages/checkout/CheckoutPage";
+import DownloadPage from "./pages/checkout/DownloadPage";
 import PayoutsPage from "./pages/dashboard/PayoutsPage";
 import KYCPage from "./pages/dashboard/KYCPage";
 import SettingsPage from "./pages/dashboard/SettingsPage";
@@ -138,10 +140,10 @@ const AppRoutes = () => (
       }
     />
     <Route
-      path="/dashboard/invoices"
+      path="/dashboard/sales"
       element={
         <ProtectedRoute>
-          <InvoicesPage />
+          <SalesPage />
         </ProtectedRoute>
       }
     />
@@ -179,6 +181,8 @@ const AppRoutes = () => (
     />
     <Route path="/admin" element={<AdminPanel />} />
     <Route path="/store/:storeUrl" element={<PublicStorefront />} />
+    <Route path="/checkout/:productId" element={<CheckoutPage />} />
+    <Route path="/download/:orderId" element={<DownloadPage />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

@@ -424,6 +424,7 @@ export default function PublicStorefront() {
                       size="sm"
                       className="gap-1"
                       style={{ backgroundColor: themeColor }}
+                      onClick={() => window.location.href = `/checkout/${product.id}`}
                     >
                       <ShoppingCart className="w-4 h-4" />
                       Buy
