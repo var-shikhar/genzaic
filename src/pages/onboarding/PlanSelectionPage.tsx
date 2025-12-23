@@ -311,7 +311,7 @@ export default function PlanSelectionPage() {
                 <Button type="button" variant="outline" onClick={() => setNotifyDialogOpen(false)} className="flex-1">
                   Cancel
                 </Button>
-                <Button type="submit" className="flex-1 bg-gradient-primary">
+                <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
                   Notify Me
                 </Button>
               </div>
