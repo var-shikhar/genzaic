@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -19,8 +19,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { getProductById, formatINR, generateOrderId } from '@/lib/mockData';
+import { getProductById, formatINR, generateOrderId, BuyerOrder } from '@/lib/mockData';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 const paymentMethods = [
   { id: 'upi', name: 'UPI', icon: Smartphone, description: 'GPay, PhonePe, Paytm' },
@@ -32,6 +33,7 @@ const paymentMethods = [
 export default function CheckoutPage() {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
+  const { user, isAuthenticated, addBuyerOrder } = useAuth();
   const product = getProductById(productId || '');
 
   const [formData, setFormData] = useState({
@@ -43,6 +45,17 @@ export default function CheckoutPage() {
   const [selectedPayment, setSelectedPayment] = useState('upi');
   const [isProcessing, setIsProcessing] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Pre-fill form for logged-in users
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      setFormData((prev) => ({
+        ...prev,
+        name: user.name || '',
+        email: user.email || '',
+      }));
+    }
+  }, [isAuthenticated, user]);
 
   if (!product) {
     return (
@@ -109,7 +122,27 @@ export default function CheckoutPage() {
     // Generate order ID and navigate to download page
     const orderId = generateOrderId();
     
-    // In production, this would save to database
+    // Save to buyer orders if logged in
+    if (isAuthenticated && product) {
+      const buyerOrder: BuyerOrder = {
+        id: orderId,
+        productId: product.id,
+        productTitle: product.title,
+        productThumbnail: product.thumbnailUrl,
+        productDescription: product.description,
+        sellerName: 'Rahul Sharma',
+        sellerStoreUrl: 'rahul-store',
+        amount: baseAmount,
+        gstAmount,
+        totalAmount,
+        purchasedAt: new Date().toISOString(),
+        downloadCount: 0,
+        maxDownloads: 5,
+        downloadLink: `https://download.genzaic.com/${orderId}`,
+      };
+      addBuyerOrder(buyerOrder);
+    }
+
     await new Promise(resolve => setTimeout(resolve, 500));
 
     navigate(`/download/${orderId}?product=${productId}&email=${encodeURIComponent(formData.email)}&name=${encodeURIComponent(formData.name)}`);

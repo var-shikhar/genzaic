@@ -16,6 +16,8 @@ export interface StorefrontSettings {
   isPublished?: boolean;
 }
 
+export type UserRole = 'buyer' | 'seller';
+
 export interface User {
   id: string;
   name: string;
@@ -29,6 +31,26 @@ export interface User {
   storefrontSettings?: StorefrontSettings;
   followers?: number;
   rating?: number;
+  role?: UserRole;
+  isSeller?: boolean;
+}
+
+export interface BuyerOrder {
+  id: string;
+  productId: string;
+  productTitle: string;
+  productThumbnail?: string;
+  productDescription?: string;
+  sellerName: string;
+  sellerStoreUrl: string;
+  amount: number;
+  gstAmount: number;
+  totalAmount: number;
+  purchasedAt: string;
+  downloadCount: number;
+  maxDownloads: number;
+  downloadLink: string;
+  invoiceUrl?: string;
 }
 
 export type ProductCategory = 'ebook' | 'template' | 'app' | 'course' | 'graphics' | 'audio' | 'other';
@@ -620,4 +642,64 @@ export const getProductById = (id: string): Product | undefined => {
 // Helper to get order by ID
 export const getOrderById = (id: string): Order | undefined => {
   return mockOrders.find(o => o.id === id);
+};
+
+// Mock buyer orders (for buyer dashboard)
+export const mockBuyerOrders: BuyerOrder[] = [
+  {
+    id: 'buyer-order-1',
+    productId: 'prod-1',
+    productTitle: 'Ultimate React Component Library',
+    productThumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400',
+    productDescription: 'A comprehensive collection of 100+ React components with TypeScript support.',
+    sellerName: 'Rahul Sharma',
+    sellerStoreUrl: 'rahul-store',
+    amount: 1999,
+    gstAmount: 360,
+    totalAmount: 2359,
+    purchasedAt: '2025-01-21T10:30:00Z',
+    downloadCount: 2,
+    maxDownloads: 5,
+    downloadLink: 'https://download.genzaic.com/abc123',
+    invoiceUrl: 'https://invoice.genzaic.com/inv-001.pdf',
+  },
+  {
+    id: 'buyer-order-2',
+    productId: 'prod-2',
+    productTitle: 'Startup Business Plan Template',
+    productThumbnail: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400',
+    productDescription: 'Professional business plan template used by 500+ startups.',
+    sellerName: 'Rahul Sharma',
+    sellerStoreUrl: 'rahul-store',
+    amount: 499,
+    gstAmount: 90,
+    totalAmount: 589,
+    purchasedAt: '2025-01-20T14:45:00Z',
+    downloadCount: 1,
+    maxDownloads: 5,
+    downloadLink: 'https://download.genzaic.com/def456',
+    invoiceUrl: 'https://invoice.genzaic.com/inv-002.pdf',
+  },
+  {
+    id: 'buyer-order-3',
+    productId: 'prod-5',
+    productTitle: 'Personal Finance eBook',
+    productThumbnail: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400',
+    productDescription: 'Learn to manage your money effectively with practical tips and strategies.',
+    sellerName: 'Rahul Sharma',
+    sellerStoreUrl: 'rahul-store',
+    amount: 299,
+    gstAmount: 54,
+    totalAmount: 353,
+    purchasedAt: '2025-01-18T11:00:00Z',
+    downloadCount: 1,
+    maxDownloads: 5,
+    downloadLink: 'https://download.genzaic.com/mno345',
+    invoiceUrl: 'https://invoice.genzaic.com/inv-003.pdf',
+  },
+];
+
+// Helper to get buyer order by ID
+export const getBuyerOrderById = (id: string): BuyerOrder | undefined => {
+  return mockBuyerOrders.find(o => o.id === id);
 };

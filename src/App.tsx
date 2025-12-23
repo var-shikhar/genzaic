@@ -28,6 +28,9 @@ import SettingsPage from "./pages/dashboard/SettingsPage";
 import DeliveryPage from "./pages/dashboard/DeliveryPage";
 import AdminPanel from "./pages/admin/AdminPanel";
 import PublicStorefront from "./pages/store/PublicStorefront";
+import BuyerDashboard from "./pages/buyer/BuyerDashboard";
+import PurchaseDetails from "./pages/buyer/PurchaseDetails";
+import BuyerSettings from "./pages/buyer/BuyerSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,7 +54,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     return (
@@ -62,6 +65,10 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (isAuthenticated) {
+    // Route based on user role
+    if (user?.role === 'buyer' && !user?.isSeller) {
+      return <Navigate to="/my-purchases" replace />;
+    }
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -183,6 +190,31 @@ const AppRoutes = () => (
     <Route path="/store/:storeUrl" element={<PublicStorefront />} />
     <Route path="/checkout/:productId" element={<CheckoutPage />} />
     <Route path="/download/:orderId" element={<DownloadPage />} />
+    {/* Buyer Routes */}
+    <Route
+      path="/my-purchases"
+      element={
+        <ProtectedRoute>
+          <BuyerDashboard />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/my-purchases/:orderId"
+      element={
+        <ProtectedRoute>
+          <PurchaseDetails />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/my-purchases/settings"
+      element={
+        <ProtectedRoute>
+          <BuyerSettings />
+        </ProtectedRoute>
+      }
+    />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
