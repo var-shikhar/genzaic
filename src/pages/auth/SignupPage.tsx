@@ -1,15 +1,19 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Loader2 } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Eye, EyeOff, Mail, Lock, User, Loader2, ShoppingBag, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, UserRole } from '@/contexts/AuthContext';
 import AuthLayout from '@/components/auth/AuthLayout';
+import { cn } from '@/lib/utils';
 
 const SignupPage = () => {
+  const [searchParams] = useSearchParams();
+  const initialRole = (searchParams.get('role') as UserRole) || 'seller';
+  
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,6 +21,7 @@ const SignupPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [role, setRole] = useState<UserRole>(initialRole);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -46,13 +51,20 @@ const SignupPage = () => {
     setIsLoading(true);
 
     try {
-      const success = await signup(name, email, password);
+      const success = await signup(name, email, password, role);
       if (success) {
         toast({
           title: 'Account created!',
-          description: 'Please verify your email to continue.',
+          description: role === 'buyer' 
+            ? 'Welcome to GenZaic! Start exploring products.'
+            : 'Please verify your email to continue.',
         });
-        navigate('/verify-email', { state: { email } });
+        // Route based on role
+        if (role === 'buyer') {
+          navigate('/my-purchases');
+        } else {
+          navigate('/verify-email', { state: { email } });
+        }
       } else {
         toast({
           title: 'Signup failed',
@@ -81,9 +93,39 @@ const SignupPage = () => {
   return (
     <AuthLayout
       title="Create your account"
-      subtitle="Start selling digital products in minutes"
+      subtitle={role === 'buyer' ? 'Discover amazing digital products' : 'Start selling digital products in minutes'}
     >
       <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Role Selection */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <button
+            type="button"
+            onClick={() => setRole('buyer')}
+            className={cn(
+              'flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all',
+              role === 'buyer'
+                ? 'border-primary bg-primary/5 text-primary'
+                : 'border-border hover:border-muted-foreground/50'
+            )}
+          >
+            <ShoppingBag className="w-6 h-6" />
+            <span className="font-medium text-sm">I want to buy</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setRole('seller')}
+            className={cn(
+              'flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all',
+              role === 'seller'
+                ? 'border-primary bg-primary/5 text-primary'
+                : 'border-border hover:border-muted-foreground/50'
+            )}
+          >
+            <Store className="w-6 h-6" />
+            <span className="font-medium text-sm">I want to sell</span>
+          </button>
+        </div>
+
         {/* Google Sign Up */}
         <Button
           type="button"

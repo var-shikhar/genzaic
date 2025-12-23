@@ -275,20 +275,26 @@ export default function DownloadPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="mt-8 text-center"
+          className="mt-8"
         >
           <Card className="bg-muted/30">
-            <CardContent className="py-8">
-              <h3 className="text-lg font-semibold mb-2">Explore More Products</h3>
+            <CardContent className="py-8 text-center">
+              <h3 className="text-lg font-semibold mb-2">What's Next?</h3>
               <p className="text-muted-foreground mb-4">
-                Check out more amazing digital products from {mockCurrentUser.name}
+                Access your purchases anytime from your dashboard
               </p>
-              <Button asChild variant="outline">
-                <Link to={`/store/${mockCurrentUser.storeUrl}`}>
-                  Visit Store
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Link>
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button asChild>
+                  <Link to="/my-purchases">
+                    View My Purchases
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to={`/store/${mockCurrentUser.storeUrl}`}>
+                    Explore More Products
+                  </Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
