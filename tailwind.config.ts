@@ -16,6 +16,16 @@ export default {
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
         display: ["Plus Jakarta Sans", "Inter", "system-ui", "sans-serif"],
+        'dm-sans': ["DM Sans", "sans-serif"],
+        'lora': ["Lora", "serif"],
+        'montserrat': ["Montserrat", "sans-serif"],
+        'nunito': ["Nunito", "sans-serif"],
+        'open-sans': ["Open Sans", "sans-serif"],
+        'outfit': ["Outfit", "sans-serif"],
+        'quicksand': ["Quicksand", "sans-serif"],
+        'raleway': ["Raleway", "sans-serif"],
+        'source-sans': ["Source Sans 3", "sans-serif"],
+        'space-grotesk': ["Space Grotesk", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
