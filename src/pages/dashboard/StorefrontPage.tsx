@@ -485,23 +485,42 @@ export default function StorefrontPage() {
                         )}
                       </div>
                       <div className="flex-1 pb-2">
-                        <h1 className="text-xl font-bold text-foreground">{storeName || 'Creator Store'}</h1>
-                        <p className="text-muted-foreground text-sm">{tagline}</p>
+                        <h1 
+                          className="text-xl font-bold"
+                          style={{ 
+                            color: currentTheme.id === 'minimal' ? '#1f2937' : '#f9fafb'
+                          }}
+                        >
+                          {storeName || 'Creator Store'}
+                        </h1>
+                        <p 
+                          className="text-sm"
+                          style={{ 
+                            color: currentTheme.id === 'minimal' ? '#6b7280' : '#d1d5db'
+                          }}
+                        >
+                          {tagline}
+                        </p>
                       </div>
                     </div>
                     
                     {/* Stats */}
-                    <div className="flex items-center gap-6 mt-4 text-sm">
+                    <div 
+                      className="flex items-center gap-6 mt-4 text-sm"
+                      style={{ 
+                        color: currentTheme.id === 'minimal' ? '#6b7280' : '#d1d5db'
+                      }}
+                    >
                       <div className="flex items-center gap-1">
                         <Star className="w-4 h-4 text-warning fill-warning" />
                         <span className="font-medium">{user?.rating || 4.8}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Users className="w-4 h-4 text-muted-foreground" />
+                        <Users className="w-4 h-4" style={{ color: currentTheme.id === 'minimal' ? '#9ca3af' : '#9ca3af' }} />
                         <span>{user?.followers || 125} followers</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Package className="w-4 h-4 text-muted-foreground" />
+                        <Package className="w-4 h-4" style={{ color: currentTheme.id === 'minimal' ? '#9ca3af' : '#9ca3af' }} />
                         <span>{publishedProducts.length} products</span>
                       </div>
                     </div>
@@ -509,10 +528,24 @@ export default function StorefrontPage() {
                 </div>
 
                 {/* Products Grid */}
-                <div className="p-6">
+                <div className="p-6" style={{ backgroundColor: currentTheme.id === 'minimal' ? '#f8fafc' : currentTheme.bgColor }}>
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-semibold text-foreground">Products</h2>
-                    <span className="text-sm text-muted-foreground">Sort: Popular</span>
+                    <h2 
+                      className="font-semibold"
+                      style={{ 
+                        color: currentTheme.id === 'minimal' ? '#1f2937' : '#f9fafb'
+                      }}
+                    >
+                      Products
+                    </h2>
+                    <span 
+                      className="text-sm"
+                      style={{ 
+                        color: currentTheme.id === 'minimal' ? '#6b7280' : '#d1d5db'
+                      }}
+                    >
+                      Sort: Popular
+                    </span>
                   </div>
                   <div className={`grid gap-4 ${
                     previewDevice === 'mobile' 
@@ -545,7 +578,17 @@ export default function StorefrontPage() {
                           )}
                         </div>
                         <div className="p-4">
-                          <h3 className="font-medium text-foreground text-sm line-clamp-1">
+                        <h3 
+                            className="font-medium text-sm line-clamp-1"
+                            style={{ 
+                              color: currentTheme.id === 'minimal' ? '#1f2937' : 
+                                     currentTheme.id === 'elegant' ? '#f9fafb' : 
+                                     currentTheme.bgColor === '#073f7c' || 
+                                     currentTheme.bgColor === '#8b5cf6' || 
+                                     currentTheme.bgColor === '#2563eb' || 
+                                     currentTheme.bgColor === '#1f2937' ? '#f9fafb' : '#1f2937'
+                            }}
+                          >
                             {product.title}
                           </h3>
                           <div className="flex items-center gap-1 mt-1">
@@ -555,14 +598,26 @@ export default function StorefrontPage() {
                             </span>
                           </div>
                           <div className="flex items-center justify-between mt-3">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-foreground">{formatINR(product.price)}</span>
-                              {product.originalPrice && (
-                                <span className="text-xs text-muted-foreground line-through">
-                                  {formatINR(product.originalPrice)}
+                              <div className="flex items-center gap-2">
+                                <span 
+                                  className="font-bold"
+                                  style={{ 
+                                    color: currentTheme.id === 'minimal' ? '#1f2937' : 
+                                           currentTheme.id === 'elegant' ? '#f9fafb' : 
+                                           currentTheme.bgColor === '#073f7c' || 
+                                           currentTheme.bgColor === '#8b5cf6' || 
+                                           currentTheme.bgColor === '#2563eb' || 
+                                           currentTheme.bgColor === '#1f2937' ? '#f9fafb' : '#1f2937'
+                                  }}
+                                >
+                                  {formatINR(product.price)}
                                 </span>
-                              )}
-                            </div>
+                                {product.originalPrice && (
+                                  <span className="text-xs line-through" style={{ color: '#9ca3af' }}>
+                                    {formatINR(product.originalPrice)}
+                                  </span>
+                                )}
+                              </div>
                             <button 
                               className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 text-white"
                               style={{ backgroundColor: primaryColor }}
