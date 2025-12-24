@@ -135,13 +135,16 @@ export default function DownloadPage() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   Order Details
-                  <Badge variant="outline" className="font-mono">
+                  <Badge variant="outline" className="font-mono border-2">
                     {orderId}
-                    <button onClick={copyOrderId} className="ml-2">
+                    <button 
+                      onClick={copyOrderId} 
+                      className="ml-2 p-0.5 rounded hover:bg-muted transition-colors"
+                    >
                       {copied ? (
-                        <Check className="w-3 h-3" />
+                        <Check className="w-3 h-3 text-success" />
                       ) : (
-                        <Copy className="w-3 h-3" />
+                        <Copy className="w-3 h-3 text-foreground" />
                       )}
                     </button>
                   </Badge>

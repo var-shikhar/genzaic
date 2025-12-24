@@ -70,11 +70,13 @@ export default function ProductsPage() {
               className="pl-10"
             />
           </div>
-          <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-1 border border-border">
             <button
               onClick={() => setViewMode('grid')}
               className={`p-2 rounded-md transition-colors ${
-                viewMode === 'grid' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                viewMode === 'grid' 
+                  ? 'bg-primary text-primary-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background'
               }`}
             >
               <Grid className="w-4 h-4" />
@@ -82,7 +84,9 @@ export default function ProductsPage() {
             <button
               onClick={() => setViewMode('list')}
               className={`p-2 rounded-md transition-colors ${
-                viewMode === 'list' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                viewMode === 'list' 
+                  ? 'bg-primary text-primary-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background'
               }`}
             >
               <List className="w-4 h-4" />
@@ -148,8 +152,8 @@ export default function ProductsPage() {
                     <h3 className="font-semibold text-foreground line-clamp-1">{product.title}</h3>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <button className="p-1 rounded-lg hover:bg-muted transition-colors">
-                          <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                      <button className="p-1 rounded-lg hover:bg-muted border border-transparent hover:border-border transition-colors">
+                          <MoreVertical className="w-4 h-4 text-foreground" />
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -225,8 +229,8 @@ export default function ProductsPage() {
                   </span>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="p-2 rounded-lg hover:bg-muted transition-colors flex-shrink-0">
-                        <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                      <button className="p-2 rounded-lg hover:bg-muted border border-transparent hover:border-border transition-colors flex-shrink-0">
+                        <MoreVertical className="w-4 h-4 text-foreground" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
