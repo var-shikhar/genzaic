@@ -7,12 +7,9 @@ import {
   AlertCircle,
   Clock,
   CreditCard,
-  Building,
   FileText,
   Loader2,
-  IndianRupee,
   HelpCircle,
-  Info,
   Wallet,
   CheckCircle2,
   XCircle,
@@ -29,12 +26,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 
 interface KYCData {
   documentType: 'pan' | 'aadhaar';
@@ -48,19 +39,11 @@ interface KYCData {
   bankName: string;
 }
 
-interface PennyDropResult {
-  verified: boolean;
-  accountHolderName: string;
-  bankName: string;
-  message: string;
-}
 
 export default function KYCPage() {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isPennyDropping, setIsPennyDropping] = useState(false);
-  const [pennyDropResult, setPennyDropResult] = useState<PennyDropResult | null>(null);
   const [kycData, setKycData] = useState<KYCData>({
     documentType: 'pan',
     panNumber: '',
@@ -99,58 +82,6 @@ export default function KYCPage() {
     }
   };
 
-  const validateIFSC = (ifsc: string) => {
-    // IFSC format: 4 letters (bank code) + 0 + 6 alphanumeric characters
-    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
-    return ifscRegex.test(ifsc);
-  };
-
-  const handlePennyDrop = async () => {
-    if (!kycData.accountNumber || !kycData.ifscCode) {
-      toast({
-        title: 'Missing Information',
-        description: 'Please enter your account number and IFSC code first.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!validateIFSC(kycData.ifscCode)) {
-      toast({
-        title: 'Invalid IFSC Code',
-        description: 'Please enter a valid 11-character IFSC code (e.g., SBIN0001234).',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsPennyDropping(true);
-    setPennyDropResult(null);
-
-    // Simulate penny drop verification (in real app, this would call an API)
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    // Simulate success response with bank details
-    const result: PennyDropResult = {
-      verified: true,
-      accountHolderName: 'RAHUL SHARMA', // This would come from bank
-      bankName: 'State Bank of India',
-      message: 'We sent ₹1 to your account. Your bank details are verified!',
-    };
-
-    setPennyDropResult(result);
-    setKycData({
-      ...kycData,
-      accountHolderName: result.accountHolderName,
-      bankName: result.bankName,
-    });
-    setIsPennyDropping(false);
-
-    toast({
-      title: '✅ Bank Account Verified!',
-      description: 'We deposited ₹1 to confirm your account. Details matched successfully.',
-    });
-  };
 
   const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -199,10 +130,19 @@ export default function KYCPage() {
       return;
     }
 
-    if (!pennyDropResult?.verified) {
+    if (!kycData.accountNumber || !kycData.ifscCode || !kycData.bankName || !kycData.accountHolderName) {
       toast({
-        title: 'Bank Verification Required',
-        description: 'Please verify your bank account using the "Verify My Account" button.',
+        title: 'Bank Details Required',
+        description: 'Please fill in all bank account details.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (kycData.accountNumber !== kycData.confirmAccountNumber) {
+      toast({
+        title: 'Account Numbers Mismatch',
+        description: 'Please ensure both account numbers match.',
         variant: 'destructive',
       });
       return;
@@ -230,8 +170,6 @@ export default function KYCPage() {
 
   const resetToUploadFlow = () => {
     setIsSubmitting(false);
-    setIsPennyDropping(false);
-    setPennyDropResult(null);
     setKycData({
       documentType: 'pan',
       panNumber: '',
@@ -496,7 +434,6 @@ export default function KYCPage() {
                       value={kycData.accountNumber}
                       onChange={(e) => {
                         setKycData({ ...kycData, accountNumber: e.target.value.replace(/\D/g, '') });
-                        setPennyDropResult(null); // Reset verification if account changes
                       }}
                     />
                   </div>
@@ -541,7 +478,6 @@ export default function KYCPage() {
                     value={kycData.ifscCode}
                     onChange={(e) => {
                       setKycData({ ...kycData, ifscCode: e.target.value.toUpperCase().slice(0, 11) });
-                      setPennyDropResult(null); // Reset verification if IFSC changes
                     }}
                     maxLength={11}
                     className="uppercase"
@@ -549,119 +485,33 @@ export default function KYCPage() {
                   <p className="text-xs text-muted-foreground mt-1">11-character code (e.g., SBIN0001234)</p>
                 </div>
 
-                {/* Penny Drop Verification Section */}
-                <div className={`rounded-xl p-5 ${pennyDropResult?.verified ? 'bg-accent-green/10 border border-accent-green/20' : 'bg-muted/50 border border-border'}`}>
-                  <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      pennyDropResult?.verified ? 'bg-accent-green/20' : 'bg-primary/10'
-                    }`}>
-                      {pennyDropResult?.verified ? (
-                        <CheckCircle2 className="w-6 h-6 text-accent-green" />
-                      ) : (
-                        <IndianRupee className="w-6 h-6 text-primary" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground mb-1">
-                        {pennyDropResult?.verified ? 'Bank Account Verified! ✅' : 'Verify Your Bank Account'}
-                      </h3>
-                      {pennyDropResult?.verified ? (
-                        <div className="space-y-2">
-                          <p className="text-sm text-muted-foreground">{pennyDropResult.message}</p>
-                          <div className="bg-background/50 rounded-lg p-3 space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Account Holder</span>
-                              <span className="font-medium text-foreground">{pennyDropResult.accountHolderName}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Bank Name</span>
-                              <span className="font-medium text-foreground">{pennyDropResult.bankName}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <p className="text-sm text-muted-foreground">
-                            We'll deposit <span className="font-semibold text-foreground">₹1</span> to your account to verify it's active and belongs to you. This is instant and secure.
-                          </p>
-                          <Button
-                            type="button"
-                            onClick={handlePennyDrop}
-                            disabled={isPennyDropping || !kycData.accountNumber || !kycData.ifscCode}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                          >
-                            {isPennyDropping ? (
-                              <>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Sending ₹1...
-                              </>
-                            ) : (
-                              <>
-                                <IndianRupee className="w-4 h-4 mr-2" />
-                                Verify My Account
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                <div>
+                  <Label htmlFor="bankName">Bank Name</Label>
+                  <Input
+                    id="bankName"
+                    placeholder="e.g., State Bank of India"
+                    value={kycData.bankName}
+                    onChange={(e) => setKycData({ ...kycData, bankName: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="accountHolderName">Account Holder Name</Label>
+                  <Input
+                    id="accountHolderName"
+                    placeholder="Name as per bank records"
+                    value={kycData.accountHolderName}
+                    onChange={(e) => setKycData({ ...kycData, accountHolderName: e.target.value })}
+                  />
                 </div>
               </div>
-            </motion.div>
-
-            {/* FAQ Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-card rounded-2xl border border-border p-6"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <Info className="w-5 h-5 text-muted-foreground" />
-                <h3 className="font-semibold text-foreground">Frequently Asked Questions</h3>
-              </div>
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="item-1" className="border-b-0">
-                  <AccordionTrigger className="text-sm hover:no-underline py-3">
-                    What is penny drop verification?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground pb-3">
-                    Penny drop is a secure way to verify your bank account. We deposit ₹1 to your account, which confirms that your account number and IFSC are correct and the account is active. This small amount stays in your account!
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="item-2" className="border-b-0">
-                  <AccordionTrigger className="text-sm hover:no-underline py-3">
-                    Why do I need to complete KYC?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground pb-3">
-                    KYC (Know Your Customer) is required by Indian regulations to transfer money. It helps us ensure secure payouts and prevents fraud. You only need to do this once.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="item-3" className="border-b-0">
-                  <AccordionTrigger className="text-sm hover:no-underline py-3">
-                    Can I sell products without KYC?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground pb-3">
-                    Yes! You can list and sell products immediately. KYC is only required when you want to withdraw your earnings to your bank account.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="item-4" className="border-b-0">
-                  <AccordionTrigger className="text-sm hover:no-underline py-3">
-                    How long does verification take?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground pb-3">
-                    Bank verification via penny drop is instant. Document verification usually takes 1-2 business days. We'll notify you via email once verified.
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
             </motion.div>
 
             {/* Submit Button */}
             <Button
               type="submit"
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12"
-              disabled={isSubmitting || !pennyDropResult?.verified}
+              disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
@@ -675,12 +525,6 @@ export default function KYCPage() {
                 </>
               )}
             </Button>
-
-            {!pennyDropResult?.verified && (
-              <p className="text-center text-sm text-muted-foreground">
-                Please verify your bank account before submitting
-              </p>
-            )}
           </form>
         )}
       </div>
