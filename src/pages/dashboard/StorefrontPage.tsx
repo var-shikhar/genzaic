@@ -156,16 +156,16 @@ export default function StorefrontPage() {
             <div className="flex items-center gap-2 bg-muted rounded-lg px-4 py-2">
               <Store className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm font-medium text-foreground">{storeUrl}</span>
-              <button
-                onClick={handleCopyUrl}
-                className="p-1 rounded hover:bg-background transition-colors"
-              >
-                {copied ? (
-                  <Check className="w-4 h-4 text-success" />
-                ) : (
-                  <Copy className="w-4 h-4 text-muted-foreground" />
-                )}
-              </button>
+                  <button
+                    onClick={handleCopyUrl}
+                    className="p-1.5 rounded-md hover:bg-background border border-transparent hover:border-border transition-colors"
+                  >
+                    {copied ? (
+                      <Check className="w-4 h-4 text-success" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-foreground" />
+                    )}
+                  </button>
             </div>
             <Button variant="outline" onClick={handleSaveDraft} className="gap-2">
               <Save className="w-4 h-4" />
@@ -409,13 +409,13 @@ export default function StorefrontPage() {
                 <Eye className="w-4 h-4 text-muted-foreground" />
                 <span className="font-medium text-foreground">Preview</span>
               </div>
-              <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
+              <div className="flex items-center gap-1 bg-muted rounded-lg p-1 border border-border">
                 <button
                   onClick={() => setPreviewDevice('desktop')}
                   className={`p-2 rounded-md transition-colors ${
                     previewDevice === 'desktop'
-                      ? 'bg-background shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-background'
                   }`}
                 >
                   <Monitor className="w-4 h-4" />
@@ -424,8 +424,8 @@ export default function StorefrontPage() {
                   onClick={() => setPreviewDevice('tablet')}
                   className={`p-2 rounded-md transition-colors ${
                     previewDevice === 'tablet'
-                      ? 'bg-background shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-background'
                   }`}
                 >
                   <Tablet className="w-4 h-4" />
@@ -434,8 +434,8 @@ export default function StorefrontPage() {
                   onClick={() => setPreviewDevice('mobile')}
                   className={`p-2 rounded-md transition-colors ${
                     previewDevice === 'mobile'
-                      ? 'bg-background shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-background'
                   }`}
                 >
                   <Smartphone className="w-4 h-4" />

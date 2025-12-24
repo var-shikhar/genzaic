@@ -423,7 +423,10 @@ export default function PublicStorefront() {
                     <Button 
                       size="sm"
                       className="gap-1"
-                      style={{ backgroundColor: themeColor }}
+                      style={{ 
+                        backgroundColor: themeColor,
+                        color: parseInt(themeColor.replace('#', ''), 16) > 0xffffff / 2 ? '#1f2937' : '#ffffff'
+                      }}
                       onClick={() => window.location.href = `/checkout/${product.id}`}
                     >
                       <ShoppingCart className="w-4 h-4" />
