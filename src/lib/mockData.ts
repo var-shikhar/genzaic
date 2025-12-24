@@ -14,9 +14,12 @@ export interface StorefrontSettings {
     website?: string;
   };
   isPublished?: boolean;
+  platformFeeMode?: 'seller' | 'buyer'; // Who pays the 10% platform fee
 }
 
 export type UserRole = 'buyer' | 'seller';
+
+export type DeliveryType = 'download' | 'external_link' | 'manual';
 
 export interface User {
   id: string;
@@ -33,6 +36,9 @@ export interface User {
   rating?: number;
   role?: UserRole;
   isSeller?: boolean;
+  contactEmail?: string;
+  contactPhone?: string;
+  contactWhatsapp?: string;
 }
 
 export interface BuyerOrder {
@@ -43,14 +49,21 @@ export interface BuyerOrder {
   productDescription?: string;
   sellerName: string;
   sellerStoreUrl: string;
+  sellerEmail?: string;
+  sellerPhone?: string;
+  sellerWhatsapp?: string;
   amount: number;
   gstAmount: number;
+  platformFee?: number;
   totalAmount: number;
   purchasedAt: string;
   downloadCount: number;
   maxDownloads: number;
   downloadLink: string;
   invoiceUrl?: string;
+  deliveryType: DeliveryType;
+  externalUrl?: string;
+  deliveryStatus?: 'pending' | 'delivered';
 }
 
 export type ProductCategory = 'ebook' | 'template' | 'app' | 'course' | 'graphics' | 'audio' | 'other';
@@ -74,6 +87,11 @@ export interface Product {
   reviewCount?: number;
   isFeatured?: boolean;
   hasDiscount?: boolean;
+  deliveryType: DeliveryType;
+  externalUrl?: string;
+  sellerContactEmail?: string;
+  sellerContactPhone?: string;
+  sellerContactWhatsapp?: string;
 }
 
 export interface Order {
@@ -88,13 +106,17 @@ export interface Order {
   buyerGstin?: string;
   amount: number;
   gstAmount: number;
+  platformFee?: number;
   totalAmount: number;
   status: 'completed' | 'pending' | 'refunded';
+  deliveryStatus?: 'pending' | 'delivered';
   paymentMethod?: string;
   downloadCount: number;
   maxDownloads: number;
   downloadLink: string;
   createdAt: string;
+  deliveryType: DeliveryType;
+  externalUrl?: string;
 }
 
 export interface DownloadLog {
@@ -119,6 +141,7 @@ export interface Invoice {
   productTitle: string;
   amount: number;
   gstAmount: number;
+  platformFee?: number;
   totalAmount: number;
   createdAt: string;
 }
@@ -149,6 +172,9 @@ export interface StorefrontTheme {
   primaryColor: string;
   description: string;
 }
+
+// Platform fee rate (10%)
+export const PLATFORM_FEE_RATE = 0.10;
 
 // Mock Storefront Themes
 export const storefrontThemes: StorefrontTheme[] = [
@@ -201,16 +227,19 @@ export const mockCurrentUser: User = {
   onboardingComplete: true,
   followers: 125,
   rating: 4.8,
+  contactEmail: 'rahul@example.com',
+  contactPhone: '+91 98765 43210',
   storefrontSettings: {
     themeId: 'modern',
     primaryColor: '#073f7c',
     fontFamily: 'Inter',
     tagline: 'Digital products by Rahul Sharma',
     isPublished: true,
+    platformFeeMode: 'seller', // Default: seller absorbs the fee
   },
 };
 
-// Mock products with categories
+// Mock products with categories and delivery types
 export const mockProducts: Product[] = [
   {
     id: 'prod-1',
@@ -228,6 +257,7 @@ export const mockProducts: Product[] = [
     reviewCount: 45,
     isFeatured: true,
     hasDiscount: true,
+    deliveryType: 'download',
   },
   {
     id: 'prod-2',
@@ -242,6 +272,7 @@ export const mockProducts: Product[] = [
     category: 'template',
     rating: 4.7,
     reviewCount: 32,
+    deliveryType: 'download',
   },
   {
     id: 'prod-3',
@@ -256,6 +287,8 @@ export const mockProducts: Product[] = [
     category: 'graphics',
     rating: 0,
     reviewCount: 0,
+    deliveryType: 'external_link',
+    externalUrl: 'https://www.figma.com/community/file/example',
   },
   {
     id: 'prod-4',
@@ -273,6 +306,7 @@ export const mockProducts: Product[] = [
     reviewCount: 78,
     isFeatured: true,
     hasDiscount: true,
+    deliveryType: 'download',
   },
   {
     id: 'prod-5',
@@ -287,6 +321,7 @@ export const mockProducts: Product[] = [
     category: 'ebook',
     rating: 4.5,
     reviewCount: 23,
+    deliveryType: 'download',
   },
   {
     id: 'prod-6',
@@ -301,10 +336,28 @@ export const mockProducts: Product[] = [
     category: 'app',
     rating: 4.6,
     reviewCount: 19,
+    deliveryType: 'download',
+  },
+  {
+    id: 'prod-7',
+    userId: 'user-1',
+    title: 'Premium SaaS Subscription Access',
+    description: 'Get 1-year access to our premium SaaS tool with all features unlocked.',
+    price: 4999,
+    thumbnailUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400',
+    status: 'published',
+    downloads: 0,
+    createdAt: '2025-01-22',
+    category: 'app',
+    rating: 4.9,
+    reviewCount: 12,
+    deliveryType: 'manual',
+    sellerContactEmail: 'rahul@example.com',
+    sellerContactPhone: '+91 98765 43210',
   },
 ];
 
-// Mock orders
+// Mock orders with delivery types
 export const mockOrders: Order[] = [
   {
     id: 'order-1',
@@ -324,6 +377,7 @@ export const mockOrders: Order[] = [
     maxDownloads: 5,
     downloadLink: 'https://download.genzaic.com/abc123',
     createdAt: '2025-01-21T10:30:00Z',
+    deliveryType: 'download',
   },
   {
     id: 'order-2',
@@ -344,6 +398,7 @@ export const mockOrders: Order[] = [
     maxDownloads: 5,
     downloadLink: 'https://download.genzaic.com/def456',
     createdAt: '2025-01-20T14:45:00Z',
+    deliveryType: 'download',
   },
   {
     id: 'order-3',
@@ -362,6 +417,7 @@ export const mockOrders: Order[] = [
     maxDownloads: 5,
     downloadLink: 'https://download.genzaic.com/ghi789',
     createdAt: '2025-01-19T09:15:00Z',
+    deliveryType: 'download',
   },
   {
     id: 'order-4',
@@ -380,6 +436,7 @@ export const mockOrders: Order[] = [
     maxDownloads: 5,
     downloadLink: 'https://download.genzaic.com/jkl012',
     createdAt: '2025-01-22T16:20:00Z',
+    deliveryType: 'download',
   },
   {
     id: 'order-5',
@@ -398,6 +455,27 @@ export const mockOrders: Order[] = [
     maxDownloads: 5,
     downloadLink: 'https://download.genzaic.com/mno345',
     createdAt: '2025-01-18T11:00:00Z',
+    deliveryType: 'download',
+  },
+  {
+    id: 'order-6',
+    productId: 'prod-7',
+    productTitle: 'Premium SaaS Subscription Access',
+    productThumbnail: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400',
+    productDescription: 'Get 1-year access to our premium SaaS tool with all features unlocked.',
+    buyerEmail: 'akash.verma@example.com',
+    buyerName: 'Akash Verma',
+    amount: 4999,
+    gstAmount: 900,
+    totalAmount: 5899,
+    status: 'completed',
+    deliveryStatus: 'pending',
+    paymentMethod: 'UPI',
+    downloadCount: 0,
+    maxDownloads: 0,
+    downloadLink: '',
+    createdAt: '2025-01-23T09:00:00Z',
+    deliveryType: 'manual',
   },
 ];
 
@@ -654,6 +732,7 @@ export const mockBuyerOrders: BuyerOrder[] = [
     productDescription: 'A comprehensive collection of 100+ React components with TypeScript support.',
     sellerName: 'Rahul Sharma',
     sellerStoreUrl: 'rahul-store',
+    sellerEmail: 'rahul@example.com',
     amount: 1999,
     gstAmount: 360,
     totalAmount: 2359,
@@ -662,6 +741,7 @@ export const mockBuyerOrders: BuyerOrder[] = [
     maxDownloads: 5,
     downloadLink: 'https://download.genzaic.com/abc123',
     invoiceUrl: 'https://invoice.genzaic.com/inv-001.pdf',
+    deliveryType: 'download',
   },
   {
     id: 'buyer-order-2',
@@ -671,6 +751,7 @@ export const mockBuyerOrders: BuyerOrder[] = [
     productDescription: 'Professional business plan template used by 500+ startups.',
     sellerName: 'Rahul Sharma',
     sellerStoreUrl: 'rahul-store',
+    sellerEmail: 'rahul@example.com',
     amount: 499,
     gstAmount: 90,
     totalAmount: 589,
@@ -679,6 +760,7 @@ export const mockBuyerOrders: BuyerOrder[] = [
     maxDownloads: 5,
     downloadLink: 'https://download.genzaic.com/def456',
     invoiceUrl: 'https://invoice.genzaic.com/inv-002.pdf',
+    deliveryType: 'download',
   },
   {
     id: 'buyer-order-3',
@@ -688,6 +770,7 @@ export const mockBuyerOrders: BuyerOrder[] = [
     productDescription: 'Learn to manage your money effectively with practical tips and strategies.',
     sellerName: 'Rahul Sharma',
     sellerStoreUrl: 'rahul-store',
+    sellerEmail: 'rahul@example.com',
     amount: 299,
     gstAmount: 54,
     totalAmount: 353,
@@ -696,6 +779,27 @@ export const mockBuyerOrders: BuyerOrder[] = [
     maxDownloads: 5,
     downloadLink: 'https://download.genzaic.com/mno345',
     invoiceUrl: 'https://invoice.genzaic.com/inv-003.pdf',
+    deliveryType: 'download',
+  },
+  {
+    id: 'buyer-order-4',
+    productId: 'prod-7',
+    productTitle: 'Premium SaaS Subscription Access',
+    productThumbnail: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400',
+    productDescription: 'Get 1-year access to our premium SaaS tool with all features unlocked.',
+    sellerName: 'Rahul Sharma',
+    sellerStoreUrl: 'rahul-store',
+    sellerEmail: 'rahul@example.com',
+    sellerPhone: '+91 98765 43210',
+    amount: 4999,
+    gstAmount: 900,
+    totalAmount: 5899,
+    purchasedAt: '2025-01-23T09:00:00Z',
+    downloadCount: 0,
+    maxDownloads: 0,
+    downloadLink: '',
+    deliveryType: 'manual',
+    deliveryStatus: 'pending',
   },
 ];
 

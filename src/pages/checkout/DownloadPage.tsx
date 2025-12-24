@@ -7,11 +7,13 @@ import {
   FileText,
   Package,
   Mail,
-  ArrowRight,
   Copy,
   Check,
-  Star,
   ExternalLink,
+  Phone,
+  MessageCircle,
+  Clock,
+  Link2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -66,6 +68,29 @@ export default function DownloadPage() {
     setCopied(true);
     toast.success('Order ID copied!');
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleOpenExternalLink = () => {
+    if (product?.externalUrl) {
+      window.open(product.externalUrl, '_blank');
+      toast.success('Opening product link...');
+    }
+  };
+
+  const handleContactSeller = (method: 'email' | 'phone' | 'whatsapp') => {
+    const sellerEmail = product?.sellerContactEmail || mockCurrentUser.contactEmail;
+    const sellerPhone = product?.sellerContactPhone || mockCurrentUser.contactPhone;
+    const sellerWhatsapp = product?.sellerContactWhatsapp || sellerPhone;
+
+    if (method === 'email' && sellerEmail) {
+      window.location.href = `mailto:${sellerEmail}?subject=Order ${orderId} - ${product?.title}&body=Hi, I just purchased ${product?.title} (Order ID: ${orderId}). `;
+    } else if (method === 'phone' && sellerPhone) {
+      window.location.href = `tel:${sellerPhone.replace(/\s/g, '')}`;
+    } else if (method === 'whatsapp' && sellerWhatsapp) {
+      const cleanNumber = sellerWhatsapp.replace(/[^0-9]/g, '');
+      const message = encodeURIComponent(`Hi! I just purchased ${product?.title} (Order ID: ${orderId}). Please help me with the delivery.`);
+      window.open(`https://wa.me/${cleanNumber}?text=${message}`, '_blank');
+    }
   };
 
   if (!product) {
@@ -168,11 +193,16 @@ export default function DownloadPage() {
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-foreground">{product.title}</h3>
-                    {product.category && (
-                      <Badge variant="secondary" className="capitalize mt-1">
-                        {product.category}
+                    <div className="flex items-center gap-2 mt-1">
+                      {product.category && (
+                        <Badge variant="secondary" className="capitalize">
+                          {product.category}
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="capitalize">
+                        {product.deliveryType === 'external_link' ? 'External Link' : product.deliveryType}
                       </Badge>
-                    )}
+                    </div>
                   </div>
                 </div>
 
@@ -208,7 +238,7 @@ export default function DownloadPage() {
             </Card>
           </motion.div>
 
-          {/* Download Card */}
+          {/* Action Card - Based on Delivery Type */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -216,55 +246,164 @@ export default function DownloadPage() {
           >
             <Card>
               <CardHeader>
-                <CardTitle>Download Your Product</CardTitle>
+                <CardTitle>
+                  {product.deliveryType === 'download' && 'Download Your Product'}
+                  {product.deliveryType === 'external_link' && 'Access Your Product'}
+                  {product.deliveryType === 'manual' && 'Order Confirmed'}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Download Limit */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Downloads Used</span>
-                    <span className="font-medium">
-                      {downloadCount} of {maxDownloads}
-                    </span>
-                  </div>
-                  <Progress value={(downloadCount / maxDownloads) * 100} />
-                </div>
+                {/* Digital Download */}
+                {product.deliveryType === 'download' && (
+                  <>
+                    {/* Download Limit */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Downloads Used</span>
+                        <span className="font-medium">
+                          {downloadCount} of {maxDownloads}
+                        </span>
+                      </div>
+                      <Progress value={(downloadCount / maxDownloads) * 100} />
+                    </div>
 
-                {/* Download Buttons */}
-                <div className="space-y-3">
-                  <Button
-                    className="w-full h-12"
-                    size="lg"
-                    onClick={handleDownload}
-                    disabled={downloadCount >= maxDownloads}
-                  >
-                    <Download className="w-5 h-5 mr-2" />
-                    Download Product
-                  </Button>
+                    {/* Download Buttons */}
+                    <div className="space-y-3">
+                      <Button
+                        className="w-full h-12"
+                        size="lg"
+                        onClick={handleDownload}
+                        disabled={downloadCount >= maxDownloads}
+                      >
+                        <Download className="w-5 h-5 mr-2" />
+                        Download Product
+                      </Button>
 
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={handleDownloadInvoice}
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    Download GST Invoice
-                  </Button>
-                </div>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={handleDownloadInvoice}
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        Download GST Invoice
+                      </Button>
+                    </div>
 
-                {downloadCount >= maxDownloads && (
-                  <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
-                    <p className="text-sm text-warning">
-                      You've reached the maximum download limit. Contact support if you need
-                      additional downloads.
-                    </p>
-                  </div>
+                    {downloadCount >= maxDownloads && (
+                      <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
+                        <p className="text-sm text-warning">
+                          You've reached the maximum download limit. Contact support if you need
+                          additional downloads.
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* External Link */}
+                {product.deliveryType === 'external_link' && (
+                  <>
+                    <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+                      <div className="flex items-start gap-3">
+                        <Link2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="font-medium text-foreground mb-1">Product Link</p>
+                          <p className="text-sm text-muted-foreground break-all">
+                            {product.externalUrl}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Button
+                        className="w-full h-12"
+                        size="lg"
+                        onClick={handleOpenExternalLink}
+                      >
+                        <ExternalLink className="w-5 h-5 mr-2" />
+                        Access Product
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={handleDownloadInvoice}
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        Download GST Invoice
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                {/* Manual Delivery */}
+                {product.deliveryType === 'manual' && (
+                  <>
+                    <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
+                      <div className="flex items-start gap-3">
+                        <Clock className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-foreground">Awaiting Seller Contact</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            The seller has been notified and will contact you within 24 hours to complete your delivery.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-foreground">Contact Seller</p>
+                      <div className="grid gap-2">
+                        {(product.sellerContactEmail || mockCurrentUser.contactEmail) && (
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start"
+                            onClick={() => handleContactSeller('email')}
+                          >
+                            <Mail className="w-4 h-4 mr-3" />
+                            <span className="truncate">
+                              {product.sellerContactEmail || mockCurrentUser.contactEmail}
+                            </span>
+                          </Button>
+                        )}
+                        {(product.sellerContactPhone || mockCurrentUser.contactPhone) && (
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start"
+                            onClick={() => handleContactSeller('phone')}
+                          >
+                            <Phone className="w-4 h-4 mr-3" />
+                            {product.sellerContactPhone || mockCurrentUser.contactPhone}
+                          </Button>
+                        )}
+                        {(product.sellerContactWhatsapp || product.sellerContactPhone || mockCurrentUser.contactPhone) && (
+                          <Button
+                            className="w-full justify-start bg-[#25D366] hover:bg-[#22c55e] text-white"
+                            onClick={() => handleContactSeller('whatsapp')}
+                          >
+                            <MessageCircle className="w-4 h-4 mr-3" />
+                            Message on WhatsApp
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={handleDownloadInvoice}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Download GST Invoice
+                    </Button>
+                  </>
                 )}
 
                 {/* Email Confirmation */}
                 <div className="p-4 bg-muted/50 rounded-lg">
                   <p className="text-sm text-muted-foreground">
-                    📧 A confirmation email with download link has been sent to{' '}
+                    📧 A confirmation email has been sent to{' '}
                     <span className="font-medium text-foreground">{buyerEmail}</span>
                   </p>
                 </div>
