@@ -12,6 +12,10 @@ import {
   Building2,
   CheckCircle2,
   Lock,
+  Download,
+  Link2,
+  Mail,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +23,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { getProductById, formatINR, generateOrderId, BuyerOrder } from '@/lib/mockData';
+import { getProductById, formatINR, generateOrderId, BuyerOrder, PLATFORM_FEE_RATE, mockCurrentUser } from '@/lib/mockData';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -29,6 +33,24 @@ const paymentMethods = [
   { id: 'wallet', name: 'Wallet', icon: Wallet, description: 'Paytm, Mobikwik' },
   { id: 'netbanking', name: 'Net Banking', icon: Building2, description: 'All Banks' },
 ];
+
+const deliveryTypeInfo = {
+  download: {
+    icon: Download,
+    title: 'Instant Download',
+    description: "You'll receive instant download access after payment",
+  },
+  external_link: {
+    icon: Link2,
+    title: 'Access Link',
+    description: "You'll be redirected to access your product after payment",
+  },
+  manual: {
+    icon: Mail,
+    title: 'Manual Delivery',
+    description: 'The seller will contact you within 24 hours to deliver your product',
+  },
+};
 
 export default function CheckoutPage() {
   const { productId } = useParams<{ productId: string }>();
@@ -45,6 +67,9 @@ export default function CheckoutPage() {
   const [selectedPayment, setSelectedPayment] = useState('upi');
   const [isProcessing, setIsProcessing] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Get seller's platform fee mode (default: seller pays)
+  const platformFeeMode = mockCurrentUser.storefrontSettings?.platformFeeMode || 'seller';
 
   // Pre-fill form for logged-in users
   useEffect(() => {
@@ -76,8 +101,14 @@ export default function CheckoutPage() {
 
   const gstRate = 0.18;
   const baseAmount = product.price;
-  const gstAmount = Math.round(baseAmount * gstRate);
-  const totalAmount = baseAmount + gstAmount;
+  
+  // Calculate platform fee based on seller's setting
+  const platformFee = platformFeeMode === 'buyer' ? Math.round(baseAmount * PLATFORM_FEE_RATE) : 0;
+  const amountForGst = baseAmount + platformFee;
+  const gstAmount = Math.round(amountForGst * gstRate);
+  const totalAmount = baseAmount + platformFee + gstAmount;
+
+  const deliveryInfo = deliveryTypeInfo[product.deliveryType];
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -130,15 +161,22 @@ export default function CheckoutPage() {
         productTitle: product.title,
         productThumbnail: product.thumbnailUrl,
         productDescription: product.description,
-        sellerName: 'Rahul Sharma',
-        sellerStoreUrl: 'rahul-store',
+        sellerName: mockCurrentUser.name,
+        sellerStoreUrl: mockCurrentUser.storeUrl,
+        sellerEmail: product.sellerContactEmail || mockCurrentUser.contactEmail,
+        sellerPhone: product.sellerContactPhone || mockCurrentUser.contactPhone,
+        sellerWhatsapp: product.sellerContactWhatsapp,
         amount: baseAmount,
         gstAmount,
+        platformFee: platformFeeMode === 'buyer' ? platformFee : undefined,
         totalAmount,
         purchasedAt: new Date().toISOString(),
         downloadCount: 0,
-        maxDownloads: 5,
-        downloadLink: `https://download.genzaic.com/${orderId}`,
+        maxDownloads: product.deliveryType === 'download' ? 5 : 0,
+        downloadLink: product.deliveryType === 'download' ? `https://download.genzaic.com/${orderId}` : '',
+        deliveryType: product.deliveryType,
+        externalUrl: product.externalUrl,
+        deliveryStatus: product.deliveryType === 'manual' ? 'pending' : undefined,
       };
       addBuyerOrder(buyerOrder);
     }
@@ -219,11 +257,17 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {product.category && (
-                  <Badge variant="secondary" className="capitalize">
-                    {product.category}
+                <div className="flex items-center gap-2">
+                  {product.category && (
+                    <Badge variant="secondary" className="capitalize">
+                      {product.category}
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className="capitalize">
+                    <deliveryInfo.icon className="w-3 h-3 mr-1" />
+                    {product.deliveryType === 'external_link' ? 'External Link' : product.deliveryType}
                   </Badge>
-                )}
+                </div>
 
                 <Separator />
 
@@ -233,6 +277,12 @@ export default function CheckoutPage() {
                     <span className="text-muted-foreground">Base Price</span>
                     <span className="text-foreground">{formatINR(baseAmount)}</span>
                   </div>
+                  {platformFee > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Platform Fee (10%)</span>
+                      <span className="text-foreground">{formatINR(platformFee)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">GST (18%)</span>
                     <span className="text-foreground">{formatINR(gstAmount)}</span>
@@ -252,6 +302,17 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
+                {/* Delivery Info */}
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <deliveryInfo.icon className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-foreground">{deliveryInfo.title}</p>
+                      <p className="text-sm text-muted-foreground">{deliveryInfo.description}</p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Trust Badges */}
                 <div className="grid grid-cols-2 gap-4 pt-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -260,7 +321,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <CheckCircle2 className="w-4 h-4 text-success" />
-                    <span>Instant Delivery</span>
+                    <span>{product.deliveryType === 'manual' ? 'Verified Seller' : 'Instant Delivery'}</span>
                   </div>
                 </div>
               </CardContent>
@@ -307,7 +368,11 @@ export default function CheckoutPage() {
                     <p className="text-sm text-destructive">{errors.email}</p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    Download link will be sent to this email
+                    {product.deliveryType === 'download' 
+                      ? 'Download link will be sent to this email'
+                      : product.deliveryType === 'manual'
+                      ? 'The seller will contact you at this email'
+                      : 'Access link will be sent to this email'}
                   </p>
                 </div>
 
