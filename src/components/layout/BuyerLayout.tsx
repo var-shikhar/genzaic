@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React from "react"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   Package,
   Settings,
@@ -8,42 +8,42 @@ import {
   Store,
   User,
   ChevronDown,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useAuth } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useAuth } from "@/contexts/AuthContext"
+import { cn } from "@/lib/utils"
 
 interface BuyerLayoutProps {
-  children: React.ReactNode;
+  children: React.ReactNode
 }
 
 const navItems = [
-  { label: 'My Purchases', icon: ShoppingBag, path: '/my-purchases' },
-  { label: 'Settings', icon: Settings, path: '/my-purchases/settings' },
-];
+  { label: "My Purchases", icon: ShoppingBag, path: "/my-purchases" },
+  { label: "Settings", icon: Settings, path: "/my-purchases/settings" },
+]
 
 export default function BuyerLayout({ children }: BuyerLayoutProps) {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { user, logout, becomeSeller } = useAuth();
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { user, logout, becomeSeller } = useAuth()
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
+  const handleLogout = async () => {
+    await logout()
+    navigate("/")
+  }
 
   const handleBecomeSeller = () => {
-    becomeSeller();
-    navigate('/onboarding');
-  };
+    becomeSeller()
+    navigate("/onboarding")
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -53,8 +53,8 @@ export default function BuyerLayout({ children }: BuyerLayoutProps) {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-                <span className="text-white font-bold text-sm">G</span>
+              <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center bg-primary text-primary-foreground">
+                <span className="font-bold text-sm">G</span>
               </div>
               <span className="font-bold text-lg text-foreground">GenZaic</span>
             </Link>
@@ -62,22 +62,22 @@ export default function BuyerLayout({ children }: BuyerLayoutProps) {
             {/* Nav Links */}
             <nav className="hidden md:flex items-center gap-1">
               {navItems.map((item) => {
-                const isActive = location.pathname === item.path;
+                const isActive = location.pathname === item.path
                 return (
                   <Link
                     key={item.path}
                     to={item.path}
                     className={cn(
-                      'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+                      "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
                       isActive
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     )}
                   >
                     <item.icon className="w-4 h-4" />
                     {item.label}
                   </Link>
-                );
+                )
               })}
             </nav>
 
@@ -113,17 +113,25 @@ export default function BuyerLayout({ children }: BuyerLayoutProps) {
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
                     <p className="text-sm font-medium">{user?.name}</p>
-                    <p className="text-xs text-muted-foreground">{user?.email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {user?.email}
+                    </p>
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to="/my-purchases" className="flex items-center gap-2">
+                    <Link
+                      to="/my-purchases"
+                      className="flex items-center gap-2"
+                    >
                       <ShoppingBag className="w-4 h-4" />
                       My Purchases
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/my-purchases/settings" className="flex items-center gap-2">
+                    <Link
+                      to="/my-purchases/settings"
+                      className="flex items-center gap-2"
+                    >
                       <Settings className="w-4 h-4" />
                       Settings
                     </Link>
@@ -143,7 +151,10 @@ export default function BuyerLayout({ children }: BuyerLayoutProps) {
                       Start Selling
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-destructive"
+                  >
                     <LogOut className="w-4 h-4 mr-2" />
                     Logout
                   </DropdownMenuItem>
@@ -158,28 +169,30 @@ export default function BuyerLayout({ children }: BuyerLayoutProps) {
       <div className="md:hidden border-b border-border bg-background">
         <div className="flex items-center gap-1 px-4 py-2 overflow-x-auto">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname === item.path
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
+                  "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors",
                   isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <item.icon className="w-4 h-4" />
                 {item.label}
               </Link>
-            );
+            )
           })}
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {children}
+      </main>
     </div>
-  );
+  )
 }

@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useMemo, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   TrendingUp,
   ShoppingCart,
@@ -19,13 +19,14 @@ import {
   AlertCircle,
   ArrowUpDown,
   Filter,
-} from 'lucide-react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+  Loader2,
+} from "lucide-react"
+import { DashboardLayout } from "@/components/layout/DashboardLayout"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Table,
   TableBody,
@@ -33,115 +34,166 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  mockOrders,
-  mockDownloadLogs,
-  mockInvoices,
-  dashboardStats,
-  formatINR,
-  Order,
-  DownloadLog,
-  Invoice,
-} from '@/lib/mockData';
-import { toast } from 'sonner';
-import { format } from 'date-fns';
+} from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { salesAPI, Order, DownloadLog, SalesStats } from "@/lib/api/sales"
+import { toast } from "sonner"
+import { format } from "date-fns"
+
+// Helper to format currency in INR
+const formatINR = (amount: number): string => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
 const statusColors = {
-  completed: 'bg-success/10 text-success border-success/20',
-  pending: 'bg-warning/10 text-warning border-warning/20',
-  refunded: 'bg-destructive/10 text-destructive border-destructive/20',
-};
+  completed: "bg-success/10 text-success border-success/20",
+  pending: "bg-warning/10 text-warning border-warning/20",
+  refunded: "bg-destructive/10 text-destructive border-destructive/20",
+}
 
 const statusIcons = {
   completed: CheckCircle2,
   pending: AlertCircle,
   refunded: XCircle,
-};
+}
 
 export default function SalesPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [sortBy, setSortBy] = useState('newest');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
+  const [stats, setStats] = useState<SalesStats | null>(null)
+  const [allOrders, setAllOrders] = useState<Order[]>([])
+  const [recentOrders, setRecentOrders] = useState<Order[]>([])
+  const [downloadLogs, setDownloadLogs] = useState<DownloadLog[]>([])
 
-  // Filter and sort orders
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [sortBy, setSortBy] = useState("newest")
+  const [statusFilter, setStatusFilter] = useState("all")
+
+  // Load data from API
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true)
+        setHasError(false)
+
+        const [statsResponse, ordersResponse, recentResponse, logsResponse] = await Promise.all([
+          salesAPI.getSalesStats(),
+          salesAPI.getOrders(),
+          salesAPI.getRecentOrders(),
+          salesAPI.getDownloadLogs(),
+        ])
+
+        setStats(statsResponse.stats)
+        setAllOrders(ordersResponse.orders || [])
+        setRecentOrders(recentResponse.orders || [])
+        setDownloadLogs(logsResponse.downloadLogs || [])
+      } catch (error: any) {
+        console.error("Failed to load sales data:", error)
+        toast.error(error.message || "Failed to load sales data")
+        setHasError(true)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadData()
+  }, [])
+
+  // Filter and sort orders locally
   const filteredOrders = useMemo(() => {
-    let orders = [...mockOrders];
+    let orders = [...allOrders]
 
     // Search filter
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+      const query = searchQuery.toLowerCase()
       orders = orders.filter(
         (o) =>
           o.id.toLowerCase().includes(query) ||
           o.productTitle.toLowerCase().includes(query) ||
           o.buyerName.toLowerCase().includes(query) ||
           o.buyerEmail.toLowerCase().includes(query)
-      );
+      )
     }
 
     // Status filter
-    if (statusFilter !== 'all') {
-      orders = orders.filter((o) => o.status === statusFilter);
+    if (statusFilter !== "all") {
+      orders = orders.filter((o) => o.status === statusFilter)
     }
 
     // Sort
     switch (sortBy) {
-      case 'newest':
-        orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        break;
-      case 'oldest':
-        orders.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-        break;
-      case 'amount-high':
-        orders.sort((a, b) => b.totalAmount - a.totalAmount);
-        break;
-      case 'amount-low':
-        orders.sort((a, b) => a.totalAmount - b.totalAmount);
-        break;
+      case "newest":
+        orders.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+        break
+      case "oldest":
+        orders.sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        )
+        break
+      case "amount-high":
+        orders.sort((a, b) => Number(b.totalAmount) - Number(a.totalAmount))
+        break
+      case "amount-low":
+        orders.sort((a, b) => Number(a.totalAmount) - Number(b.totalAmount))
+        break
     }
 
-    return orders;
-  }, [mockOrders, searchQuery, statusFilter, sortBy]);
-
-  // Recent orders (last 7 days)
-  const recentOrders = useMemo(() => {
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    return mockOrders.filter((o) => new Date(o.createdAt) >= sevenDaysAgo);
-  }, [mockOrders]);
-
-  // Stats calculations
-  const totalRevenue = mockOrders
-    .filter((o) => o.status === 'completed')
-    .reduce((sum, o) => sum + o.totalAmount, 0);
-  const totalOrders = mockOrders.length;
-  const completedOrders = mockOrders.filter((o) => o.status === 'completed').length;
-  const pendingAmount = mockOrders
-    .filter((o) => o.status === 'pending')
-    .reduce((sum, o) => sum + o.totalAmount, 0);
+    return orders
+  }, [allOrders, searchQuery, statusFilter, sortBy])
 
   const handleDownloadInvoice = (order: Order) => {
-    toast.success(`Invoice for ${order.id} downloaded!`);
-  };
+    toast.success(`Invoice for ${order.id} downloaded!`)
+  }
 
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'dd MMM yyyy, hh:mm a');
-  };
+    return format(new Date(dateString), "dd MMM yyyy, hh:mm a")
+  }
 
   const formatShortDate = (dateString: string) => {
-    return format(new Date(dateString), 'dd MMM yyyy');
-  };
+    return format(new Date(dateString), "dd MMM yyyy")
+  }
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  // Error state
+  if (hasError || !stats) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-[400px]">
+          <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+          <h3 className="font-semibold text-foreground mb-2">Failed to Load Sales Data</h3>
+          <p className="text-sm text-muted-foreground mb-4">Please try refreshing the page</p>
+          <Button onClick={() => window.location.reload()}>Reload Page</Button>
+        </div>
+      </DashboardLayout>
+    )
+  }
 
   return (
     <DashboardLayout>
@@ -150,7 +202,9 @@ export default function SalesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Sales</h1>
-            <p className="text-muted-foreground">Track your orders, downloads, and revenue</p>
+            <p className="text-muted-foreground">
+              Track your orders, downloads, and revenue
+            </p>
           </div>
           <Button variant="outline">
             <Download className="w-4 h-4 mr-2" />
@@ -160,13 +214,20 @@ export default function SalesPage() {
 
         {/* Stats Cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Revenue</p>
-                    <p className="text-2xl font-bold text-foreground">{formatINR(totalRevenue)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Total Revenue
+                    </p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {formatINR(stats.totalRevenue)}
+                    </p>
                   </div>
                   <div className="p-3 bg-primary/10 rounded-xl">
                     <TrendingUp className="w-6 h-6 text-primary" />
@@ -185,8 +246,12 @@ export default function SalesPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Orders</p>
-                    <p className="text-2xl font-bold text-foreground">{totalOrders}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Total Orders
+                    </p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {stats.totalOrders}
+                    </p>
                   </div>
                   <div className="p-3 bg-success/10 rounded-xl">
                     <ShoppingCart className="w-6 h-6 text-success" />
@@ -207,7 +272,7 @@ export default function SalesPage() {
                   <div>
                     <p className="text-sm text-muted-foreground">This Month</p>
                     <p className="text-2xl font-bold text-foreground">
-                      {formatINR(dashboardStats.monthlyRevenue)}
+                      {formatINR(stats.monthlyRevenue)}
                     </p>
                   </div>
                   <div className="p-3 bg-warning/10 rounded-xl">
@@ -228,7 +293,9 @@ export default function SalesPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Pending</p>
-                    <p className="text-2xl font-bold text-foreground">{formatINR(pendingAmount)}</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {formatINR(stats.pendingAmount)}
+                    </p>
                   </div>
                   <div className="p-3 bg-muted rounded-xl">
                     <Clock className="w-6 h-6 text-muted-foreground" />
@@ -242,10 +309,9 @@ export default function SalesPage() {
         {/* Tabs */}
         <Tabs defaultValue="all-sales" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="all-sales">All Sales</TabsTrigger>
             <TabsTrigger value="recent">Recent Orders</TabsTrigger>
+            <TabsTrigger value="all-sales">All Sales</TabsTrigger>
             <TabsTrigger value="downloads">Download Logs</TabsTrigger>
-            <TabsTrigger value="invoices">GST Invoices</TabsTrigger>
           </TabsList>
 
           {/* All Sales Tab */}
@@ -281,8 +347,12 @@ export default function SalesPage() {
                 <SelectContent>
                   <SelectItem value="newest">Newest First</SelectItem>
                   <SelectItem value="oldest">Oldest First</SelectItem>
-                  <SelectItem value="amount-high">Amount: High to Low</SelectItem>
-                  <SelectItem value="amount-low">Amount: Low to High</SelectItem>
+                  <SelectItem value="amount-high">
+                    Amount: High to Low
+                  </SelectItem>
+                  <SelectItem value="amount-low">
+                    Amount: Low to High
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -305,10 +375,12 @@ export default function SalesPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredOrders.map((order) => {
-                      const StatusIcon = statusIcons[order.status];
+                      const StatusIcon = statusIcons[order.status]
                       return (
                         <TableRow key={order.id}>
-                          <TableCell className="font-mono text-sm">{order.id}</TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {order.id}
+                          </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted flex-shrink-0">
@@ -324,20 +396,27 @@ export default function SalesPage() {
                                   </div>
                                 )}
                               </div>
-                              <span className="font-medium line-clamp-1">{order.productTitle}</span>
+                              <span className="font-medium line-clamp-1">
+                                {order.productTitle}
+                              </span>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div>
                               <p className="font-medium">{order.buyerName}</p>
-                              <p className="text-xs text-muted-foreground">{order.buyerEmail}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {order.buyerEmail}
+                              </p>
                             </div>
                           </TableCell>
                           <TableCell className="font-semibold">
-                            {formatINR(order.totalAmount)}
+                            {formatINR(Number(order.totalAmount))}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={statusColors[order.status]}>
+                            <Badge
+                              variant="outline"
+                              className={statusColors[order.status]}
+                            >
                               <StatusIcon className="w-3 h-3 mr-1" />
                               {order.status}
                             </Badge>
@@ -369,7 +448,7 @@ export default function SalesPage() {
                             </div>
                           </TableCell>
                         </TableRow>
-                      );
+                      )
                     })}
                   </TableBody>
                 </Table>
@@ -404,17 +483,24 @@ export default function SalesPage() {
                   </TableHeader>
                   <TableBody>
                     {recentOrders.map((order) => {
-                      const StatusIcon = statusIcons[order.status];
+                      const StatusIcon = statusIcons[order.status]
                       return (
                         <TableRow key={order.id}>
-                          <TableCell className="font-mono text-sm">{order.id}</TableCell>
-                          <TableCell className="font-medium">{order.productTitle}</TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {order.id}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {order.productTitle}
+                          </TableCell>
                           <TableCell>{order.buyerName}</TableCell>
                           <TableCell className="font-semibold">
-                            {formatINR(order.totalAmount)}
+                            {formatINR(Number(order.totalAmount))}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={statusColors[order.status]}>
+                            <Badge
+                              variant="outline"
+                              className={statusColors[order.status]}
+                            >
                               <StatusIcon className="w-3 h-3 mr-1" />
                               {order.status}
                             </Badge>
@@ -423,7 +509,7 @@ export default function SalesPage() {
                             {formatDate(order.createdAt)}
                           </TableCell>
                         </TableRow>
-                      );
+                      )
                     })}
                   </TableBody>
                 </Table>
@@ -431,7 +517,9 @@ export default function SalesPage() {
                 {recentOrders.length === 0 && (
                   <div className="py-12 text-center">
                     <Calendar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">No orders in the last 7 days</p>
+                    <p className="text-muted-foreground">
+                      No orders in the last 7 days
+                    </p>
                   </div>
                 )}
               </CardContent>
@@ -456,78 +544,32 @@ export default function SalesPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockDownloadLogs.map((log) => (
+                    {downloadLogs.map((log) => (
                       <TableRow key={log.id}>
-                        <TableCell className="font-medium">{log.productTitle}</TableCell>
+                        <TableCell className="font-medium">
+                          {log.productTitle}
+                        </TableCell>
                         <TableCell>{log.buyerName}</TableCell>
-                        <TableCell className="text-muted-foreground">{log.buyerEmail}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {log.buyerEmail}
+                        </TableCell>
                         <TableCell className="text-muted-foreground">
                           {formatDate(log.downloadedAt)}
                         </TableCell>
                         <TableCell className="font-mono text-sm text-muted-foreground">
-                          {log.ipAddress}
+                          {log.ipAddress || 'N/A'}
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          {/* GST Invoices Tab */}
-          <TabsContent value="invoices" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>GST Invoices</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Invoice No.</TableHead>
-                      <TableHead>Product</TableHead>
-                      <TableHead>Buyer</TableHead>
-                      <TableHead>Base Amount</TableHead>
-                      <TableHead>GST</TableHead>
-                      <TableHead>Total</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mockInvoices.map((invoice) => (
-                      <TableRow key={invoice.id}>
-                        <TableCell className="font-mono text-sm">{invoice.invoiceNumber}</TableCell>
-                        <TableCell className="font-medium">{invoice.productTitle}</TableCell>
-                        <TableCell>
-                          <div>
-                            <p>{invoice.buyerName}</p>
-                            <p className="text-xs text-muted-foreground">{invoice.buyerEmail}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{formatINR(invoice.amount)}</TableCell>
-                        <TableCell>{formatINR(invoice.gstAmount)}</TableCell>
-                        <TableCell className="font-semibold">
-                          {formatINR(invoice.totalAmount)}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatShortDate(invoice.createdAt)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toast.success('Invoice downloaded!')}
-                          >
-                            <Download className="w-4 h-4 mr-2" />
-                            Download
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                {downloadLogs.length === 0 && (
+                  <div className="py-12 text-center">
+                    <Download className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">No downloads yet</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -553,7 +595,11 @@ export default function SalesPage() {
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-bold">Order Details</h2>
-                    <Button variant="ghost" size="icon" onClick={() => setSelectedOrder(null)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setSelectedOrder(null)}
+                    >
                       <X className="w-5 h-5" />
                     </Button>
                   </div>
@@ -598,7 +644,9 @@ export default function SalesPage() {
                             )}
                           </div>
                           <div>
-                            <p className="font-medium">{selectedOrder.productTitle}</p>
+                            <p className="font-medium">
+                              {selectedOrder.productTitle}
+                            </p>
                             <p className="text-sm text-muted-foreground line-clamp-2">
                               {selectedOrder.productDescription}
                             </p>
@@ -610,10 +658,14 @@ export default function SalesPage() {
 
                       {/* Buyer Info */}
                       <div>
-                        <h3 className="font-semibold mb-3">Buyer Information</h3>
+                        <h3 className="font-semibold mb-3">
+                          Buyer Information
+                        </h3>
                         <div className="space-y-2 text-sm">
                           <div className="flex items-center gap-2">
-                            <span className="text-muted-foreground w-20">Name:</span>
+                            <span className="text-muted-foreground w-20">
+                              Name:
+                            </span>
                             <span>{selectedOrder.buyerName}</span>
                           </div>
                           <div className="flex items-center gap-2">
@@ -628,8 +680,12 @@ export default function SalesPage() {
                           )}
                           {selectedOrder.buyerGstin && (
                             <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground w-20">GSTIN:</span>
-                              <span className="font-mono">{selectedOrder.buyerGstin}</span>
+                              <span className="text-muted-foreground w-20">
+                                GSTIN:
+                              </span>
+                              <span className="font-mono">
+                                {selectedOrder.buyerGstin}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -642,18 +698,22 @@ export default function SalesPage() {
                         <h3 className="font-semibold mb-3">Payment Details</h3>
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Base Amount</span>
-                            <span>{formatINR(selectedOrder.amount)}</span>
+                            <span className="text-muted-foreground">
+                              Base Amount
+                            </span>
+                            <span>{formatINR(Number(selectedOrder.amount))}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">GST (18%)</span>
-                            <span>{formatINR(selectedOrder.gstAmount)}</span>
+                            <span className="text-muted-foreground">
+                              GST (18%)
+                            </span>
+                            <span>{formatINR(Number(selectedOrder.gstAmount))}</span>
                           </div>
                           <Separator />
                           <div className="flex justify-between font-semibold">
                             <span>Total</span>
                             <span className="text-primary">
-                              {formatINR(selectedOrder.totalAmount)}
+                              {formatINR(Number(selectedOrder.totalAmount))}
                             </span>
                           </div>
                           {selectedOrder.paymentMethod && (
@@ -675,7 +735,8 @@ export default function SalesPage() {
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">Used</span>
                           <span>
-                            {selectedOrder.downloadCount} of {selectedOrder.maxDownloads}
+                            {selectedOrder.downloadCount} of{" "}
+                            {selectedOrder.maxDownloads}
                           </span>
                         </div>
                       </div>
@@ -690,7 +751,10 @@ export default function SalesPage() {
                       <FileText className="w-4 h-4 mr-2" />
                       Download Invoice
                     </Button>
-                    <Button variant="outline" onClick={() => setSelectedOrder(null)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setSelectedOrder(null)}
+                    >
                       Close
                     </Button>
                   </div>
@@ -701,5 +765,5 @@ export default function SalesPage() {
         </AnimatePresence>
       </div>
     </DashboardLayout>
-  );
+  )
 }

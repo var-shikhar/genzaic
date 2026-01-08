@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState, useEffect } from "react"
+import { motion } from "framer-motion"
 import {
   Shield,
   Upload,
@@ -13,182 +14,276 @@ import {
   Wallet,
   CheckCircle2,
   XCircle,
-} from 'lucide-react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+} from "lucide-react"
+import { DashboardLayout } from "@/components/layout/DashboardLayout"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { useAuth } from "@/contexts/AuthContext"
+import { useToast } from "@/hooks/use-toast"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from "@/components/ui/tooltip"
+import { kycAPI, KycData, SubmitKycData } from "@/lib/api/kyc"
 
-interface KYCData {
-  documentType: 'pan' | 'aadhaar';
-  panNumber: string;
-  aadhaarNumber: string;
-  documentFile: File | null;
-  accountHolderName: string;
-  accountNumber: string;
-  confirmAccountNumber: string;
-  ifscCode: string;
-  bankName: string;
+interface KYCFormData {
+  documentType: "pan" | "aadhaar"
+  panNumber: string
+  aadhaarNumber: string
+  documentFile: File | null
+  accountHolderName: string
+  accountNumber: string
+  confirmAccountNumber: string
+  ifscCode: string
+  bankName: string
 }
 
-
 export default function KYCPage() {
-  const { user, updateUser } = useAuth();
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [kycData, setKycData] = useState<KYCData>({
-    documentType: 'pan',
-    panNumber: '',
-    aadhaarNumber: '',
+  const { user, updateUser } = useAuth()
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [kycData, setKycData] = useState<KYCFormData>({
+    documentType: "pan",
+    panNumber: "",
+    aadhaarNumber: "",
     documentFile: null,
-    accountHolderName: '',
-    accountNumber: '',
-    confirmAccountNumber: '',
-    ifscCode: '',
-    bankName: '',
-  });
+    accountHolderName: "",
+    accountNumber: "",
+    confirmAccountNumber: "",
+    ifscCode: "",
+    bankName: "",
+  })
+  const [existingKyc, setExistingKyc] = useState<KycData | null>(null)
+
+  // Load existing KYC data
+  useEffect(() => {
+    const loadKycData = async () => {
+      try {
+        setIsLoading(true)
+
+        // Try to get existing KYC data first
+        const kycResponse = await kycAPI.getKyc()
+
+        if (kycResponse.kyc) {
+          // If KYC exists, use that data
+          setExistingKyc(kycResponse.kyc)
+          setKycData({
+            documentType: kycResponse.kyc.documentType,
+            panNumber: kycResponse.kyc.panNumber || "",
+            aadhaarNumber: kycResponse.kyc.aadhaarNumber || "",
+            documentFile: null,
+            accountHolderName: kycResponse.kyc.accountHolderName,
+            accountNumber: kycResponse.kyc.accountNumber,
+            confirmAccountNumber: kycResponse.kyc.accountNumber,
+            ifscCode: kycResponse.kyc.ifscCode,
+            bankName: kycResponse.kyc.bankName,
+          })
+        }
+        // If no KYC data exists, form starts empty - bank details are no longer in storefront
+      } catch (error: any) {
+        console.error("Failed to load KYC data:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadKycData()
+  }, [])
 
   const getStatusBadge = () => {
     switch (user?.kycStatus) {
-      case 'verified':
+      case "verified":
         return (
           <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent-green/10 text-accent-green">
             <Check className="w-4 h-4" />
             <span className="font-medium">Verified</span>
           </div>
-        );
-      case 'pending':
+        )
+      case "pending":
         return (
           <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent-orange/10 text-accent-orange">
             <Clock className="w-4 h-4" />
             <span className="font-medium">Pending Verification</span>
           </div>
-        );
+        )
+      case "rejected":
+        return (
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-destructive/10 text-destructive">
+            <XCircle className="w-4 h-4" />
+            <span className="font-medium">Rejected</span>
+          </div>
+        )
       default:
         return (
           <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted text-muted-foreground">
             <AlertCircle className="w-4 h-4" />
             <span className="font-medium">Not Submitted</span>
           </div>
-        );
+        )
     }
-  };
-
+  }
 
   const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?.[0]
     if (file) {
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast({
-          title: 'File Too Large',
-          description: 'Please upload a file smaller than 5MB.',
-          variant: 'destructive',
-        });
-        return;
+          title: "File Too Large",
+          description: "Please upload a file smaller than 5MB.",
+          variant: "destructive",
+        })
+        return
       }
-      setKycData({ ...kycData, documentFile: file });
+      setKycData({ ...kycData, documentFile: file })
     }
-  };
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
     // Validate document
-    if (kycData.documentType === 'pan' && !kycData.panNumber) {
+    if (kycData.documentType === "pan" && !kycData.panNumber) {
       toast({
-        title: 'PAN Number Required',
-        description: 'Please enter your PAN number.',
-        variant: 'destructive',
-      });
-      return;
+        title: "PAN Number Required",
+        description: "Please enter your PAN number.",
+        variant: "destructive",
+      })
+      return
     }
 
-    if (kycData.documentType === 'aadhaar' && !kycData.aadhaarNumber) {
+    if (kycData.documentType === "aadhaar" && !kycData.aadhaarNumber) {
       toast({
-        title: 'Aadhaar Number Required',
-        description: 'Please enter your Aadhaar number.',
-        variant: 'destructive',
-      });
-      return;
+        title: "Aadhaar Number Required",
+        description: "Please enter your Aadhaar number.",
+        variant: "destructive",
+      })
+      return
     }
 
-    if (!kycData.documentFile) {
+    if (
+      !kycData.accountNumber ||
+      !kycData.ifscCode ||
+      !kycData.bankName ||
+      !kycData.accountHolderName
+    ) {
       toast({
-        title: 'Document Required',
-        description: `Please upload your ${kycData.documentType === 'pan' ? 'PAN Card' : 'Aadhaar Card'} image.`,
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!kycData.accountNumber || !kycData.ifscCode || !kycData.bankName || !kycData.accountHolderName) {
-      toast({
-        title: 'Bank Details Required',
-        description: 'Please fill in all bank account details.',
-        variant: 'destructive',
-      });
-      return;
+        title: "Bank Details Required",
+        description: "Please fill in all bank account details.",
+        variant: "destructive",
+      })
+      return
     }
 
     if (kycData.accountNumber !== kycData.confirmAccountNumber) {
       toast({
-        title: 'Account Numbers Mismatch',
-        description: 'Please ensure both account numbers match.',
-        variant: 'destructive',
-      });
-      return;
+        title: "Account Numbers Mismatch",
+        description: "Please ensure both account numbers match.",
+        variant: "destructive",
+      })
+      return
     }
 
-    setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    updateUser({ kycStatus: 'pending' });
-    setIsSubmitting(false);
-    toast({
-      title: '🎉 KYC Submitted Successfully!',
-      description: 'We\'ll verify your documents within 1-2 business days.',
-    });
-  };
+    try {
+      setIsSubmitting(true)
+
+      // Prepare submission data
+      const submitData: SubmitKycData = {
+        documentType: kycData.documentType,
+        accountHolderName: kycData.accountHolderName,
+        accountNumber: kycData.accountNumber,
+        ifscCode: kycData.ifscCode,
+        bankName: kycData.bankName,
+      }
+
+      // Add document number based on type
+      if (kycData.documentType === "pan") {
+        submitData.panNumber = kycData.panNumber
+      } else {
+        submitData.aadhaarNumber = kycData.aadhaarNumber.replace(/\s/g, "") // Remove spaces
+      }
+
+      // Submit to backend
+      const response = await kycAPI.submitKyc(submitData)
+
+      // Update user context
+      updateUser({ kycStatus: "pending" })
+
+      toast({
+        title: "🎉 KYC Submitted Successfully!",
+        description: response.message,
+      })
+
+      // Reload KYC data
+      const updatedKyc = await kycAPI.getKyc()
+      if (updatedKyc.kyc) {
+        setExistingKyc(updatedKyc.kyc)
+      }
+    } catch (error: any) {
+      toast({
+        title: "Submission Failed",
+        description: error.message || "Failed to submit KYC. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   const formatAadhaar = (value: string) => {
     // Format as XXXX XXXX XXXX
-    const numbers = value.replace(/\D/g, '').slice(0, 12);
-    const parts = [];
+    const numbers = value.replace(/\D/g, "").slice(0, 12)
+    const parts = []
     for (let i = 0; i < numbers.length; i += 4) {
-      parts.push(numbers.slice(i, i + 4));
+      parts.push(numbers.slice(i, i + 4))
     }
-    return parts.join(' ');
-  };
+    return parts.join(" ")
+  }
 
-  const resetToUploadFlow = () => {
-    setIsSubmitting(false);
-    setKycData({
-      documentType: 'pan',
-      panNumber: '',
-      aadhaarNumber: '',
-      documentFile: null,
-      accountHolderName: '',
-      accountNumber: '',
-      confirmAccountNumber: '',
-      ifscCode: '',
-      bankName: '',
-    });
-    updateUser({ kycStatus: 'not_submitted' });
-    toast({
-      title: 'Upload form opened',
-      description: 'You can upload your documents again now.',
-    });
-  };
+  const resetToUploadFlow = async () => {
+    try {
+      await kycAPI.deleteKyc()
+      setExistingKyc(null)
+      setKycData({
+        documentType: "pan",
+        panNumber: "",
+        aadhaarNumber: "",
+        documentFile: null,
+        accountHolderName: "",
+        accountNumber: "",
+        confirmAccountNumber: "",
+        ifscCode: "",
+        bankName: "",
+      })
+      updateUser({ kycStatus: "not_submitted" })
+      toast({
+        title: "Upload form opened",
+        description: "You can upload your documents again now.",
+      })
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reset KYC data.",
+        variant: "destructive",
+      })
+    }
+  }
 
-  if (user?.kycStatus === 'verified') {
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (user?.kycStatus === "verified" && existingKyc) {
     return (
       <DashboardLayout>
         <div className="max-w-2xl mx-auto">
@@ -200,28 +295,46 @@ export default function KYCPage() {
             <div className="w-20 h-20 rounded-full bg-accent-green/10 flex items-center justify-center mx-auto mb-6">
               <Check className="w-10 h-10 text-accent-green" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground mb-2">KYC Verified! 🎉</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              KYC Verified! 🎉
+            </h1>
             <p className="text-muted-foreground mb-6">
-              Your identity has been verified. You can now withdraw your earnings anytime.
+              Your identity has been verified. You can now withdraw your
+              earnings anytime.
             </p>
             <div className="bg-muted/50 rounded-xl p-6 text-left space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Document</span>
-                <span className="font-medium text-foreground">PAN Card - ABCDE1234F</span>
+                <span className="font-medium text-foreground">
+                  {existingKyc.documentType === "pan"
+                    ? "PAN Card"
+                    : "Aadhaar Card"}{" "}
+                  - {existingKyc.panNumber || existingKyc.aadhaarNumber}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Bank Account</span>
-                <span className="font-medium text-foreground">XXXX XXXX 1234</span>
+                <span className="font-medium text-foreground">
+                  XXXX XXXX {existingKyc.accountNumber.slice(-4)}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Bank Name</span>
-                <span className="font-medium text-foreground">State Bank of India</span>
+                <span className="font-medium text-foreground">
+                  {existingKyc.bankName}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">IFSC Code</span>
+                <span className="font-medium text-foreground">
+                  {existingKyc.ifscCode}
+                </span>
               </div>
             </div>
           </motion.div>
         </div>
       </DashboardLayout>
-    );
+    )
   }
 
   return (
@@ -231,8 +344,12 @@ export default function KYCPage() {
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Complete Your KYC</h1>
-              <p className="text-muted-foreground mt-1">Required to withdraw your earnings</p>
+              <h1 className="text-2xl font-bold text-foreground">
+                Complete Your KYC
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Required to withdraw your earnings
+              </p>
             </div>
             {getStatusBadge()}
           </div>
@@ -248,18 +365,50 @@ export default function KYCPage() {
                 <Wallet className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground mb-1">When do you need KYC?</h3>
+                <h3 className="font-semibold text-foreground mb-1">
+                  When do you need KYC?
+                </h3>
                 <p className="text-sm text-muted-foreground">
-                  <span className="text-accent-green font-medium">✓ You can sell products</span> without KYC. 
-                  KYC is only needed when you want to <span className="font-medium text-foreground">withdraw money</span> to your bank account. 
-                  Complete it anytime before your first withdrawal.
+                  <span className="text-accent-green font-medium">
+                    ✓ You can sell products
+                  </span>{" "}
+                  without KYC. KYC is only needed when you want to{" "}
+                  <span className="font-medium text-foreground">
+                    withdraw money
+                  </span>{" "}
+                  to your bank account. Complete it anytime before your first
+                  withdrawal.
                 </p>
               </div>
             </div>
           </motion.div>
+
+          {/* Rejection Notice */}
+          {user?.kycStatus === "rejected" && existingKyc?.rejectionReason && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-destructive/5 border border-destructive/20 rounded-xl p-4"
+            >
+              <div className="flex gap-3">
+                <XCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-foreground mb-1">
+                    KYC Rejected
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {existingKyc.rejectionReason}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Please correct the information and resubmit.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
 
-        {user?.kycStatus === 'pending' ? (
+        {user?.kycStatus === "pending" ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -268,20 +417,37 @@ export default function KYCPage() {
             <div className="w-20 h-20 rounded-full bg-accent-orange/10 flex items-center justify-center mx-auto mb-6">
               <Clock className="w-10 h-10 text-accent-orange" />
             </div>
-            <h2 className="text-xl font-bold text-foreground mb-2">We're Reviewing Your Documents</h2>
+            <h2 className="text-xl font-bold text-foreground mb-2">
+              We're Reviewing Your Documents
+            </h2>
             <p className="text-muted-foreground mb-4">
-              This usually takes 1-2 business days. We'll notify you once verified.
+              This usually takes 1-2 business days. We'll notify you once
+              verified.
             </p>
             <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
               <p>💡 You can continue selling while we verify your documents.</p>
             </div>
 
             <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-              <Button type="button" variant="outline" onClick={resetToUploadFlow}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={resetToUploadFlow}
+              >
                 Upload / edit documents
               </Button>
-              <Button type="button" variant="ghost" onClick={() => toast({ title: 'All set', description: 'We’ll notify you when verification is complete.' })}>
-                Okay, I’ll wait
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() =>
+                  toast({
+                    title: "All set",
+                    description:
+                      "We'll notify you when verification is complete.",
+                  })
+                }
+              >
+                Okay, I'll wait
               </Button>
             </div>
           </motion.div>
@@ -298,8 +464,12 @@ export default function KYCPage() {
                   1
                 </div>
                 <div className="flex-1">
-                  <h2 className="font-semibold text-foreground">Upload Identity Proof</h2>
-                  <p className="text-sm text-muted-foreground">PAN Card or Aadhaar Card</p>
+                  <h2 className="font-semibold text-foreground">
+                    Upload Identity Proof
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    PAN Card or Aadhaar Card
+                  </p>
                 </div>
               </div>
 
@@ -307,21 +477,31 @@ export default function KYCPage() {
               <div className="grid grid-cols-2 gap-3 mb-6">
                 <button
                   type="button"
-                  onClick={() => setKycData({ ...kycData, documentType: 'pan' })}
-                  className={`p-4 rounded-xl border-2 text-left transition-all ${
-                    kycData.documentType === 'pan'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50'
+                  onClick={() =>
+                    setKycData({ ...kycData, documentType: "pan" })
+                  }
+                  className={`p-4 rounded-xl border-2 text-left transition-all relative ${
+                    kycData.documentType === "pan"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <CreditCard className={`w-6 h-6 ${kycData.documentType === 'pan' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <CreditCard
+                      className={`w-6 h-6 ${
+                        kycData.documentType === "pan"
+                          ? "text-primary"
+                          : "text-muted-foreground"
+                      }`}
+                    />
                     <div>
                       <p className="font-medium text-foreground">PAN Card</p>
-                      <p className="text-xs text-muted-foreground">Permanent Account Number</p>
+                      <p className="text-xs text-muted-foreground">
+                        Permanent Account Number
+                      </p>
                     </div>
                   </div>
-                  {kycData.documentType === 'pan' && (
+                  {kycData.documentType === "pan" && (
                     <div className="absolute top-2 right-2">
                       <Check className="w-5 h-5 text-primary" />
                     </div>
@@ -330,37 +510,61 @@ export default function KYCPage() {
 
                 <button
                   type="button"
-                  onClick={() => setKycData({ ...kycData, documentType: 'aadhaar' })}
-                  className={`p-4 rounded-xl border-2 text-left transition-all ${
-                    kycData.documentType === 'aadhaar'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50'
+                  onClick={() =>
+                    setKycData({ ...kycData, documentType: "aadhaar" })
+                  }
+                  className={`p-4 rounded-xl border-2 text-left transition-all relative ${
+                    kycData.documentType === "aadhaar"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <FileText className={`w-6 h-6 ${kycData.documentType === 'aadhaar' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <FileText
+                      className={`w-6 h-6 ${
+                        kycData.documentType === "aadhaar"
+                          ? "text-primary"
+                          : "text-muted-foreground"
+                      }`}
+                    />
                     <div>
-                      <p className="font-medium text-foreground">Aadhaar Card</p>
-                      <p className="text-xs text-muted-foreground">12-digit identity number</p>
+                      <p className="font-medium text-foreground">
+                        Aadhaar Card
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        12-digit identity number
+                      </p>
                     </div>
                   </div>
+                  {kycData.documentType === "aadhaar" && (
+                    <div className="absolute top-2 right-2">
+                      <Check className="w-5 h-5 text-primary" />
+                    </div>
+                  )}
                 </button>
               </div>
 
               <div className="space-y-4">
                 {/* Document Number Input */}
-                {kycData.documentType === 'pan' ? (
+                {kycData.documentType === "pan" ? (
                   <div>
                     <Label htmlFor="panNumber">PAN Number</Label>
                     <Input
                       id="panNumber"
                       placeholder="ABCDE1234F"
                       value={kycData.panNumber}
-                      onChange={(e) => setKycData({ ...kycData, panNumber: e.target.value.toUpperCase().slice(0, 10) })}
+                      onChange={(e) =>
+                        setKycData({
+                          ...kycData,
+                          panNumber: e.target.value.toUpperCase().slice(0, 10),
+                        })
+                      }
                       maxLength={10}
                       className="uppercase"
                     />
-                    <p className="text-xs text-muted-foreground mt-1">Enter 10-character PAN (e.g., ABCDE1234F)</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Enter 10-character PAN (e.g., ABCDE1234F)
+                    </p>
                   </div>
                 ) : (
                   <div>
@@ -369,30 +573,51 @@ export default function KYCPage() {
                       id="aadhaarNumber"
                       placeholder="1234 5678 9012"
                       value={kycData.aadhaarNumber}
-                      onChange={(e) => setKycData({ ...kycData, aadhaarNumber: formatAadhaar(e.target.value) })}
+                      onChange={(e) =>
+                        setKycData({
+                          ...kycData,
+                          aadhaarNumber: formatAadhaar(e.target.value),
+                        })
+                      }
                       maxLength={14}
                     />
-                    <p className="text-xs text-muted-foreground mt-1">Enter 12-digit Aadhaar number</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Enter 12-digit Aadhaar number
+                    </p>
                   </div>
                 )}
 
-                {/* Document Upload */}
+                {/* Document Upload - Optional for MVP */}
                 <div>
-                  <Label>Upload {kycData.documentType === 'pan' ? 'PAN Card' : 'Aadhaar Card'}</Label>
+                  <Label>
+                    Upload{" "}
+                    {kycData.documentType === "pan"
+                      ? "PAN Card"
+                      : "Aadhaar Card"}{" "}
+                    (Optional)
+                  </Label>
                   <label className="mt-2 border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer flex flex-col items-center">
                     {kycData.documentFile ? (
                       <>
                         <div className="w-12 h-12 rounded-full bg-accent-green/10 flex items-center justify-center mb-2">
                           <CheckCircle2 className="w-6 h-6 text-accent-green" />
                         </div>
-                        <p className="text-sm font-medium text-foreground">{kycData.documentFile.name}</p>
-                        <p className="text-xs text-accent-green mt-1">File uploaded successfully</p>
+                        <p className="text-sm font-medium text-foreground">
+                          {kycData.documentFile.name}
+                        </p>
+                        <p className="text-xs text-accent-green mt-1">
+                          File uploaded successfully
+                        </p>
                       </>
                     ) : (
                       <>
                         <Upload className="w-8 h-8 text-muted-foreground mb-2" />
-                        <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
-                        <p className="text-xs text-muted-foreground mt-1">PNG, JPG or PDF (max 5MB)</p>
+                        <p className="text-sm text-muted-foreground">
+                          Click to upload or drag and drop
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          PNG, JPG or PDF (max 5MB)
+                        </p>
                       </>
                     )}
                     <input
@@ -402,6 +627,10 @@ export default function KYCPage() {
                       onChange={handleDocumentUpload}
                     />
                   </label>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Note: Document upload will be enabled soon. For now, we'll
+                    verify using the number provided.
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -418,8 +647,12 @@ export default function KYCPage() {
                   2
                 </div>
                 <div className="flex-1">
-                  <h2 className="font-semibold text-foreground">Add Bank Account</h2>
-                  <p className="text-sm text-muted-foreground">Where you'll receive your earnings</p>
+                  <h2 className="font-semibold text-foreground">
+                    Add Bank Account
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Where you'll receive your earnings
+                  </p>
                 </div>
               </div>
 
@@ -433,28 +666,47 @@ export default function KYCPage() {
                       placeholder="Enter account number"
                       value={kycData.accountNumber}
                       onChange={(e) => {
-                        setKycData({ ...kycData, accountNumber: e.target.value.replace(/\D/g, '') });
+                        setKycData({
+                          ...kycData,
+                          accountNumber: e.target.value.replace(/\D/g, ""),
+                        })
                       }}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="confirmAccountNumber">Confirm Account Number</Label>
+                    <Label htmlFor="confirmAccountNumber">
+                      Confirm Account Number
+                    </Label>
                     <Input
                       id="confirmAccountNumber"
                       placeholder="Re-enter account number"
                       value={kycData.confirmAccountNumber}
-                      onChange={(e) => setKycData({ ...kycData, confirmAccountNumber: e.target.value.replace(/\D/g, '') })}
+                      onChange={(e) =>
+                        setKycData({
+                          ...kycData,
+                          confirmAccountNumber: e.target.value.replace(
+                            /\D/g,
+                            ""
+                          ),
+                        })
+                      }
                     />
-                    {kycData.confirmAccountNumber && kycData.accountNumber !== kycData.confirmAccountNumber && (
-                      <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-                        <XCircle className="w-3 h-3" /> Account numbers don't match
-                      </p>
-                    )}
-                    {kycData.confirmAccountNumber && kycData.accountNumber === kycData.confirmAccountNumber && (
-                      <p className="text-xs text-accent-green mt-1 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Account numbers match
-                      </p>
-                    )}
+                    {kycData.confirmAccountNumber &&
+                      kycData.accountNumber !==
+                        kycData.confirmAccountNumber && (
+                        <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+                          <XCircle className="w-3 h-3" /> Account numbers don't
+                          match
+                        </p>
+                      )}
+                    {kycData.confirmAccountNumber &&
+                      kycData.accountNumber ===
+                        kycData.confirmAccountNumber && (
+                        <p className="text-xs text-accent-green mt-1 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Account numbers
+                          match
+                        </p>
+                      )}
                   </div>
                 </div>
 
@@ -467,7 +719,11 @@ export default function KYCPage() {
                           <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent className="max-w-xs">
-                          <p>IFSC is an 11-character code that identifies your bank branch. You can find it on your cheque book or bank statement.</p>
+                          <p>
+                            IFSC is an 11-character code that identifies your
+                            bank branch. You can find it on your cheque book or
+                            bank statement.
+                          </p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -477,12 +733,17 @@ export default function KYCPage() {
                     placeholder="SBIN0001234"
                     value={kycData.ifscCode}
                     onChange={(e) => {
-                      setKycData({ ...kycData, ifscCode: e.target.value.toUpperCase().slice(0, 11) });
+                      setKycData({
+                        ...kycData,
+                        ifscCode: e.target.value.toUpperCase().slice(0, 11),
+                      })
                     }}
                     maxLength={11}
                     className="uppercase"
                   />
-                  <p className="text-xs text-muted-foreground mt-1">11-character code (e.g., SBIN0001234)</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    11-character code (e.g., SBIN0001234)
+                  </p>
                 </div>
 
                 <div>
@@ -491,7 +752,9 @@ export default function KYCPage() {
                     id="bankName"
                     placeholder="e.g., State Bank of India"
                     value={kycData.bankName}
-                    onChange={(e) => setKycData({ ...kycData, bankName: e.target.value })}
+                    onChange={(e) =>
+                      setKycData({ ...kycData, bankName: e.target.value })
+                    }
                   />
                 </div>
 
@@ -501,7 +764,12 @@ export default function KYCPage() {
                     id="accountHolderName"
                     placeholder="Name as per bank records"
                     value={kycData.accountHolderName}
-                    onChange={(e) => setKycData({ ...kycData, accountHolderName: e.target.value })}
+                    onChange={(e) =>
+                      setKycData({
+                        ...kycData,
+                        accountHolderName: e.target.value,
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -529,5 +797,5 @@ export default function KYCPage() {
         )}
       </div>
     </DashboardLayout>
-  );
+  )
 }

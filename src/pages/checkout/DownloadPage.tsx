@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -14,48 +14,84 @@ import {
   MessageCircle,
   Clock,
   Link2,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import { getProductById, formatINR, mockCurrentUser } from '@/lib/mockData';
+import { formatINR } from '@/lib/mockData';
+import { checkoutAPI } from '@/lib/api/checkout';
 import { toast } from 'sonner';
 
 export default function DownloadPage() {
   const { orderId } = useParams<{ orderId: string }>();
   const [searchParams] = useSearchParams();
 
-  const productId = searchParams.get('product') || '';
   const buyerEmail = searchParams.get('email') || '';
   const buyerName = searchParams.get('name') || '';
 
-  const product = getProductById(productId);
-  const [downloadCount, setDownloadCount] = useState(0);
-  const maxDownloads = 5;
+  const [order, setOrder] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const gstRate = 0.18;
-  const baseAmount = product?.price || 0;
-  const gstAmount = Math.round(baseAmount * gstRate);
-  const totalAmount = baseAmount + gstAmount;
+  // Fetch order details from backend
+  useEffect(() => {
+    const loadOrder = async () => {
+      if (!orderId) {
+        setHasError(true);
+        setIsLoading(false);
+        return;
+      }
 
-  const handleDownload = () => {
-    if (downloadCount >= maxDownloads) {
+      try {
+        setIsLoading(true);
+        const response = await checkoutAPI.getOrderForDownload(orderId);
+        setOrder(response.order);
+        setHasError(false);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load order';
+        console.error('Failed to load order:', error);
+        toast.error(errorMessage);
+        setHasError(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadOrder();
+  }, [orderId]);
+
+  const handleDownload = async () => {
+    if (!order || !orderId) return;
+
+    if (order.downloadCount >= order.maxDownloads) {
       toast.error('Download limit reached. Please contact support.');
       return;
     }
 
-    // Simulate download
-    toast.success('Download started!');
-    setDownloadCount((prev) => prev + 1);
+    try {
+      // Record download in backend
+      await checkoutAPI.recordDownload(orderId);
 
-    // In production, this would trigger actual file download
-    const link = document.createElement('a');
-    link.href = product?.fileUrl || '#';
-    link.download = `${product?.title || 'product'}.zip`;
-    // link.click();
+      // Trigger file download
+      toast.success('Download started!');
+
+      if (order.downloadLink) {
+        const link = document.createElement('a');
+        link.href = order.downloadLink;
+        link.download = `${order.productTitle}.zip`;
+        link.click();
+      }
+
+      // Refresh order to get updated download count
+      const response = await checkoutAPI.getOrderForDownload(orderId);
+      setOrder(response.order);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Download failed';
+      toast.error(errorMessage);
+    }
   };
 
   const handleDownloadInvoice = () => {
@@ -70,30 +106,17 @@ export default function DownloadPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleOpenExternalLink = () => {
-    if (product?.externalUrl) {
-      window.open(product.externalUrl, '_blank');
-      toast.success('Opening product link...');
-    }
-  };
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-  const handleContactSeller = (method: 'email' | 'phone' | 'whatsapp') => {
-    const sellerEmail = product?.sellerContactEmail || mockCurrentUser.contactEmail;
-    const sellerPhone = product?.sellerContactPhone || mockCurrentUser.contactPhone;
-    const sellerWhatsapp = product?.sellerContactWhatsapp || sellerPhone;
-
-    if (method === 'email' && sellerEmail) {
-      window.location.href = `mailto:${sellerEmail}?subject=Order ${orderId} - ${product?.title}&body=Hi, I just purchased ${product?.title} (Order ID: ${orderId}). `;
-    } else if (method === 'phone' && sellerPhone) {
-      window.location.href = `tel:${sellerPhone.replace(/\s/g, '')}`;
-    } else if (method === 'whatsapp' && sellerWhatsapp) {
-      const cleanNumber = sellerWhatsapp.replace(/[^0-9]/g, '');
-      const message = encodeURIComponent(`Hi! I just purchased ${product?.title} (Order ID: ${orderId}). Please help me with the delivery.`);
-      window.open(`https://wa.me/${cleanNumber}?text=${message}`, '_blank');
-    }
-  };
-
-  if (!product) {
+  // Error or order not found
+  if (hasError || !order) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="max-w-md">
@@ -111,6 +134,13 @@ export default function DownloadPage() {
       </div>
     );
   }
+
+  // Determine delivery type (default to download if not specified)
+  const deliveryType = 'download'; // Simplified for now - can be extended later
+
+  // Extract product info from order
+  const productTitle = order.productTitle;
+  const productThumbnail = order.productThumbnail;
 
   return (
     <div className="min-h-screen bg-background">
@@ -179,10 +209,10 @@ export default function DownloadPage() {
                 {/* Product Info */}
                 <div className="flex gap-4">
                   <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                    {product.thumbnailUrl ? (
+                    {productThumbnail ? (
                       <img
-                        src={product.thumbnailUrl}
-                        alt={product.title}
+                        src={productThumbnail}
+                        alt={productTitle}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -192,15 +222,10 @@ export default function DownloadPage() {
                     )}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-foreground">{product.title}</h3>
+                    <h3 className="font-semibold text-foreground">{productTitle}</h3>
                     <div className="flex items-center gap-2 mt-1">
-                      {product.category && (
-                        <Badge variant="secondary" className="capitalize">
-                          {product.category}
-                        </Badge>
-                      )}
                       <Badge variant="outline" className="capitalize">
-                        {product.deliveryType === 'external_link' ? 'External Link' : product.deliveryType}
+                        {deliveryType}
                       </Badge>
                     </div>
                   </div>
@@ -212,16 +237,22 @@ export default function DownloadPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Base Amount</span>
-                    <span>{formatINR(baseAmount)}</span>
+                    <span>{formatINR(order.amount)}</span>
                   </div>
+                  {order.platformFee && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Platform Fee</span>
+                      <span>{formatINR(order.platformFee)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">GST (18%)</span>
-                    <span>{formatINR(gstAmount)}</span>
+                    <span>{formatINR(order.gstAmount)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-semibold">
                     <span>Total Paid</span>
-                    <span className="text-primary">{formatINR(totalAmount)}</span>
+                    <span className="text-primary">{formatINR(order.totalAmount)}</span>
                   </div>
                 </div>
 
@@ -246,159 +277,51 @@ export default function DownloadPage() {
           >
             <Card>
               <CardHeader>
-                <CardTitle>
-                  {product.deliveryType === 'download' && 'Download Your Product'}
-                  {product.deliveryType === 'external_link' && 'Access Your Product'}
-                  {product.deliveryType === 'manual' && 'Order Confirmed'}
-                </CardTitle>
+                <CardTitle>Download Your Product</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Digital Download */}
-                {product.deliveryType === 'download' && (
-                  <>
-                    {/* Download Limit */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Downloads Used</span>
-                        <span className="font-medium">
-                          {downloadCount} of {maxDownloads}
-                        </span>
-                      </div>
-                      <Progress value={(downloadCount / maxDownloads) * 100} />
-                    </div>
+                {/* Download Limit */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Downloads Used</span>
+                    <span className="font-medium">
+                      {order.downloadCount} of {order.maxDownloads}
+                    </span>
+                  </div>
+                  <Progress value={(order.downloadCount / order.maxDownloads) * 100} />
+                </div>
 
-                    {/* Download Buttons */}
-                    <div className="space-y-3">
-                      <Button
-                        className="w-full h-12"
-                        size="lg"
-                        onClick={handleDownload}
-                        disabled={downloadCount >= maxDownloads}
-                      >
-                        <Download className="w-5 h-5 mr-2" />
-                        Download Product
-                      </Button>
+                {/* Download Buttons */}
+                <div className="space-y-3">
+                  <Button
+                    className="w-full h-12"
+                    size="lg"
+                    onClick={handleDownload}
+                    disabled={order.downloadCount >= order.maxDownloads}
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Download Product
+                  </Button>
 
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={handleDownloadInvoice}
-                      >
-                        <FileText className="w-4 h-4 mr-2" />
-                        Download GST Invoice
-                      </Button>
-                    </div>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleDownloadInvoice}
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Download GST Invoice
+                  </Button>
+                </div>
 
-                    {downloadCount >= maxDownloads && (
-                      <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
-                        <p className="text-sm text-warning">
-                          You've reached the maximum download limit. Contact support if you need
-                          additional downloads.
-                        </p>
-                      </div>
-                    )}
-                  </>
+                {order.downloadCount >= order.maxDownloads && (
+                  <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
+                    <p className="text-sm text-warning">
+                      You've reached the maximum download limit. Contact support if you need
+                      additional downloads.
+                    </p>
+                  </div>
                 )}
 
-                {/* External Link */}
-                {product.deliveryType === 'external_link' && (
-                  <>
-                    <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-                      <div className="flex items-start gap-3">
-                        <Link2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground mb-1">Product Link</p>
-                          <p className="text-sm text-muted-foreground break-all">
-                            {product.externalUrl}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <Button
-                        className="w-full h-12"
-                        size="lg"
-                        onClick={handleOpenExternalLink}
-                      >
-                        <ExternalLink className="w-5 h-5 mr-2" />
-                        Access Product
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={handleDownloadInvoice}
-                      >
-                        <FileText className="w-4 h-4 mr-2" />
-                        Download GST Invoice
-                      </Button>
-                    </div>
-                  </>
-                )}
-
-                {/* Manual Delivery */}
-                {product.deliveryType === 'manual' && (
-                  <>
-                    <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
-                      <div className="flex items-start gap-3">
-                        <Clock className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-medium text-foreground">Awaiting Seller Contact</p>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            The seller has been notified and will contact you within 24 hours to complete your delivery.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-foreground">Contact Seller</p>
-                      <div className="grid gap-2">
-                        {(product.sellerContactEmail || mockCurrentUser.contactEmail) && (
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start"
-                            onClick={() => handleContactSeller('email')}
-                          >
-                            <Mail className="w-4 h-4 mr-3" />
-                            <span className="truncate">
-                              {product.sellerContactEmail || mockCurrentUser.contactEmail}
-                            </span>
-                          </Button>
-                        )}
-                        {(product.sellerContactPhone || mockCurrentUser.contactPhone) && (
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start"
-                            onClick={() => handleContactSeller('phone')}
-                          >
-                            <Phone className="w-4 h-4 mr-3" />
-                            {product.sellerContactPhone || mockCurrentUser.contactPhone}
-                          </Button>
-                        )}
-                        {(product.sellerContactWhatsapp || product.sellerContactPhone || mockCurrentUser.contactPhone) && (
-                          <Button
-                            className="w-full justify-start bg-[#25D366] hover:bg-[#22c55e] text-white"
-                            onClick={() => handleContactSeller('whatsapp')}
-                          >
-                            <MessageCircle className="w-4 h-4 mr-3" />
-                            Message on WhatsApp
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={handleDownloadInvoice}
-                    >
-                      <FileText className="w-4 h-4 mr-2" />
-                      Download GST Invoice
-                    </Button>
-                  </>
-                )}
 
                 {/* Email Confirmation */}
                 <div className="p-4 bg-muted/50 rounded-lg">
@@ -432,7 +355,7 @@ export default function DownloadPage() {
                   </Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link to={`/store/${mockCurrentUser.storeUrl}`}>
+                  <Link to="/">
                     Explore More Products
                   </Link>
                 </Button>

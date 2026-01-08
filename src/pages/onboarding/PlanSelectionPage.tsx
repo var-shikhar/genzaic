@@ -20,6 +20,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
+import { onboardingAPI } from '@/lib/api/onboarding';
+import { toast as sonnerToast } from 'sonner';
 
 export default function PlanSelectionPage() {
   const [selectedPlan, setSelectedPlan] = useState<'creator' | null>('creator');
@@ -36,17 +38,43 @@ export default function PlanSelectionPage() {
 
   const handleContinue = async () => {
     if (selectedPlan === 'creator') {
-      setIsProcessing(true);
-      
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 2500));
-      
-      updateUser({ onboardingComplete: true });
-      toast({
-        title: "Welcome to GenZaic!",
-        description: "Your Creator plan is now active. Start selling!",
-      });
-      navigate('/dashboard');
+      try {
+        setIsProcessing(true);
+
+        // Step 1: Select plan
+        const planResponse = await onboardingAPI.selectPlan({ planType: 'creator' });
+
+        if (planResponse.success) {
+          // Step 2: Complete onboarding
+          const completeResponse = await onboardingAPI.completeOnboarding();
+
+          if (completeResponse.success) {
+            // Update user in AuthContext
+            updateUser({
+              onboardingComplete: true,
+              planType: 'creator',
+            });
+
+            sonnerToast.success('Welcome to GenZaic Creator Hub!');
+            toast({
+              title: "Welcome to GenZaic!",
+              description: "Your Creator plan is now active. Start selling!",
+            });
+
+            navigate('/dashboard');
+          }
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to complete onboarding';
+        sonnerToast.error(errorMessage);
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 

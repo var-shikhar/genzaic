@@ -1,122 +1,139 @@
-import { useState, useRef, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Loader2, CheckCircle, Mail } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import AuthLayout from '@/components/auth/AuthLayout';
+import AuthLayout from "@/components/auth/AuthLayout"
+import { Button } from "@/components/ui/button"
+import { useAuth } from "@/contexts/AuthContext"
+import { useToast } from "@/hooks/use-toast"
+import { authAPI } from "@/lib/api/auth"
+import { motion } from "framer-motion"
+import { CheckCircle, Loader2, Mail } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { useLocation, useNavigate } from "react-router-dom"
 
 const VerifyEmailPage = () => {
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
-  const [resendTimer, setResendTimer] = useState(60);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""])
+  const [isLoading, setIsLoading] = useState(false)
+  const [isVerified, setIsVerified] = useState(false)
+  const [resendTimer, setResendTimer] = useState(60)
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { toast } = useToast();
-  const { verifyOTP } = useAuth();
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { toast } = useToast()
+  const { verifyOTP, pendingVerificationEmail, user } = useAuth()
 
-  const email = location.state?.email || 'your@email.com';
+  const email =
+    location.state?.email || pendingVerificationEmail || "your@email.com"
+
+  // Navigate based on user role after verification
+  useEffect(() => {
+    if (isVerified && user) {
+      setTimeout(() => {
+        if (user.role === "buyer" || user.onboardingComplete) {
+          // Buyers skip onboarding and go straight to purchases
+          navigate("/my-purchases")
+        } else {
+          // Sellers need to complete onboarding
+          navigate("/onboarding")
+        }
+      }, 2000)
+    }
+  }, [isVerified, user, navigate])
 
   useEffect(() => {
     // Focus first input on mount
-    inputRefs.current[0]?.focus();
-  }, []);
+    inputRefs.current[0]?.focus()
+  }, [])
 
   useEffect(() => {
     // Countdown timer for resend
     if (resendTimer > 0) {
-      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-      return () => clearTimeout(timer);
+      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000)
+      return () => clearTimeout(timer)
     }
-  }, [resendTimer]);
+  }, [resendTimer])
 
   const handleChange = (index: number, value: string) => {
     if (value.length > 1) {
       // Handle paste
-      const pastedCode = value.slice(0, 6).split('');
-      const newOtp = [...otp];
+      const pastedCode = value.slice(0, 6).split("")
+      const newOtp = [...otp]
       pastedCode.forEach((char, i) => {
         if (index + i < 6) {
-          newOtp[index + i] = char;
+          newOtp[index + i] = char
         }
-      });
-      setOtp(newOtp);
-      const nextIndex = Math.min(index + pastedCode.length, 5);
-      inputRefs.current[nextIndex]?.focus();
+      })
+      setOtp(newOtp)
+      const nextIndex = Math.min(index + pastedCode.length, 5)
+      inputRefs.current[nextIndex]?.focus()
     } else {
-      const newOtp = [...otp];
-      newOtp[index] = value;
-      setOtp(newOtp);
-      
+      const newOtp = [...otp]
+      newOtp[index] = value
+      setOtp(newOtp)
+
       // Move to next input
       if (value && index < 5) {
-        inputRefs.current[index + 1]?.focus();
+        inputRefs.current[index + 1]?.focus()
       }
     }
-  };
+  }
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus()
     }
-  };
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const code = otp.join('');
-    
+    e.preventDefault()
+    const code = otp.join("")
+
     if (code.length !== 6) {
       toast({
-        title: 'Invalid code',
-        description: 'Please enter the complete 6-digit code.',
-        variant: 'destructive',
-      });
-      return;
+        title: "Invalid code",
+        description: "Please enter the complete 6-digit code.",
+        variant: "destructive",
+      })
+      return
     }
 
-    setIsLoading(true);
+    setIsLoading(true)
 
     try {
-      const success = await verifyOTP(code);
+      const success = await verifyOTP(email, code)
       if (success) {
-        setIsVerified(true);
+        setIsVerified(true)
+      }
+    } catch (error) {
+      // Error toast is already shown by AuthContext
+      console.error("Verification error:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleResend = async () => {
+    try {
+      const response = await authAPI.resendOTP(email)
+      if (response.success) {
+        setResendTimer(60)
         toast({
-          title: 'Email verified!',
-          description: 'Your email has been successfully verified.',
-        });
-        // Navigate to onboarding after short delay
-        setTimeout(() => {
-          navigate('/onboarding');
-        }, 2000);
+          title: "Code resent!",
+          description: "A new verification code has been sent to your email.",
+        })
       } else {
         toast({
-          title: 'Invalid code',
-          description: 'The code you entered is incorrect. Please try again.',
-          variant: 'destructive',
-        });
+          title: "Failed to resend",
+          description: response.message || "Please try again later.",
+          variant: "destructive",
+        })
       }
     } catch (error) {
       toast({
-        title: 'Verification failed',
-        description: 'Something went wrong. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
+        title: "Failed to resend",
+        description: "Something went wrong. Please try again later.",
+        variant: "destructive",
+      })
     }
-  };
-
-  const handleResend = () => {
-    setResendTimer(60);
-    toast({
-      title: 'Code resent!',
-      description: 'A new verification code has been sent to your email.',
-    });
-  };
+  }
 
   if (isVerified) {
     return (
@@ -132,13 +149,15 @@ const VerifyEmailPage = () => {
           <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mx-auto">
             <CheckCircle className="w-10 h-10 text-success" />
           </div>
-          
+
           <div className="space-y-2">
             <h3 className="text-xl font-semibold text-foreground">
               Welcome to GenZaic!
             </h3>
             <p className="text-muted-foreground">
-              Redirecting you to set up your store...
+              {user?.role === "buyer"
+                ? "Redirecting you to your purchases..."
+                : "Redirecting you to set up your store..."}
             </p>
           </div>
 
@@ -147,7 +166,7 @@ const VerifyEmailPage = () => {
           </div>
         </motion.div>
       </AuthLayout>
-    );
+    )
   }
 
   return (
@@ -175,7 +194,9 @@ const VerifyEmailPage = () => {
               inputMode="numeric"
               maxLength={6}
               value={digit}
-              onChange={(e) => handleChange(index, e.target.value.replace(/\D/g, ''))}
+              onChange={(e) =>
+                handleChange(index, e.target.value.replace(/\D/g, ""))
+              }
               onKeyDown={(e) => handleKeyDown(index, e)}
               className="w-12 h-14 text-center text-xl font-semibold border border-border rounded-lg bg-background focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
             />
@@ -186,7 +207,7 @@ const VerifyEmailPage = () => {
         <Button
           type="submit"
           className="w-full h-12 text-base gradient-primary hover:opacity-90 transition-opacity"
-          disabled={isLoading || otp.join('').length !== 6}
+          disabled={isLoading || otp.join("").length !== 6}
         >
           {isLoading ? (
             <>
@@ -194,7 +215,7 @@ const VerifyEmailPage = () => {
               Verifying...
             </>
           ) : (
-            'Verify Email'
+            "Verify Email"
           )}
         </Button>
 
@@ -202,7 +223,10 @@ const VerifyEmailPage = () => {
         <div className="text-center text-sm">
           {resendTimer > 0 ? (
             <p className="text-muted-foreground">
-              Resend code in <span className="text-foreground font-medium">{resendTimer}s</span>
+              Resend code in{" "}
+              <span className="text-foreground font-medium">
+                {resendTimer}s
+              </span>
             </p>
           ) : (
             <button
@@ -216,7 +240,7 @@ const VerifyEmailPage = () => {
         </div>
       </form>
     </AuthLayout>
-  );
-};
+  )
+}
 
-export default VerifyEmailPage;
+export default VerifyEmailPage

@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
-  Star,
   Package,
   Shield,
   CreditCard,
@@ -13,19 +12,26 @@ import {
   CheckCircle2,
   Lock,
   Download,
-  Link2,
-  Mail,
-  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { getProductById, formatINR, generateOrderId, BuyerOrder, PLATFORM_FEE_RATE, mockCurrentUser } from '@/lib/mockData';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { checkoutAPI, ProductForCheckout } from '@/lib/api/checkout';
+
+// Helper to format currency in INR
+const formatINR = (amount: number): string => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
 const paymentMethods = [
   { id: 'upi', name: 'UPI', icon: Smartphone, description: 'GPay, PhonePe, Paytm' },
@@ -34,29 +40,14 @@ const paymentMethods = [
   { id: 'netbanking', name: 'Net Banking', icon: Building2, description: 'All Banks' },
 ];
 
-const deliveryTypeInfo = {
-  download: {
-    icon: Download,
-    title: 'Instant Download',
-    description: "You'll receive instant download access after payment",
-  },
-  external_link: {
-    icon: Link2,
-    title: 'Access Link',
-    description: "You'll be redirected to access your product after payment",
-  },
-  manual: {
-    icon: Mail,
-    title: 'Manual Delivery',
-    description: 'The seller will contact you within 24 hours to deliver your product',
-  },
-};
-
 export default function CheckoutPage() {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
-  const { user, isAuthenticated, addBuyerOrder } = useAuth();
-  const product = getProductById(productId || '');
+  const { user, isAuthenticated } = useAuth();
+
+  const [product, setProduct] = useState<ProductForCheckout | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -68,8 +59,31 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Get seller's platform fee mode (default: seller pays)
-  const platformFeeMode = mockCurrentUser.storefrontSettings?.platformFeeMode || 'seller';
+  // Load product details from API
+  useEffect(() => {
+    const loadProduct = async () => {
+      if (!productId) {
+        setHasError(true);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const response = await checkoutAPI.getProductForCheckout(productId);
+        setProduct(response.product);
+        setHasError(false);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load product';
+        console.error('Failed to load product:', error);
+        toast.error(errorMessage);
+        setHasError(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadProduct();
+  }, [productId]);
 
   // Pre-fill form for logged-in users
   useEffect(() => {
@@ -82,7 +96,17 @@ export default function CheckoutPage() {
     }
   }, [isAuthenticated, user]);
 
-  if (!product) {
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Error or product not found
+  if (hasError || !product) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="max-w-md">
@@ -99,16 +123,43 @@ export default function CheckoutPage() {
     );
   }
 
+  // Check if current user is the seller of this product
+  const isOwnProduct = isAuthenticated && user && product && user.email.toLowerCase() === product.seller.email.toLowerCase();
+
+  // If seller is trying to purchase their own product, show message
+  if (isOwnProduct) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-8 text-center">
+            <Shield className="w-16 h-16 mx-auto text-primary mb-4" />
+            <h2 className="text-xl font-semibold mb-2">This is Your Product</h2>
+            <p className="text-muted-foreground mb-6">
+              You cannot purchase your own product. You can access it from your Products page.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Button variant="outline" onClick={() => navigate(-1)}>
+                Go Back
+              </Button>
+              <Button onClick={() => navigate('/dashboard/products')}>
+                My Products
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Calculate amounts
   const gstRate = 0.18;
   const baseAmount = product.price;
-  
-  // Calculate platform fee based on seller's setting
-  const platformFee = platformFeeMode === 'buyer' ? Math.round(baseAmount * PLATFORM_FEE_RATE) : 0;
+
+  // Calculate platform fee based on seller's setting (10%)
+  const platformFee = product.platformFeeMode === 'buyer' ? Math.round(baseAmount * 0.10) : 0;
   const amountForGst = baseAmount + platformFee;
   const gstAmount = Math.round(amountForGst * gstRate);
   const totalAmount = baseAmount + platformFee + gstAmount;
-
-  const deliveryInfo = deliveryTypeInfo[product.deliveryType];
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -142,48 +193,39 @@ export default function CheckoutPage() {
 
     setIsProcessing(true);
 
-    // Simulate Razorpay payment
-    toast.loading('Initiating payment...', { id: 'payment' });
+    try {
+      // Simulate Razorpay payment
+      toast.loading('Initiating payment...', { id: 'payment' });
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
+      // Simulate payment success and generate payment ID
+      const paymentId = `pay_${Math.random().toString(36).substring(2, 15)}`;
+      toast.success('Payment successful!', { id: 'payment' });
 
-    // Simulate payment success
-    toast.success('Payment successful!', { id: 'payment' });
-
-    // Generate order ID and navigate to download page
-    const orderId = generateOrderId();
-    
-    // Save to buyer orders if logged in
-    if (isAuthenticated && product) {
-      const buyerOrder: BuyerOrder = {
-        id: orderId,
+      // Create order in backend
+      toast.loading('Creating order...', { id: 'order' });
+      const orderResponse = await checkoutAPI.createOrder({
         productId: product.id,
-        productTitle: product.title,
-        productThumbnail: product.thumbnailUrl,
-        productDescription: product.description,
-        sellerName: mockCurrentUser.name,
-        sellerStoreUrl: mockCurrentUser.storeUrl,
-        sellerEmail: product.sellerContactEmail || mockCurrentUser.contactEmail,
-        sellerPhone: product.sellerContactPhone || mockCurrentUser.contactPhone,
-        sellerWhatsapp: product.sellerContactWhatsapp,
-        amount: baseAmount,
-        gstAmount,
-        platformFee: platformFeeMode === 'buyer' ? platformFee : undefined,
-        totalAmount,
-        purchasedAt: new Date().toISOString(),
-        downloadCount: 0,
-        maxDownloads: product.deliveryType === 'download' ? 5 : 0,
-        downloadLink: product.deliveryType === 'download' ? `https://download.genzaic.com/${orderId}` : '',
-        deliveryType: product.deliveryType,
-        externalUrl: product.externalUrl,
-        deliveryStatus: product.deliveryType === 'manual' ? 'pending' : undefined,
-      };
-      addBuyerOrder(buyerOrder);
+        buyerName: formData.name,
+        buyerEmail: formData.email,
+        buyerPhone: formData.phone || undefined,
+        buyerGstin: formData.gstin || undefined,
+        paymentMethod: selectedPayment,
+        paymentId,
+        sellerId: product.seller.id,
+      });
+
+      toast.success('Order created successfully!', { id: 'order' });
+
+      // Navigate to download page
+      await new Promise(resolve => setTimeout(resolve, 500));
+      navigate(`/download/${orderResponse.order.id}?product=${productId}&email=${encodeURIComponent(formData.email)}&name=${encodeURIComponent(formData.name)}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create order';
+      console.error('Payment/Order creation failed:', error);
+      toast.error(errorMessage, { id: 'payment' });
+      setIsProcessing(false);
     }
-
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    navigate(`/download/${orderId}?product=${productId}&email=${encodeURIComponent(formData.email)}&name=${encodeURIComponent(formData.name)}`);
   };
 
   return (
@@ -245,28 +287,10 @@ export default function CheckoutPage() {
                     <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
                       {product.description}
                     </p>
-                    {product.rating && (
-                      <div className="flex items-center gap-1 mt-2">
-                        <Star className="w-4 h-4 text-warning fill-warning" />
-                        <span className="text-sm font-medium">{product.rating}</span>
-                        <span className="text-sm text-muted-foreground">
-                          ({product.reviewCount} reviews)
-                        </span>
-                      </div>
-                    )}
+                    <p className="text-xs text-muted-foreground mt-2">
+                      by <span className="font-medium">{product.seller.name}</span>
+                    </p>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {product.category && (
-                    <Badge variant="secondary" className="capitalize">
-                      {product.category}
-                    </Badge>
-                  )}
-                  <Badge variant="outline" className="capitalize">
-                    <deliveryInfo.icon className="w-3 h-3 mr-1" />
-                    {product.deliveryType === 'external_link' ? 'External Link' : product.deliveryType}
-                  </Badge>
                 </div>
 
                 <Separator />
@@ -287,14 +311,6 @@ export default function CheckoutPage() {
                     <span className="text-muted-foreground">GST (18%)</span>
                     <span className="text-foreground">{formatINR(gstAmount)}</span>
                   </div>
-                  {product.originalPrice && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Discount</span>
-                      <span className="text-success">
-                        -{formatINR(product.originalPrice - product.price)}
-                      </span>
-                    </div>
-                  )}
                   <Separator />
                   <div className="flex justify-between font-semibold text-lg">
                     <span>Total</span>
@@ -305,10 +321,12 @@ export default function CheckoutPage() {
                 {/* Delivery Info */}
                 <div className="p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-start gap-3">
-                    <deliveryInfo.icon className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                    <Download className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-medium text-foreground">{deliveryInfo.title}</p>
-                      <p className="text-sm text-muted-foreground">{deliveryInfo.description}</p>
+                      <p className="font-medium text-foreground">Instant Download</p>
+                      <p className="text-sm text-muted-foreground">
+                        You'll receive instant download access after payment
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -321,7 +339,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <CheckCircle2 className="w-4 h-4 text-success" />
-                    <span>{product.deliveryType === 'manual' ? 'Verified Seller' : 'Instant Delivery'}</span>
+                    <span>Instant Delivery</span>
                   </div>
                 </div>
               </CardContent>
@@ -368,11 +386,7 @@ export default function CheckoutPage() {
                     <p className="text-sm text-destructive">{errors.email}</p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    {product.deliveryType === 'download' 
-                      ? 'Download link will be sent to this email'
-                      : product.deliveryType === 'manual'
-                      ? 'The seller will contact you at this email'
-                      : 'Access link will be sent to this email'}
+                    Download link will be sent to this email
                   </p>
                 </div>
 
@@ -443,7 +457,7 @@ export default function CheckoutPage() {
                 >
                   {isProcessing ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2" />
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
                       Processing...
                     </>
                   ) : (

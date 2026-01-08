@@ -18,6 +18,8 @@ import PlanSelectionPage from "./pages/onboarding/PlanSelectionPage";
 import DashboardHome from "./pages/dashboard/DashboardHome";
 import ProductsPage from "./pages/dashboard/ProductsPage";
 import AddProductPage from "./pages/dashboard/AddProductPage";
+import NewProductPage from "./pages/dashboard/NewProductPage";
+import EditProductPage from "./pages/dashboard/EditProductPage";
 import StorefrontPage from "./pages/dashboard/StorefrontPage";
 import SalesPage from "./pages/dashboard/SalesPage";
 import CheckoutPage from "./pages/checkout/CheckoutPage";
@@ -134,7 +136,15 @@ const AppRoutes = () => (
       path="/dashboard/products/new"
       element={
         <ProtectedRoute>
-          <AddProductPage />
+          <NewProductPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/products/:id/edit"
+      element={
+        <ProtectedRoute>
+          <EditProductPage />
         </ProtectedRoute>
       }
     />

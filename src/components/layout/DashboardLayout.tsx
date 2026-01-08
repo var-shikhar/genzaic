@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from "react"
+import { Link, useLocation, useNavigate } from "react-router-dom"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   LayoutDashboard,
   Package,
@@ -14,41 +14,41 @@ import {
   ChevronDown,
   User,
   Shield,
-} from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
+} from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu"
 
 interface DashboardLayoutProps {
-  children: React.ReactNode;
+  children: React.ReactNode
 }
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-  { icon: Package, label: 'Products', path: '/dashboard/products' },
-  { icon: Store, label: 'Storefront', path: '/dashboard/storefront' },
-  { icon: TrendingUp, label: 'Sales', path: '/dashboard/sales' },
-  { icon: Wallet, label: 'Payouts', path: '/dashboard/payouts' },
-  { icon: Shield, label: 'KYC', path: '/dashboard/kyc' },
-  { icon: Settings, label: 'Settings', path: '/dashboard/settings' },
-];
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: Package, label: "Products", path: "/dashboard/products" },
+  { icon: Store, label: "Storefront", path: "/dashboard/storefront" },
+  { icon: TrendingUp, label: "Sales", path: "/dashboard/sales" },
+  { icon: Wallet, label: "Payouts", path: "/dashboard/payouts" },
+  { icon: Shield, label: "KYC", path: "/dashboard/kyc" },
+  { icon: Settings, label: "Settings", path: "/dashboard/settings" },
+]
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
+  const handleLogout = async () => {
+    await logout()
+    navigate("/")
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -61,8 +61,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <Menu className="w-6 h-6 text-foreground" />
         </button>
         <Link to="/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-            <span className="text-white font-bold text-sm">G</span>
+          <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center bg-primary text-primary-foreground">
+            <span className="font-bold text-sm">G</span>
           </div>
           <span className="font-bold text-lg text-foreground">GenZaic</span>
         </Link>
@@ -73,12 +73,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => navigate('/dashboard/settings')}>
+            <DropdownMenuItem onClick={() => navigate("/dashboard/settings")}>
               <Settings className="w-4 h-4 mr-2" />
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="text-destructive"
+            >
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </DropdownMenuItem>
@@ -101,15 +104,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               initial={{ x: -280 }}
               animate={{ x: 0 }}
               exit={{ x: -280 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className="lg:hidden fixed left-0 top-0 bottom-0 w-[280px] bg-card border-r border-border z-50 p-4"
             >
               <div className="flex items-center justify-between mb-8">
                 <Link to="/dashboard" className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center">
-                    <span className="text-white font-bold">G</span>
+                  <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center bg-primary text-primary-foreground">
+                    <span className="font-bold">G</span>
                   </div>
-                  <span className="font-bold text-xl text-foreground">GenZaic</span>
+                  <span className="font-bold text-xl text-foreground">
+                    GenZaic
+                  </span>
                 </Link>
                 <button
                   onClick={() => setSidebarOpen(false)}
@@ -120,7 +125,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
               <nav className="space-y-1">
                 {navItems.map((item) => {
-                  const isActive = location.pathname === item.path;
+                  const isActive = location.pathname === item.path
                   return (
                     <Link
                       key={item.path}
@@ -128,14 +133,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       onClick={() => setSidebarOpen(false)}
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                         isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
                       }`}
                     >
                       <item.icon className="w-5 h-5" />
                       <span className="font-medium">{item.label}</span>
                     </Link>
-                  );
+                  )
                 })}
               </nav>
             </motion.aside>
@@ -146,29 +151,29 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-[260px] bg-card border-r border-border flex-col p-4">
         <Link to="/dashboard" className="flex items-center gap-3 mb-8 px-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center">
-            <span className="text-white font-bold">G</span>
+          <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center bg-primary text-primary-foreground">
+            <span className="font-bold">G</span>
           </div>
           <span className="font-bold text-xl text-foreground">GenZaic</span>
         </Link>
 
         <nav className="flex-1 space-y-1">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname === item.path
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                   isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
                 <item.icon className="w-5 h-5" />
                 <span className="font-medium">{item.label}</span>
               </Link>
-            );
+            )
           })}
         </nav>
 
@@ -176,24 +181,30 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="border-t border-border pt-4 mt-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted transition-colors">
+              <button className="w-full flex items-center gap-1 px-4 py-3 rounded-xl hover:bg-muted transition-colors">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <User className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="font-medium text-foreground text-sm">{user?.name || 'Creator'}</p>
-                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                  <p className="font-medium text-foreground text-sm">
+                    {user?.name || "Creator"}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {user?.email}
+                  </p>
                 </div>
-                <ChevronDown className="w-4 h-4 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onClick={() => navigate('/dashboard/settings')}>
+              <DropdownMenuItem onClick={() => navigate("/dashboard/settings")}>
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-destructive"
+              >
                 <LogOut className="w-4 h-4 mr-2" />
                 Logout
               </DropdownMenuItem>
@@ -207,5 +218,5 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="p-4 lg:p-8">{children}</div>
       </main>
     </div>
-  );
+  )
 }

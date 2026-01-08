@@ -1,34 +1,34 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import AuthLayout from '@/components/auth/AuthLayout';
+import AuthLayout from "@/components/auth/AuthLayout"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/hooks/use-toast"
+import { ArrowLeft, CheckCircle, Loader2, Mail } from "lucide-react"
+import { useState } from "react"
+import { Link } from "react-router-dom"
 
 const ForgotPasswordPage = () => {
-  const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [email, setEmail] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitted, setIsSubmitted] = useState(false)
 
-  const { toast } = useToast();
+  const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+    e.preventDefault()
+    setIsLoading(true)
 
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1500))
 
     toast({
-      title: 'Reset link sent!',
-      description: 'Check your email for password reset instructions.',
-    });
-    
-    setIsSubmitted(true);
-    setIsLoading(false);
-  };
+      title: "Reset link sent!",
+      description: "Check your email for password reset instructions.",
+    })
+
+    setIsSubmitted(true)
+    setIsLoading(false)
+  }
 
   if (isSubmitted) {
     return (
@@ -42,7 +42,7 @@ const ForgotPasswordPage = () => {
               <CheckCircle className="w-8 h-8 text-success" />
             </div>
           </div>
-          
+
           <div className="text-center space-y-2">
             <p className="text-muted-foreground">
               We've sent a password reset link to
@@ -52,7 +52,7 @@ const ForgotPasswordPage = () => {
 
           <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
             <p>
-              Didn't receive the email? Check your spam folder or{' '}
+              Didn't receive the email? Check your spam folder or{" "}
               <button
                 onClick={() => setIsSubmitted(false)}
                 className="text-primary hover:text-primary/80 font-medium"
@@ -70,7 +70,7 @@ const ForgotPasswordPage = () => {
           </Button>
         </div>
       </AuthLayout>
-    );
+    )
   }
 
   return (
@@ -108,7 +108,7 @@ const ForgotPasswordPage = () => {
               Sending reset link...
             </>
           ) : (
-            'Send reset link'
+            "Send reset link"
           )}
         </Button>
 
@@ -121,7 +121,7 @@ const ForgotPasswordPage = () => {
         </Button>
       </form>
     </AuthLayout>
-  );
-};
+  )
+}
 
-export default ForgotPasswordPage;
+export default ForgotPasswordPage

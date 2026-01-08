@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { motion } from "framer-motion"
 import {
   Plus,
   Search,
@@ -11,36 +11,99 @@ import {
   Eye,
   Grid,
   List,
-} from 'lucide-react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+  EyeOff,
+  Loader2,
+} from "lucide-react"
+import { DashboardLayout } from "@/components/layout/DashboardLayout"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { mockProducts, Product } from '@/lib/mockData';
-import { useToast } from '@/hooks/use-toast';
+} from "@/components/ui/dropdown-menu"
+import { productsAPI, type Product } from "@/lib/api/products"
+import { toast } from "sonner"
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>(mockProducts);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const { toast } = useToast();
+  const navigate = useNavigate()
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 12,
+    total: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false,
+  })
 
-  const filteredProducts = products.filter((product) =>
-    product.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    loadProducts()
+  }, [pagination.page, searchQuery])
 
-  const handleDelete = (productId: string) => {
-    setProducts(products.filter((p) => p.id !== productId));
-    toast({
-      title: 'Product Deleted',
-      description: 'The product has been removed from your store.',
-    });
-  };
+  const loadProducts = async () => {
+    try {
+      setLoading(true)
+      const response = await productsAPI.getProducts({
+        page: pagination.page,
+        limit: pagination.limit,
+        search: searchQuery || undefined,
+        sortBy: "createdAt",
+        sortOrder: "desc",
+      })
+      setProducts(response.data)
+      setPagination(response.pagination)
+    } catch (error) {
+      toast.error("Failed to load products")
+      console.error("Error loading products:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDelete = async (productId: string, productTitle: string) => {
+    if (
+      !confirm(
+        `Are you sure you want to delete "${productTitle}"? This action cannot be undone.`
+      )
+    ) {
+      return
+    }
+
+    try {
+      await productsAPI.deleteProduct(productId)
+      toast.success("Product deleted successfully")
+      loadProducts()
+    } catch (error) {
+      toast.error("Failed to delete product")
+      console.error("Error deleting product:", error)
+    }
+  }
+
+  const handleToggleStatus = async (
+    productId: string,
+    currentStatus: boolean
+  ) => {
+    try {
+      await productsAPI.toggleProductStatus(productId)
+      toast.success(
+        `Product ${currentStatus ? "deactivated" : "activated"} successfully`
+      )
+      loadProducts()
+    } catch (error) {
+      toast.error("Failed to update product status")
+      console.error("Error toggling status:", error)
+    }
+  }
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
+    setPagination((prev) => ({ ...prev, page: 1 })) // Reset to page 1 on search
+  }
 
   return (
     <DashboardLayout>
@@ -49,10 +112,12 @@ export default function ProductsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Products</h1>
-            <p className="text-muted-foreground mt-1">Manage your digital products</p>
+            <p className="text-muted-foreground mt-1">
+              Manage your digital products
+            </p>
           </div>
           <Link to="/dashboard/products/new">
-            <Button className="gap-2 bg-gradient-primary hover:opacity-90">
+            <Button className="gap-2 hover:opacity-90">
               <Plus className="w-4 h-4" />
               Add Product
             </Button>
@@ -66,27 +131,27 @@ export default function ProductsPage() {
             <Input
               placeholder="Search products..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
               className="pl-10"
             />
           </div>
           <div className="flex items-center gap-1 bg-muted rounded-lg p-1 border border-border">
             <button
-              onClick={() => setViewMode('grid')}
+              onClick={() => setViewMode("grid")}
               className={`p-2 rounded-md transition-colors ${
-                viewMode === 'grid' 
-                  ? 'bg-primary text-primary-foreground shadow-sm' 
-                  : 'text-muted-foreground hover:text-foreground hover:bg-background'
+                viewMode === "grid"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background"
               }`}
             >
               <Grid className="w-4 h-4" />
             </button>
             <button
-              onClick={() => setViewMode('list')}
+              onClick={() => setViewMode("list")}
               className={`p-2 rounded-md transition-colors ${
-                viewMode === 'list' 
-                  ? 'bg-primary text-primary-foreground shadow-sm' 
-                  : 'text-muted-foreground hover:text-foreground hover:bg-background'
+                viewMode === "list"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background"
               }`}
             >
               <List className="w-4 h-4" />
@@ -94,8 +159,13 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        {/* Products Grid/List */}
-        {filteredProducts.length === 0 ? (
+        {/* Loading State */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : products.length === 0 ? (
+          /* Empty State */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -104,18 +174,27 @@ export default function ProductsPage() {
             <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
               <Package className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">No products yet</h3>
-            <p className="text-muted-foreground mb-6">Start by adding your first digital product</p>
-            <Link to="/dashboard/products/new">
-              <Button className="gap-2 bg-gradient-primary hover:opacity-90">
-                <Plus className="w-4 h-4" />
-                Add Your First Product
-              </Button>
-            </Link>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              {searchQuery ? "No products found" : "No products yet"}
+            </h3>
+            <p className="text-muted-foreground mb-6">
+              {searchQuery
+                ? "Try adjusting your search query"
+                : "Start by adding your first digital product"}
+            </p>
+            {!searchQuery && (
+              <Link to="/dashboard/products/new">
+                <Button className="gap-2 bg-gradient-primary hover:opacity-90">
+                  <Plus className="w-4 h-4" />
+                  Add Your First Product
+                </Button>
+              </Link>
+            )}
           </motion.div>
-        ) : viewMode === 'grid' ? (
+        ) : viewMode === "grid" ? (
+          /* Grid View */
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredProducts.map((product, index) => (
+            {products.map((product, index) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -124,9 +203,9 @@ export default function ProductsPage() {
                 className="bg-card rounded-2xl border border-border overflow-hidden hover:shadow-card transition-shadow"
               >
                 <div className="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 relative">
-                  {product.fileUrl ? (
+                  {product.thumbnailUrl ? (
                     <img
-                      src={product.fileUrl}
+                      src={product.thumbnailUrl}
                       alt={product.title}
                       className="w-full h-full object-cover"
                     />
@@ -138,35 +217,56 @@ export default function ProductsPage() {
                   <div className="absolute top-3 right-3">
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        product.status === 'published'
-                          ? 'bg-accent-green/90 text-white'
-                          : 'bg-muted text-muted-foreground'
+                        product.isActive
+                          ? "bg-accent-green/90 text-white"
+                          : "bg-muted text-muted-foreground"
                       }`}
                     >
-                      {product.status}
+                      {product.isActive ? "Active" : "Inactive"}
                     </span>
                   </div>
                 </div>
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-foreground line-clamp-1">{product.title}</h3>
+                    <h3 className="font-semibold text-foreground line-clamp-1">
+                      {product.title}
+                    </h3>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                      <button className="p-1 rounded-lg hover:bg-muted border border-transparent hover:border-border transition-colors">
+                        <button className="p-1 rounded-lg hover:bg-muted border border-transparent hover:border-border transition-colors">
                           <MoreVertical className="w-4 h-4 text-foreground" />
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="w-4 h-4 mr-2" />
-                          Preview
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            navigate(`/dashboard/products/${product.id}/edit`)
+                          }
+                        >
                           <Edit className="w-4 h-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleDelete(product.id)}
+                          onClick={() =>
+                            handleToggleStatus(product.id, product.isActive)
+                          }
+                        >
+                          {product.isActive ? (
+                            <>
+                              <EyeOff className="w-4 h-4 mr-2" />
+                              Deactivate
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="w-4 h-4 mr-2" />
+                              Activate
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            handleDelete(product.id, product.title)
+                          }
                           className="text-destructive"
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
@@ -176,22 +276,26 @@ export default function ProductsPage() {
                     </DropdownMenu>
                   </div>
                   <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                    {product.description}
+                    {product.description || "No description"}
                   </p>
                   <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold text-foreground">₹{product.price}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {product.downloads} downloads
+                    <span className="text-lg font-bold text-foreground">
+                      ₹{product.price}
                     </span>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span>{product.views} views</span>
+                      <span>{product.downloads} downloads</span>
+                    </div>
                   </div>
                 </div>
               </motion.div>
             ))}
           </div>
         ) : (
+          /* List View */
           <div className="bg-card rounded-2xl border border-border overflow-hidden">
             <div className="divide-y divide-border">
-              {filteredProducts.map((product, index) => (
+              {products.map((product, index) => (
                 <motion.div
                   key={product.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -200,9 +304,9 @@ export default function ProductsPage() {
                   className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors"
                 >
                   <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center flex-shrink-0">
-                    {product.fileUrl ? (
+                    {product.thumbnailUrl ? (
                       <img
-                        src={product.fileUrl}
+                        src={product.thumbnailUrl}
                         alt={product.title}
                         className="w-full h-full object-cover rounded-xl"
                       />
@@ -211,21 +315,29 @@ export default function ProductsPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground truncate">{product.title}</h3>
-                    <p className="text-sm text-muted-foreground truncate">{product.description}</p>
+                    <h3 className="font-semibold text-foreground truncate">
+                      {product.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {product.description || "No description"}
+                    </p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="font-bold text-foreground">₹{product.price}</p>
-                    <p className="text-xs text-muted-foreground">{product.downloads} downloads</p>
+                    <p className="font-bold text-foreground">
+                      ₹{product.price}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {product.views} views · {product.downloads} downloads
+                    </p>
                   </div>
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
-                      product.status === 'published'
-                        ? 'bg-accent-green/10 text-accent-green'
-                        : 'bg-muted text-muted-foreground'
+                      product.isActive
+                        ? "bg-accent-green/10 text-accent-green"
+                        : "bg-muted text-muted-foreground"
                     }`}
                   >
-                    {product.status}
+                    {product.isActive ? "Active" : "Inactive"}
                   </span>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -234,16 +346,33 @@ export default function ProductsPage() {
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Eye className="w-4 h-4 mr-2" />
-                        Preview
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          navigate(`/dashboard/products/${product.id}/edit`)
+                        }
+                      >
                         <Edit className="w-4 h-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => handleDelete(product.id)}
+                        onClick={() =>
+                          handleToggleStatus(product.id, product.isActive)
+                        }
+                      >
+                        {product.isActive ? (
+                          <>
+                            <EyeOff className="w-4 h-4 mr-2" />
+                            Deactivate
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-4 h-4 mr-2" />
+                            Activate
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(product.id, product.title)}
                         className="text-destructive"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
@@ -256,7 +385,68 @@ export default function ProductsPage() {
             </div>
           </div>
         )}
+
+        {/* Pagination */}
+        {!loading && products.length > 0 && pagination.totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+              {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
+              of {pagination.total} products
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setPagination((prev) => ({ ...prev, page: prev.page - 1 }))
+                }
+                disabled={!pagination.hasPrev}
+              >
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                  .filter(
+                    (page) =>
+                      page === 1 ||
+                      page === pagination.totalPages ||
+                      Math.abs(page - pagination.page) <= 1
+                  )
+                  .map((page, index, array) => (
+                    <React.Fragment key={page}>
+                      {index > 0 && array[index - 1] !== page - 1 && (
+                        <span className="px-2 text-muted-foreground">...</span>
+                      )}
+                      <Button
+                        variant={
+                          page === pagination.page ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() =>
+                          setPagination((prev) => ({ ...prev, page }))
+                        }
+                        className="w-8 h-8 p-0"
+                      >
+                        {page}
+                      </Button>
+                    </React.Fragment>
+                  ))}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
+                }
+                disabled={!pagination.hasNext}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
-  );
+  )
 }

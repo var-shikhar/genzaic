@@ -1,111 +1,109 @@
-import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Loader2, ShoppingBag, Store } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth, UserRole } from '@/contexts/AuthContext';
-import AuthLayout from '@/components/auth/AuthLayout';
-import { cn } from '@/lib/utils';
+import AuthLayout from "@/components/auth/AuthLayout"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { useAuth, UserRole } from "@/contexts/AuthContext"
+import { useToast } from "@/hooks/use-toast"
+import { Eye, EyeOff, Loader2, Lock, Mail, User, ShoppingBag, Store } from "lucide-react"
+import { useState } from "react"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import { cn } from "@/lib/utils"
 
 const SignupPage = () => {
-  const [searchParams] = useSearchParams();
-  const initialRole = (searchParams.get('role') as UserRole) || 'seller';
-  
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [agreeTerms, setAgreeTerms] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [role, setRole] = useState<UserRole>(initialRole);
+  const [searchParams] = useSearchParams()
+  const initialRole = (searchParams.get("role") as UserRole) || "seller"
 
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { signup } = useAuth();
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [agreeTerms, setAgreeTerms] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [role, setRole] = useState<UserRole>(initialRole)
+
+  const navigate = useNavigate()
+  const { toast } = useToast()
+  const { signup } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (password !== confirmPassword) {
       toast({
-        title: 'Password mismatch',
-        description: 'Passwords do not match. Please try again.',
-        variant: 'destructive',
-      });
-      return;
+        title: "Password mismatch",
+        description: "Passwords do not match. Please try again.",
+        variant: "destructive",
+      })
+      return
     }
 
     if (!agreeTerms) {
       toast({
-        title: 'Terms required',
-        description: 'Please agree to the terms and conditions.',
-        variant: 'destructive',
-      });
-      return;
+        title: "Terms required",
+        description: "Please agree to the terms and conditions.",
+        variant: "destructive",
+      })
+      return
     }
 
-    setIsLoading(true);
+    setIsLoading(true)
 
     try {
-      const success = await signup(name, email, password, role);
+      const success = await signup(name, email, password, role)
       if (success) {
         toast({
-          title: 'Account created!',
-          description: role === 'buyer' 
-            ? 'Welcome to GenZaic! Start exploring products.'
-            : 'Please verify your email to continue.',
-        });
-        // Route based on role
-        if (role === 'buyer') {
-          navigate('/my-purchases');
-        } else {
-          navigate('/verify-email', { state: { email } });
-        }
+          title: "Account created!",
+          description: "Please check your email to verify your account.",
+        })
+        // All users (buyers and sellers) need to verify their email
+        navigate("/verify-email", { state: { email } })
       } else {
         toast({
-          title: 'Signup failed',
-          description: 'Could not create account. Please try again.',
-          variant: 'destructive',
-        });
+          title: "Signup failed",
+          description: "Could not create account. Please try again.",
+          variant: "destructive",
+        })
       }
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Something went wrong. Please try again.',
-        variant: 'destructive',
-      });
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleGoogleSignup = () => {
     toast({
-      title: 'Google Sign-Up',
-      description: 'Google OAuth will be integrated in production.',
-    });
-  };
+      title: "Google Sign-Up",
+      description: "Google OAuth will be integrated in production.",
+    })
+  }
 
   return (
     <AuthLayout
       title="Create your account"
-      subtitle={role === 'buyer' ? 'Discover amazing digital products' : 'Start selling digital products in minutes'}
+      subtitle={
+        role === "buyer"
+          ? "Discover amazing digital products"
+          : "Start selling digital products in minutes"
+      }
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Role Selection */}
         <div className="grid grid-cols-2 gap-3 mb-6">
           <button
             type="button"
-            onClick={() => setRole('buyer')}
+            onClick={() => setRole("buyer")}
             className={cn(
-              'flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all',
-              role === 'buyer'
-                ? 'border-primary bg-primary/5 text-primary'
-                : 'border-border hover:border-muted-foreground/50'
+              "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
+              role === "buyer"
+                ? "border-primary bg-primary/5 text-primary"
+                : "border-border hover:border-muted-foreground/50"
             )}
           >
             <ShoppingBag className="w-6 h-6" />
@@ -113,12 +111,12 @@ const SignupPage = () => {
           </button>
           <button
             type="button"
-            onClick={() => setRole('seller')}
+            onClick={() => setRole("seller")}
             className={cn(
-              'flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all',
-              role === 'seller'
-                ? 'border-primary bg-primary/5 text-primary'
-                : 'border-border hover:border-muted-foreground/50'
+              "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
+              role === "seller"
+                ? "border-primary bg-primary/5 text-primary"
+                : "border-border hover:border-muted-foreground/50"
             )}
           >
             <Store className="w-6 h-6" />
@@ -159,7 +157,9 @@ const SignupPage = () => {
             <span className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+            <span className="bg-background px-2 text-muted-foreground">
+              Or continue with
+            </span>
           </div>
         </div>
 
@@ -204,7 +204,7 @@ const SignupPage = () => {
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               id="password"
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               placeholder="Create a strong password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -217,7 +217,11 @@ const SignupPage = () => {
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
             </button>
           </div>
         </div>
@@ -229,7 +233,7 @@ const SignupPage = () => {
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               id="confirmPassword"
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               placeholder="Confirm your password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -247,11 +251,18 @@ const SignupPage = () => {
             onCheckedChange={(checked) => setAgreeTerms(checked === true)}
             className="mt-1"
           />
-          <Label htmlFor="terms" className="text-sm font-normal cursor-pointer leading-relaxed">
-            I agree to the{' '}
-            <a href="#" className="text-primary hover:text-primary/80">Terms of Service</a>
-            {' '}and{' '}
-            <a href="#" className="text-primary hover:text-primary/80">Privacy Policy</a>
+          <Label
+            htmlFor="terms"
+            className="text-sm font-normal cursor-pointer leading-relaxed"
+          >
+            I agree to the{" "}
+            <a href="#" className="text-primary hover:text-primary/80">
+              Terms of Service
+            </a>{" "}
+            and{" "}
+            <a href="#" className="text-primary hover:text-primary/80">
+              Privacy Policy
+            </a>
           </Label>
         </div>
 
@@ -267,20 +278,23 @@ const SignupPage = () => {
               Creating account...
             </>
           ) : (
-            'Create Account'
+            "Create Account"
           )}
         </Button>
 
         {/* Login Link */}
         <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{' '}
-          <Link to="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            className="text-primary hover:text-primary/80 font-medium transition-colors"
+          >
             Sign in
           </Link>
         </p>
       </form>
     </AuthLayout>
-  );
-};
+  )
+}
 
-export default SignupPage;
+export default SignupPage
