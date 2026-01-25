@@ -42,8 +42,8 @@ const envSchema = z.object({
   COOKIE_SECURE: z
     .string()
     .transform((val) => val === "true")
-    .default("false"),
-  COOKIE_SAME_SITE: z.enum(["strict", "lax", "none"]).default("lax"),
+    .default(process.env.NODE_ENV === "production" ? "true" : "false"),
+  COOKIE_SAME_SITE: z.enum(["strict", "lax", "none"]).default(process.env.NODE_ENV === "production" ? "none" : "lax"),
 
   // Security
   BCRYPT_SALT_ROUNDS: z
