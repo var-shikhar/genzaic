@@ -39,18 +39,47 @@ export class OnboardingService {
       throw new NotFoundError("Storefront not found. Please contact support.")
     }
 
-    // Upload files to Cloudinary
+    // Create product first
+    const product = await prisma.product.create({
+      data: {
+        storefrontId: user.storefront.id,
+        title: productData.title || "",
+        description: productData.description || "",
+        price: productData.price,
+        fileUrl: "",
+        thumbnailUrl: null,
+        seoTitle: productData.seoTitle || productData.title,
+        seoKeywords: productData.seoKeywords || "",
+        isActive: true,
+        stock: null, // Digital products have unlimited stock
+      },
+    })
+
+    // Upload files to Cloudinary/Drive
     let fileUrl = ""
     let thumbnailUrl: string | null = null
+    let driveFileId: string | null = null
+    let driveFileName: string | null = null
 
     try {
       // Upload product file (required)
       if (files?.productFile) {
         const productFileResult = await UploadService.uploadProductFile(
-          files.productFile
+          files.productFile,
+          userId,
+          product.id
         )
-        fileUrl = productFileResult.secureUrl
-        logger.info(`Product file uploaded: ${productFileResult.publicId}`)
+        // Check if the result has secureUrl (old implementation) or fields for Drive
+        // Based on DriveService it returns fileId, fileName, fileSize
+        // But UploadService wrapper might return something different? 
+        // Assuming UploadService delegates to DriveService for product files as per ProductService
+        // Let's check ProductService usage: 
+        // productFileResult.publicId is used as driveFileId.
+        
+        driveFileId = productFileResult.publicId
+        driveFileName = files.productFile.originalname
+        fileUrl = driveFileId || ""
+        logger.info(`Product file uploaded: ${driveFileId}`)
       }
 
       // Upload thumbnail (optional)
@@ -61,26 +90,25 @@ export class OnboardingService {
         thumbnailUrl = thumbnailResult.secureUrl
         logger.info(`Thumbnail uploaded: ${thumbnailResult.publicId}`)
       }
+
+      // Update product with file info
+      if (driveFileId || thumbnailUrl) {
+        await prisma.product.update({
+          where: { id: product.id },
+          data: {
+            driveFileId,
+            driveFileName,
+            fileUrl,
+            thumbnailUrl,
+          },
+        })
+      }
     } catch (error) {
+      // Cleanup if upload fails
+      await prisma.product.delete({ where: { id: product.id } }).catch(() => {})
       logger.error("File upload failed:", error)
       throw new ValidationError("Failed to upload files. Please try again.")
     }
-
-    // Create product
-    const product = await prisma.product.create({
-      data: {
-        storefrontId: user.storefront.id,
-        title: productData.title || "",
-        description: productData.description || "",
-        price: productData.price,
-        fileUrl,
-        thumbnailUrl,
-        seoTitle: productData.seoTitle || productData.title,
-        seoKeywords: productData.seoKeywords || "",
-        isActive: true,
-        stock: null, // Digital products have unlimited stock
-      },
-    })
 
     return {
       product,

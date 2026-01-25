@@ -14,6 +14,14 @@ export const createProductSchema = z.object({
   seoKeywords: z.string().max(500).optional(),
   stock: z.number().int().min(0).optional().nullable(),
   isActive: z.boolean().default(true),
+  // New fields
+  originalPrice: z.number().positive().max(10000000).optional().nullable(),
+  deliveryType: z.enum(['download', 'external_link', 'manual']).default('download'),
+  externalUrl: z.string().url().optional().or(z.literal('')),
+  sellerContactEmail: z.string().email().optional().or(z.literal('')),
+  sellerContactPhone: z.string().max(20).optional().or(z.literal('')),
+  sellerContactWhatsapp: z.string().max(20).optional().or(z.literal('')),
+  subscriptionDuration: z.string().max(50).optional().or(z.literal('')),
 });
 
 /**
@@ -31,6 +39,14 @@ export const updateProductSchema = z.object({
   seoKeywords: z.string().max(500).optional(),
   stock: z.number().int().min(0).optional().nullable(),
   isActive: z.boolean().optional(),
+  // New fields
+  originalPrice: z.number().positive().max(10000000).optional().nullable(),
+  deliveryType: z.enum(['download', 'external_link', 'manual']).optional(),
+  externalUrl: z.string().url().optional().or(z.literal('')),
+  sellerContactEmail: z.string().email().optional().or(z.literal('')),
+  sellerContactPhone: z.string().max(20).optional().or(z.literal('')),
+  sellerContactWhatsapp: z.string().max(20).optional().or(z.literal('')),
+  subscriptionDuration: z.string().max(50).optional().or(z.literal('')),
 });
 
 /**
