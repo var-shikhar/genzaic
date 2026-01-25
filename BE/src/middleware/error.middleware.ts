@@ -60,6 +60,18 @@ export const errorHandler = (
       message: err.message,
       path: req.path,
     })
+  } else if ((err as any).http_code) {
+    // Cloudinary errors (have http_code property)
+    statusCode = (err as any).http_code || 400
+    message = err.message || 'File upload failed'
+
+    logger.error({
+      type: 'CloudinaryError',
+      http_code: (err as any).http_code,
+      message: err.message,
+      path: req.path,
+      method: req.method,
+    })
   } else {
     // Programming errors (unexpected)
     logger.error({

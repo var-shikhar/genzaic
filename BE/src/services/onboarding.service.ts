@@ -358,7 +358,7 @@ export class OnboardingService {
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        onboardingComplete: true,
+        onboardingComplete: false,
         planType: "creator", // Default plan
       },
       include: {

@@ -159,8 +159,18 @@ model Product {
   title         String    @db.VarChar(255)
   description   String?   @db.Text
   price         Decimal   @db.Decimal(10, 2)
-  fileUrl       String    @map("file_url")
-  thumbnailUrl  String?   @map("thumbnail_url")
+  
+  // File storage fields
+  fileUrl       String    @map("file_url")  // For Drive: stores driveFileId; For legacy: stores Cloudinary URL
+  thumbnailUrl  String?   @map("thumbnail_url")  // Cloudinary thumbnail URL
+  
+  // Google Drive specific fields
+  driveFileId     String?  @map("drive_file_id")  // Google Drive file ID
+  driveFileName   String?  @map("drive_file_name")  // Original filename in Drive
+  
+  // Cloudinary tracking (for thumbnails)
+  thumbnailPublicId  String? @map("thumbnail_public_id")  // Cloudinary public ID for thumbnail
+  
   seoTitle      String?   @map("seo_title") @db.VarChar(255)
   seoKeywords   String?   @map("seo_keywords") @db.VarChar(500)
   isActive      Boolean   @default(true) @map("is_active")
@@ -169,7 +179,7 @@ model Product {
   views         Int       @default(0)
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
-
+  
   storefront Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade)
   orders     Order[]
 

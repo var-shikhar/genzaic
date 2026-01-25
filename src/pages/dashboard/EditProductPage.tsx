@@ -265,7 +265,7 @@ export default function EditProductPage() {
                     }
                     value={files.productFile}
                     label="Upload new product file"
-                    maxSize={100}
+                    maxSize={10}
                     preview={false}
                   />
                 </div>

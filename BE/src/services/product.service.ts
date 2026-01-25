@@ -149,44 +149,15 @@ export class ProductService {
       )
     }
 
-    // Upload files to Cloudinary
-    let fileUrl = ""
-    let thumbnailUrl: string | null = null
-
-    try {
-      // Upload product file (required)
-      if (files?.productFile) {
-        const productFileResult = await UploadService.uploadProductFile(
-          files.productFile
-        )
-        fileUrl = productFileResult.secureUrl
-        logger.info(`Product file uploaded: ${productFileResult.publicId}`)
-      } else {
-        throw new ValidationError("Product file is required")
-      }
-
-      // Upload thumbnail (optional)
-      if (files?.thumbnail) {
-        const thumbnailResult = await UploadService.uploadProductThumbnail(
-          files.thumbnail
-        )
-        thumbnailUrl = thumbnailResult.secureUrl
-        logger.info(`Thumbnail uploaded: ${thumbnailResult.publicId}`)
-      }
-    } catch (error) {
-      logger.error("File upload failed:", error)
-      throw new ValidationError("Failed to upload files. Please try again.")
-    }
-
-    // Create product
+    // Create product first to get productId
     const product = await prisma.product.create({
       data: {
         storefrontId: user.storefront.id,
         title: productData.title,
         description: productData.description || "",
         price: productData.price,
-        fileUrl,
-        thumbnailUrl,
+        fileUrl: "", // Will be updated after file upload
+        thumbnailUrl: null,
         seoTitle: productData.seoTitle || productData.title,
         seoKeywords: productData.seoKeywords || "",
         isActive:
@@ -194,6 +165,54 @@ export class ProductService {
         stock: productData.stock,
       },
     })
+
+    // Upload files after product creation
+    let driveFileId: string | null = null
+    let driveFileName: string | null = null
+    let thumbnailUrl: string | null = null
+
+    try {
+      // Upload product file to Google Drive (required)
+      if (files?.productFile) {
+        const productFileResult = await UploadService.uploadProductFile(
+          files.productFile,
+          userId,
+          product.id // Now we have the productId
+        )
+        driveFileId = productFileResult.publicId // This is the Drive file ID
+        driveFileName = files.productFile.originalname
+        logger.info(`Product file uploaded to Drive: ${driveFileId}`)
+      } else {
+        // Delete the product if file upload is required but missing
+        await prisma.product.delete({ where: { id: product.id } })
+        throw new ValidationError("Product file is required")
+      }
+
+      // Upload thumbnail to Cloudinary (optional)
+      if (files?.thumbnail) {
+        const thumbnailResult = await UploadService.uploadProductThumbnail(
+          files.thumbnail
+        )
+        thumbnailUrl = thumbnailResult.secureUrl
+        logger.info(`Thumbnail uploaded: ${thumbnailResult.publicId}`)
+      }
+
+      // Update product with file information
+      await prisma.product.update({
+        where: { id: product.id },
+        data: {
+          driveFileId,
+          driveFileName,
+          thumbnailUrl,
+          fileUrl: driveFileId || "", // Use driveFileId as fileUrl for now
+        },
+      })
+    } catch (error) {
+      // Clean up: delete product if file upload fails
+      await prisma.product.delete({ where: { id: product.id } }).catch(() => {})
+      logger.error("File upload failed:", error)
+      throw new ValidationError("Failed to upload files. Please try again.")
+    }
 
     // Update user's total products count
     await prisma.user.update({
@@ -224,16 +243,20 @@ export class ProductService {
     console.log("userId", userId)
 
     // Upload new files if provided
-    let fileUrl: string | undefined
+    let driveFileId: string | undefined
+    let driveFileName: string | undefined
     let thumbnailUrl: string | undefined
 
     try {
       if (files?.productFile) {
         const productFileResult = await UploadService.uploadProductFile(
-          files.productFile
+          files.productFile,
+          userId,
+          productId
         )
-        fileUrl = productFileResult.secureUrl
-        logger.info(`Product file updated: ${productFileResult.publicId}`)
+        driveFileId = productFileResult.publicId // Drive file ID
+        driveFileName = files.productFile.originalname
+        logger.info(`Product file updated in Drive: ${driveFileId}`)
       }
 
       if (files?.thumbnail) {
@@ -267,7 +290,7 @@ export class ProductService {
           isActive: productData.isActive,
         }),
         ...(productData.stock !== undefined && { stock: productData.stock }),
-        ...(fileUrl && { fileUrl }),
+        ...(driveFileId && { driveFileId, driveFileName, fileUrl: driveFileId }),
         ...(thumbnailUrl && { thumbnailUrl }),
       },
     })

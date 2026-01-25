@@ -114,11 +114,19 @@ const envSchema = z.object({
     .optional(),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
+  FROM_EMAIL: z.string(),
+  FROM_NAME: z.string(),
 
   // Optional SendGrid settings
   SENDGRID_API_KEY: z.string().optional(),
   SENDGRID_FROM_EMAIL: z.string().email().optional(),
   SENDGRID_FROM_NAME: z.string().optional(),
+
+  // Google Drive
+  GOOGLE_DRIVE_CLIENT_EMAIL: z.string().email(),
+  GOOGLE_DRIVE_PRIVATE_KEY: z.string(),
+  GOOGLE_DRIVE_SHARED_DRIVE_ID: z.string().optional(), // For Google Workspace shared drives
+  USE_GOOGLE_DRIVE: z.string().transform((val) => val === "true").default("false"), // Feature flag
 })
 
 // Parse and validate environment variables
@@ -126,13 +134,15 @@ let env: z.infer<typeof envSchema>
 
 try {
   env = envSchema.parse(process.env)
+  // Don't log here - will be logged in server.ts after logger is initialized
 } catch (error) {
   console.error("❌ Invalid environment variables:")
   if (error instanceof z.ZodError) {
     error.errors.forEach((err) => {
-      console.error(`  - ${err.path.join(".")}: ${err.message}`)
+      console.error(`  ❌ ${err.path.join(".")}: ${err.message}`)
     })
   }
+  console.error("\n💡 Please check your .env file and ensure all required variables are set.")
   process.exit(1)
 }
 

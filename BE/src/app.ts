@@ -19,6 +19,7 @@ import payoutRoutes from './routes/payout.routes';
 import salesRoutes from './routes/sales.routes';
 import checkoutRoutes from './routes/checkout.routes';
 import buyerRoutes from './routes/buyer.routes';
+import healthRoutes from './routes/health.routes';
 import { logger } from './utils/logger';
 
 export const createApp = (): Application => {
@@ -79,14 +80,8 @@ export const createApp = (): Application => {
   // HEALTH CHECK
   // ============================================================================
 
-  app.get('/health', (_, res) => {
-    res.status(200).json({
-      success: true,
-      message: 'Server is healthy',
-      timestamp: new Date().toISOString(),
-      environment: env.NODE_ENV,
-    });
-  });
+  // Use comprehensive health check routes
+  app.use('/', healthRoutes);
 
   app.get('/', (_, res) => {
     res.status(200).json({

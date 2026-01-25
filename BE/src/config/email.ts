@@ -28,8 +28,8 @@ export interface EmailConfig {
 export const emailConfig: EmailConfig = {
   service: env.EMAIL_SERVICE,
   from: {
-    email: env.SENDGRID_FROM_EMAIL || 'noreply@genzaic.com',
-    name: env.SENDGRID_FROM_NAME || env.PLATFORM_NAME,
+    email: env.FROM_EMAIL || 'noreply@genzaic.com',
+    name: env.FROM_NAME || env.PLATFORM_NAME,
   },
   smtp:
     env.EMAIL_SERVICE === 'smtp' && env.SMTP_HOST

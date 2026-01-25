@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
@@ -11,51 +11,94 @@ import {
   Plus,
   Eye,
   Download,
+  Loader2,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { mockOrders, mockProducts } from '@/lib/mockData';
-
-const stats = [
-  {
-    title: 'Total Sales',
-    value: '₹24,500',
-    change: '+12.5%',
-    icon: TrendingUp,
-    color: 'from-accent-green to-green-600',
-    bgColor: 'bg-accent-green/10',
-  },
-  {
-    title: 'Total Orders',
-    value: '156',
-    change: '+8.2%',
-    icon: ShoppingCart,
-    color: 'from-accent-purple to-purple-600',
-    bgColor: 'bg-accent-purple/10',
-  },
-  {
-    title: 'Products',
-    value: mockProducts.length.toString(),
-    change: '',
-    icon: Package,
-    color: 'from-accent-orange to-orange-600',
-    bgColor: 'bg-accent-orange/10',
-  },
-  {
-    title: 'Pending Payout',
-    value: '₹8,250',
-    change: 'T+1',
-    icon: Wallet,
-    color: 'from-primary to-secondary',
-    bgColor: 'bg-primary/10',
-  },
-];
-
-const recentOrders = mockOrders.slice(0, 5);
+import { dashboardAPI, DashboardStats, RecentOrder } from '@/lib/api/dashboard';
+import { toast } from 'sonner';
 
 export default function DashboardHome() {
   const { user } = useAuth();
+  
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch dashboard data on mount
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const [stats, orders] = await Promise.all([
+          dashboardAPI.getDashboardStats(),
+          dashboardAPI.getRecentOrders(5),
+        ]);
+        
+        setDashboardStats(stats);
+        setRecentOrders(orders);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load dashboard data';
+        setError(errorMessage);
+        toast.error(errorMessage);
+        console.error('Dashboard data fetch error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  // Format currency
+  const formatINR = (amount: number): string => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  // Prepare stats array from fetched data
+  const stats = dashboardStats ? [
+    {
+      title: 'Total Sales',
+      value: formatINR(dashboardStats.totalSales),
+      change: dashboardStats.salesChange || '',
+      icon: TrendingUp,
+      color: 'from-accent-green to-green-600',
+      bgColor: 'bg-accent-green/10',
+    },
+    {
+      title: 'Total Orders',
+      value: dashboardStats.totalOrders.toString(),
+      change: dashboardStats.ordersChange || '',
+      icon: ShoppingCart,
+      color: 'from-accent-purple to-purple-600',
+      bgColor: 'bg-accent-purple/10',
+    },
+    {
+      title: 'Products',
+      value: dashboardStats.totalProducts.toString(),
+      change: '',
+      icon: Package,
+      color: 'from-accent-orange to-orange-600',
+      bgColor: 'bg-accent-orange/10',
+    },
+    {
+      title: 'Pending Payout',
+      value: formatINR(dashboardStats.pendingPayout),
+      change: 'T+1',
+      icon: Wallet,
+      color: 'from-primary to-secondary',
+      bgColor: 'bg-primary/10',
+    },
+  ] : [];
 
   return (
     <DashboardLayout>
@@ -101,8 +144,50 @@ export default function DashboardHome() {
           </motion.div>
         )}
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="bg-card rounded-2xl border border-border p-6 animate-pulse"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-muted" />
+                  <div className="w-16 h-6 rounded-full bg-muted" />
+                </div>
+                <div className="w-24 h-8 bg-muted rounded mb-2" />
+                <div className="w-32 h-4 bg-muted rounded" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !isLoading && (
+          <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
+                <Package className="w-5 h-5 text-destructive" />
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Failed to load dashboard data</p>
+                <p className="text-sm text-muted-foreground">{error}</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </Button>
+          </div>
+        )}
+
         {/* Stats Grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {!isLoading && !error && (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat, index) => (
             <motion.div
               key={stat.title}
@@ -127,10 +212,12 @@ export default function DashboardHome() {
               <p className="text-sm text-muted-foreground">{stat.title}</p>
             </motion.div>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Quick Actions & Recent Orders */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        {!isLoading && !error && (
+          <div className="grid gap-6 lg:grid-cols-2">
           {/* Quick Actions */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -229,7 +316,8 @@ export default function DashboardHome() {
               ))}
             </div>
           </motion.div>
-        </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

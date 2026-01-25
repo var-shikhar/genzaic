@@ -24,6 +24,7 @@ export class EmailService {
       return
     }
 
+
     try {
       if (emailConfig.service === "ethereal") {
         // Ethereal for development/testing
@@ -51,6 +52,7 @@ export class EmailService {
             user: emailConfig.smtp.auth.user,
             pass: emailConfig.smtp.auth.pass,
           },
+          requireTLS: true,
         })
 
         logger.info("📧 Email service initialized with SMTP")

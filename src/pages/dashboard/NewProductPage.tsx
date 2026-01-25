@@ -170,7 +170,7 @@ export default function NewProductPage() {
                     }
                     value={files.productFile}
                     label="Upload product file (PDF, ZIP, etc.)"
-                    maxSize={100}
+                    maxSize={10}
                     preview={false}
                   />
                 </div>

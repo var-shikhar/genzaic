@@ -110,7 +110,6 @@ export class OnboardingController {
       const userId = req.user!.userId;
 
       const result = await OnboardingService.completeOnboarding(userId);
-
       res.json({
         success: true,
         data: result.user,

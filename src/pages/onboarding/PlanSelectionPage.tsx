@@ -19,7 +19,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useToast } from '@/hooks/use-toast';
 import { onboardingAPI } from '@/lib/api/onboarding';
 import { toast as sonnerToast } from 'sonner';
 
@@ -30,7 +29,6 @@ export default function PlanSelectionPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
   const { updateUser } = useAuth();
-  const { toast } = useToast();
 
   const handleSelectCreator = () => {
     setSelectedPlan('creator');
@@ -56,22 +54,12 @@ export default function PlanSelectionPage() {
             });
 
             sonnerToast.success('Welcome to GenZaic Creator Hub!');
-            toast({
-              title: "Welcome to GenZaic!",
-              description: "Your Creator plan is now active. Start selling!",
-            });
-
             navigate('/dashboard');
           }
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to complete onboarding';
         sonnerToast.error(errorMessage);
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
       } finally {
         setIsProcessing(false);
       }
@@ -81,10 +69,7 @@ export default function PlanSelectionPage() {
   const handleNotifySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (notifyEmail) {
-      toast({
-        title: "You're on the list!",
-        description: "We'll notify you when the Startup plan launches.",
-      });
+      sonnerToast.success('You\'re on the list!');
       setNotifyDialogOpen(false);
       setNotifyEmail('');
     }
@@ -123,7 +108,7 @@ export default function PlanSelectionPage() {
         <header className="p-6">
           <div className="max-w-4xl mx-auto flex items-center justify-center">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
                 <span className="text-white font-bold">G</span>
               </div>
               <span className="font-bold text-xl text-foreground">GenZaic</span>
@@ -162,7 +147,7 @@ export default function PlanSelectionPage() {
               )}
               
               <div className="mb-6">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent-green to-green-600 flex items-center justify-center mb-4">
+                <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center mb-4">
                   <Sparkles className="w-7 h-7 text-white" />
                 </div>
                 <h2 className="text-2xl font-bold text-foreground mb-1">Creator Plan</h2>
@@ -206,7 +191,7 @@ export default function PlanSelectionPage() {
               {/* Coming Soon Badge at Top Center - Half inside, half outside */}
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20">
                 <div className="flex items-center gap-2 px-5 py-2 rounded-full bg-slate-800 text-white text-sm font-semibold shadow-lg">
-                  <Sparkles className="w-4 h-4 text-accent-purple" />
+                  <Sparkles className="w-4 h-4 text-primary" />
                   Coming Soon
                 </div>
               </div>
@@ -215,7 +200,7 @@ export default function PlanSelectionPage() {
               <div className="absolute inset-0 bg-background/30 z-10 pointer-events-none" />
               
               <div className="mb-6">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent-purple to-purple-600 flex items-center justify-center mb-4">
+                <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center mb-4">
                   <TrendingUp className="w-7 h-7 text-white" />
                 </div>
                 <h2 className="text-2xl font-bold text-foreground mb-1">Startup Plan</h2>

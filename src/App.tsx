@@ -1,39 +1,39 @@
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 // Pages
-import LandingPage from "./pages/LandingPage";
 import AboutPage from "./pages/AboutPage";
-import DisclaimerPage from "./pages/DisclaimerPage";
+import AdminPanel from "./pages/admin/AdminPanel";
+import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
-import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import VerifyEmailPage from "./pages/auth/VerifyEmailPage";
-import OnboardingPage from "./pages/onboarding/OnboardingPage";
-import PlanSelectionPage from "./pages/onboarding/PlanSelectionPage";
-import DashboardHome from "./pages/dashboard/DashboardHome";
-import ProductsPage from "./pages/dashboard/ProductsPage";
-import AddProductPage from "./pages/dashboard/AddProductPage";
-import NewProductPage from "./pages/dashboard/NewProductPage";
-import EditProductPage from "./pages/dashboard/EditProductPage";
-import StorefrontPage from "./pages/dashboard/StorefrontPage";
-import SalesPage from "./pages/dashboard/SalesPage";
+import BuyerDashboard from "./pages/buyer/BuyerDashboard";
+import BuyerSettings from "./pages/buyer/BuyerSettings";
+import PurchaseDetails from "./pages/buyer/PurchaseDetails";
 import CheckoutPage from "./pages/checkout/CheckoutPage";
 import DownloadPage from "./pages/checkout/DownloadPage";
-import PayoutsPage from "./pages/dashboard/PayoutsPage";
-import KYCPage from "./pages/dashboard/KYCPage";
-import SettingsPage from "./pages/dashboard/SettingsPage";
+import DashboardHome from "./pages/dashboard/DashboardHome";
 import DeliveryPage from "./pages/dashboard/DeliveryPage";
-import AdminPanel from "./pages/admin/AdminPanel";
-import PublicStorefront from "./pages/store/PublicStorefront";
-import BuyerDashboard from "./pages/buyer/BuyerDashboard";
-import PurchaseDetails from "./pages/buyer/PurchaseDetails";
-import BuyerSettings from "./pages/buyer/BuyerSettings";
+import EditProductPage from "./pages/dashboard/EditProductPage";
+import KYCPage from "./pages/dashboard/KYCPage";
+import NewProductPage from "./pages/dashboard/NewProductPage";
+import PayoutsPage from "./pages/dashboard/PayoutsPage";
+import ProductsPage from "./pages/dashboard/ProductsPage";
+import SalesPage from "./pages/dashboard/SalesPage";
+import SettingsPage from "./pages/dashboard/SettingsPage";
+import StorefrontPage from "./pages/dashboard/StorefrontPage";
+import DisclaimerPage from "./pages/DisclaimerPage";
+import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
+import OnboardingPage from "./pages/onboarding/OnboardingPage";
+import PlanSelectionPage from "./pages/onboarding/PlanSelectionPage";
+import ProductDetailPage from "./pages/store/ProductDetailPage";
+import PublicStorefront from "./pages/store/PublicStorefront";
 
 const queryClient = new QueryClient();
 
@@ -198,6 +198,7 @@ const AppRoutes = () => (
     />
     <Route path="/admin" element={<AdminPanel />} />
     <Route path="/store/:storeUrl" element={<PublicStorefront />} />
+    <Route path="/store/:storeUrl/product/:productId" element={<ProductDetailPage />} />
     <Route path="/checkout/:productId" element={<CheckoutPage />} />
     <Route path="/download/:orderId" element={<DownloadPage />} />
     {/* Buyer Routes */}

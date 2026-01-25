@@ -516,91 +516,98 @@ export default function PublicStorefront() {
               className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
               {filteredProducts.map((product, index) => (
-                <motion.div
+                <Link
                   key={product.id}
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.1 * index }}
-                  className="bg-card rounded-2xl border border-border overflow-hidden hover:shadow-lg transition-all group"
+                  to={`/store/${storeUrl}/product/${product.id}`}
+                  className="block"
                 >
-                  {/* Product Image */}
-                  <div className="aspect-video bg-muted relative overflow-hidden">
-                    {product.thumbnailUrl ? (
-                      <img
-                        src={product.thumbnailUrl}
-                        alt={product.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package className="w-12 h-12 text-muted-foreground" />
-                      </div>
-                    )}
-                    {product.hasDiscount && (
-                      <span className="absolute top-3 left-3 bg-destructive text-destructive-foreground text-xs font-medium px-2.5 py-1 rounded-full">
-                        Sale
-                      </span>
-                    )}
-                    {product.isFeatured && (
-                      <span className="absolute top-3 right-3 bg-warning text-warning-foreground text-xs font-medium px-2.5 py-1 rounded-full">
-                        Featured
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Product Info */}
-                  <div className="p-5">
-                    <div className="flex items-center gap-1 mb-2">
-                      <Star className="w-4 h-4 text-warning fill-warning" />
-                      <span className="text-sm font-medium">
-                        {product.rating || 0}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        ({product.reviewCount || 0} reviews)
-                      </span>
-                    </div>
-
-                    <h3 className="font-semibold text-foreground line-clamp-1 mb-1">
-                      {product.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                      {product.description}
-                    </p>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-lg font-bold text-foreground">
-                          {formatINR(product.price)}
+                  <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.1 * index }}
+                    className="bg-card rounded-2xl border border-border overflow-hidden hover:shadow-lg transition-all group cursor-pointer"
+                  >
+                    {/* Product Image */}
+                    <div className="aspect-video bg-muted relative overflow-hidden">
+                      {product.thumbnailUrl ? (
+                        <img
+                          src={product.thumbnailUrl}
+                          alt={product.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="w-12 h-12 text-muted-foreground" />
+                        </div>
+                      )}
+                      {product.hasDiscount && (
+                        <span className="absolute top-3 left-3 bg-destructive text-destructive-foreground text-xs font-medium px-2.5 py-1 rounded-full">
+                          Sale
                         </span>
-                        {product.originalPrice && (
-                          <span className="text-sm text-muted-foreground line-through ml-2">
-                            {formatINR(product.originalPrice)}
-                          </span>
-                        )}
-                      </div>
-                      {!isOwnStore && (
-                        <Button
-                          size="sm"
-                          className="gap-1"
-                          style={{
-                            backgroundColor: themeColor,
-                            color:
-                              parseInt(themeColor.replace("#", ""), 16) >
-                              0xffffff / 2
-                                ? "#1f2937"
-                                : "#ffffff",
-                          }}
-                          onClick={() =>
-                            (window.location.href = `/checkout/${product.id}`)
-                          }
-                        >
-                          <ShoppingCart className="w-4 h-4" />
-                          Buy
-                        </Button>
+                      )}
+                      {product.isFeatured && (
+                        <span className="absolute top-3 right-3 bg-warning text-warning-foreground text-xs font-medium px-2.5 py-1 rounded-full">
+                          Featured
+                        </span>
                       )}
                     </div>
-                  </div>
-                </motion.div>
+
+                    {/* Product Info */}
+                    <div className="p-5">
+                      <div className="flex items-center gap-1 mb-2">
+                        <Star className="w-4 h-4 text-warning fill-warning" />
+                        <span className="text-sm font-medium">
+                          {product.rating || 0}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          ({product.reviewCount || 0} reviews)
+                        </span>
+                      </div>
+
+                      <h3 className="font-semibold text-foreground line-clamp-1 mb-1">
+                        {product.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                        {product.description}
+                      </p>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-lg font-bold text-foreground">
+                            {formatINR(product.price)}
+                          </span>
+                          {product.originalPrice && (
+                            <span className="text-sm text-muted-foreground line-through ml-2">
+                              {formatINR(product.originalPrice)}
+                            </span>
+                          )}
+                        </div>
+                        {!isOwnStore && (
+                          <Button
+                            size="sm"
+                            className="gap-1"
+                            style={{
+                              backgroundColor: themeColor,
+                              color:
+                                parseInt(themeColor.replace("#", ""), 16) >
+                                0xffffff / 2
+                                  ? "#1f2937"
+                                  : "#ffffff",
+                            }}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              window.location.href = `/checkout/${product.id}`
+                            }}
+                          >
+                            <ShoppingCart className="w-4 h-4" />
+                            Buy
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                </Link>
               ))}
             </motion.div>
           ) : (

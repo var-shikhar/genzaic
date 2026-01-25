@@ -226,13 +226,21 @@ export default function OnboardingPage() {
 
       if (currentStep === 1) {
         // Step 1: Create product
-        const response = await onboardingAPI.createFirstProduct({
-          title: productData.title,
-          price: parseFloat(productData.price),
-          description: productData.description || undefined,
-          seoTitle: productData.seoTitle || undefined,
-          seoKeywords: productData.seoKeywords || undefined,
-        })
+        const files = {
+          productFile: productData.file || undefined,
+          thumbnail: productData.thumbnail || undefined,
+        }
+        
+        const response = await onboardingAPI.createFirstProduct(
+          {
+            title: productData.title,
+            price: parseFloat(productData.price),
+            description: productData.description || undefined,
+            seoTitle: productData.seoTitle || undefined,
+            seoKeywords: productData.seoKeywords || undefined,
+          },
+          files
+        )
 
         if (response.success) {
           toast.success("Product created successfully!")
@@ -242,14 +250,19 @@ export default function OnboardingPage() {
         // Step 2: Update storefront
         const primaryColor =
           storeData.customColor || getColorHex(storeData.selectedColor)
-        const response = await onboardingAPI.updateStorefrontSettings({
-          storeName: storeData.storeName,
-          storeDescription: storeData.storeDescription || undefined,
-          tagline: `Digital products by ${storeData.storeName}`,
-          themeId: storeData.selectedTheme as any,
-          primaryColor,
-          fontFamily: storeData.selectedFont as any,
-        })
+        const response = await onboardingAPI.updateStorefrontSettings(
+          {
+            storeName: storeData.storeName,
+            storeDescription: storeData.storeDescription || undefined,
+            tagline: `Digital products by ${storeData.storeName}`,
+            themeId: storeData.selectedTheme as any,
+            primaryColor,
+            fontFamily: storeData.selectedFont as any,
+          },
+          {
+            profileImage: storeData.logo || undefined,
+          }
+        )
 
         if (response.success) {
           toast.success("Storefront settings saved!")
@@ -359,7 +372,7 @@ export default function OnboardingPage() {
       <header className="p-6">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
               <span className="text-white font-bold">G</span>
             </div>
             <span className="font-bold text-xl text-foreground">GenZaic</span>
@@ -495,28 +508,9 @@ export default function OnboardingPage() {
                         }
                         value={productData.file}
                         label="Upload product file (PDF, ZIP, etc.)"
-                        maxSize={100}
+                        maxSize={10}
                         preview={false}
                       />
-                      {/* <div className="mt-2 border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                        <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-sm text-muted-foreground">
-                          {productData.file
-                            ? productData.file.name
-                            : "Click to upload or drag and drop"}
-                        </p>
-                        <input
-                          type="file"
-                          className="hidden"
-                          accept=".pdf,.zip"
-                          onChange={(e) =>
-                            setProductData({
-                              ...productData,
-                              file: e.target.files?.[0] || null,
-                            })
-                          }
-                        />
-                      </div> */}
                     </div>
                     <div>
                       <Label>Product Thumbnail</Label>
@@ -531,17 +525,6 @@ export default function OnboardingPage() {
                         preview={true}
                       />
                     </div>
-                    {/* <div>
-                      <Label>Cover Image</Label>
-                      <div className="mt-2 border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                        <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-sm text-muted-foreground">
-                          {productData.thumbnail
-                            ? productData.thumbnail.name
-                            : "Upload cover image"}
-                        </p>
-                      </div>
-                    </div> */}
                   </div>
                 </div>
 
@@ -640,14 +623,6 @@ export default function OnboardingPage() {
                         maxSize={10}
                         preview={true}
                       />
-                      {/* <div className="mt-2 border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                        <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-sm text-muted-foreground">
-                          {storeData.logo
-                            ? storeData.logo.name
-                            : "Upload your logo"}
-                        </p>
-                      </div> */}
                     </div>
                   </div>
 
