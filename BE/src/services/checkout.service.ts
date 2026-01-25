@@ -48,6 +48,13 @@ export class CheckoutService {
         title: product.title,
         description: product.description,
         price: Number(product.price),
+        originalPrice: product.originalPrice ? Number(product.originalPrice) : undefined,
+        deliveryType: product.deliveryType,
+        externalUrl: product.externalUrl,
+        sellerContactEmail: product.sellerContactEmail,
+        sellerContactPhone: product.sellerContactPhone,
+        sellerContactWhatsapp: product.sellerContactWhatsapp,
+        subscriptionDuration: product.subscriptionDuration,
         thumbnailUrl: product.thumbnailUrl,
         fileUrl: product.fileUrl,
         seller: {

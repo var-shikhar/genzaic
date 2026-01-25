@@ -61,7 +61,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <Menu className="w-6 h-6 text-foreground" />
         </button>
         <Link to="/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center bg-primary text-primary-foreground">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center bg-primary text-primary-foreground">
             <span className="font-bold text-sm">G</span>
           </div>
           <span className="font-bold text-lg text-foreground">GenZaic</span>
@@ -109,7 +109,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             >
               <div className="flex items-center justify-between mb-8">
                 <Link to="/dashboard" className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center bg-primary text-primary-foreground">
+                  <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center bg-primary text-primary-foreground">
                     <span className="font-bold">G</span>
                   </div>
                   <span className="font-bold text-xl text-foreground">
@@ -151,7 +151,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-[260px] bg-card border-r border-border flex-col p-4">
         <Link to="/dashboard" className="flex items-center gap-3 mb-8 px-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center bg-primary text-primary-foreground">
+          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center bg-primary text-primary-foreground">
             <span className="font-bold">G</span>
           </div>
           <span className="font-bold text-xl text-foreground">GenZaic</span>

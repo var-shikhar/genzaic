@@ -20,6 +20,7 @@ import salesRoutes from './routes/sales.routes';
 import checkoutRoutes from './routes/checkout.routes';
 import buyerRoutes from './routes/buyer.routes';
 import healthRoutes from './routes/health.routes';
+import aiRoutes from './routes/ai.routes';
 import { logger } from './utils/logger';
 
 export const createApp = (): Application => {
@@ -124,6 +125,7 @@ export const createApp = (): Application => {
   app.use('/api/sales', salesRoutes);
   app.use('/api/checkout', checkoutRoutes);
   app.use('/api/buyer', buyerRoutes);
+  app.use('/api/ai', aiRoutes);
 
   // ============================================================================
   // ERROR HANDLING

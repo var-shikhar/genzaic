@@ -161,7 +161,7 @@ model Product {
   price         Decimal   @db.Decimal(10, 2)
   
   // File storage fields
-  fileUrl       String    @map("file_url")  // For Drive: stores driveFileId; For legacy: stores Cloudinary URL
+  fileUrl       String?    @map("file_url")  // For Drive: stores driveFileId; For legacy: stores Cloudinary URL
   thumbnailUrl  String?   @map("thumbnail_url")  // Cloudinary thumbnail URL
   
   // Google Drive specific fields
@@ -170,6 +170,21 @@ model Product {
   
   // Cloudinary tracking (for thumbnails)
   thumbnailPublicId  String? @map("thumbnail_public_id")  // Cloudinary public ID for thumbnail
+  
+  // Delivery type and method
+  deliveryType      String   @default("download") @map("delivery_type")  // 'download', 'external_link', 'manual'
+  
+  // External link delivery (for deliveryType = 'external_link')
+  externalUrl       String?  @map("external_url") @db.VarChar(500)
+  
+  // Manual delivery contact info (for deliveryType = 'manual')
+  sellerContactEmail    String? @map("seller_contact_email") @db.VarChar(255)
+  sellerContactPhone    String? @map("seller_contact_phone") @db.VarChar(50)
+  sellerContactWhatsapp String? @map("seller_contact_whatsapp") @db.VarChar(50)
+  
+  // Subscription and pricing
+  subscriptionDuration  String?  @map("subscription_duration") @db.VarChar(100)  // '1 month', '3 months', '1 year', 'lifetime'
+  originalPrice         Decimal? @db.Decimal(10, 2) @map("original_price")  // For showing discounts
   
   seoTitle      String?   @map("seo_title") @db.VarChar(255)
   seoKeywords   String?   @map("seo_keywords") @db.VarChar(500)

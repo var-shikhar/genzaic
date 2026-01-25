@@ -10,6 +10,9 @@ import {
   Share2,
   Heart,
   Loader2,
+  ExternalLink,
+  Mail,
+  AlertCircle
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -103,12 +106,80 @@ export default function ProductDetailPage() {
     product &&
     user.email.toLowerCase() === product.seller.email.toLowerCase()
 
-  // Calculate discount if there's an original price
-  const hasDiscount = product.price < (product.price * 1.2) // Placeholder logic
-  const originalPrice = hasDiscount ? Math.round(product.price * 1.25) : null
-  const discountPercent = originalPrice
+  // Calculate discount
+  const originalPrice = product.originalPrice
+  const hasDiscount = originalPrice && originalPrice > product.price
+  const discountPercent = hasDiscount && originalPrice
     ? Math.round(((originalPrice - product.price) / originalPrice) * 100)
     : 0
+
+  // Render delivery specific content
+  const renderDeliveryInfo = () => {
+    switch (product.deliveryType) {
+      case "external_link":
+        return (
+          <Card className="bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0">
+                  <ExternalLink className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-1">
+                    External Access
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    After purchase, you will be redirected to access this product externally.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )
+
+      case "manual":
+        return (
+          <Card className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                  <Mail className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-1">
+                    Manual Delivery
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    This is a manually delivered product. After purchase, you will receive contact details to connect with the seller.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )
+
+      default: // download
+        return (
+          <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                  <Download className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-1">
+                    Instant Download
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Download immediately after purchase via email and dashboard.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -160,21 +231,22 @@ export default function ProductDetailPage() {
 
               {/* Badges */}
               <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-                <span className="bg-primary text-primary-foreground text-xs font-medium px-3 py-1 rounded-full">
-                  Course
-                </span>
-                <span className="bg-blue-500 text-white text-xs font-medium px-3 py-1 rounded-full flex items-center gap-1">
-                  <Download className="w-3 h-3" />
-                  Instant Download
-                </span>
+                {product.subscriptionDuration && (
+                  <span className="bg-primary text-primary-foreground text-xs font-medium px-3 py-1 rounded-full">
+                    {product.subscriptionDuration} Subscription
+                  </span>
+                )}
+                {product.deliveryType === 'download' && (
+                  <span className="bg-blue-500 text-white text-xs font-medium px-3 py-1 rounded-full flex items-center gap-1">
+                    <Download className="w-3 h-3" />
+                    Instant Download
+                  </span>
+                )}
                 {hasDiscount && (
                   <span className="bg-destructive text-destructive-foreground text-xs font-medium px-3 py-1 rounded-full">
                     Sale
                   </span>
                 )}
-                <span className="bg-warning text-warning-foreground text-xs font-medium px-3 py-1 rounded-full">
-                  Featured
-                </span>
               </div>
             </div>
           </motion.div>
@@ -190,19 +262,21 @@ export default function ProductDetailPage() {
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div>
-                    <div className="flex items-baseline gap-3">
-                      <span className="text-3xl font-bold text-foreground">
-                        {formatINR(product.price)}
-                      </span>
-                      {originalPrice && (
-                        <>
-                          <span className="text-lg text-muted-foreground line-through">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-baseline gap-3">
+                        <span className="text-3xl font-bold text-foreground">
+                          {formatINR(product.price)}
+                        </span>
+                        {hasDiscount && originalPrice && (
+                          <span className="text-lg text-muted-foreground line-through decoration-destructive/50 decoration-2">
                             {formatINR(originalPrice)}
                           </span>
-                          <span className="text-sm font-medium text-green-600">
-                            Save ₹{originalPrice - product.price} ({discountPercent}% off)
-                          </span>
-                        </>
+                        )}
+                      </div>
+                      {hasDiscount && originalPrice && (
+                         <span className="text-sm font-medium text-emerald-600 bg-emerald-50 w-fit px-2 py-0.5 rounded">
+                           Save ₹{originalPrice - product.price} ({discountPercent}% OFF)
+                         </span>
                       )}
                     </div>
                   </div>
@@ -228,11 +302,6 @@ export default function ProductDetailPage() {
                   <div className="flex items-center gap-3">
                     <div
                       className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-bold"
-                      style={{
-                        backgroundColor: product.seller.storeUrl
-                          ? "#6366f1"
-                          : "#6366f1",
-                      }}
                     >
                       {product.seller.name.charAt(0)}
                     </div>
@@ -287,30 +356,13 @@ export default function ProductDetailPage() {
             <h2 className="text-xl font-semibold text-foreground mb-4">
               Description
             </h2>
-            <p className="text-muted-foreground leading-relaxed">
-              {product.description ||
-                "Master JavaScript from basics to advanced concepts with 50+ hours of content."}
+            <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+              {product.description || "No description provided."}
             </p>
           </div>
 
-          {/* Instant Download Feature */}
-          <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
-                  <Download className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground mb-1">
-                    Instant Download
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Download immediately after purchase
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Delivery Feature Card */}
+          {renderDeliveryInfo()}
         </motion.div>
       </div>
     </div>

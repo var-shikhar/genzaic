@@ -267,7 +267,7 @@ export default function PlanSelectionPage() {
                   </div>
                   <div className="w-64 h-2 bg-muted rounded-full overflow-hidden">
                     <motion.div
-                      className="h-full bg-gradient-primary"
+                      className="h-full bg-primary"
                       initial={{ width: '0%' }}
                       animate={{ width: '100%' }}
                       transition={{ duration: 2.5, ease: 'easeInOut' }}

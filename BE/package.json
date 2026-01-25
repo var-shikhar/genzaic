@@ -25,6 +25,7 @@
   "author": "GenZaic Team",
   "license": "MIT",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^5.19.0",
     "@types/multer": "^2.0.0",
     "bcrypt": "^5.1.1",

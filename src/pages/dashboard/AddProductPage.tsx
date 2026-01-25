@@ -448,7 +448,7 @@ export default function AddProductPage() {
             </Button>
             <Button
               type="submit"
-              className="bg-gradient-primary hover:opacity-90"
+              className="bg-primary hover:opacity-90"
               disabled={isSubmitting}
             >
               {isSubmitting ? (

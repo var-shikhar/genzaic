@@ -112,7 +112,7 @@ export default function DashboardHome() {
             <p className="text-muted-foreground mt-1">Here's what's happening with your store today.</p>
           </div>
           <Link to="/dashboard/products/new">
-            <Button className="gap-2 bg-gradient-primary hover:opacity-90">
+            <Button className="gap-2 bg-primary hover:opacity-90">
               <Plus className="w-4 h-4" />
               Add Product
             </Button>

@@ -392,7 +392,7 @@ export default function OnboardingPage() {
                 <div
                   className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
                     currentStep >= step.id
-                      ? "bg-gradient-primary text-white"
+                      ? "bg-primary text-white"
                       : "bg-muted text-muted-foreground"
                   }`}
                 >

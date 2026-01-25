@@ -53,7 +53,7 @@ export default function BuyerLayout({ children }: BuyerLayoutProps) {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center bg-primary text-primary-foreground">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center bg-primary text-primary-foreground">
                 <span className="font-bold text-sm">G</span>
               </div>
               <span className="font-bold text-lg text-foreground">GenZaic</span>

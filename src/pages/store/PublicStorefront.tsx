@@ -117,7 +117,14 @@ export default function PublicStorefront() {
         setLoading(true)
         const response = await storefrontAPI.getPublicStorefront(storeUrl || "")
         setStorefront(response.storefront)
-        setAllProducts(response.storefront.products || [])
+        
+        // Enhance products with calculated fields
+        const enhancedProducts = (response.storefront.products || []).map((p: any) => ({
+          ...p,
+          hasDiscount: p.originalPrice && p.originalPrice > p.price
+        }))
+        
+        setAllProducts(enhancedProducts)
       } catch (error) {
         toast.error("Store not found")
         console.error("Error loading storefront:", error)

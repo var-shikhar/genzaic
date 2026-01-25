@@ -184,7 +184,7 @@ export default function ProductsPage() {
             </p>
             {!searchQuery && (
               <Link to="/dashboard/products/new">
-                <Button className="gap-2 bg-gradient-primary hover:opacity-90">
+                <Button className="gap-2 bg-primary hover:opacity-90">
                   <Plus className="w-4 h-4" />
                   Add Your First Product
                 </Button>
@@ -279,9 +279,18 @@ export default function ProductsPage() {
                     {product.description || "No description"}
                   </p>
                   <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold text-foreground">
-                      ₹{product.price}
-                    </span>
+                    <div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-lg font-bold text-foreground">
+                          ₹{product.price}
+                        </span>
+                        {product.originalPrice && product.originalPrice > product.price && (
+                          <span className="text-sm text-muted-foreground line-through">
+                            ₹{product.originalPrice}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span>{product.views} views</span>
                       <span>{product.downloads} downloads</span>
@@ -323,9 +332,16 @@ export default function ProductsPage() {
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="font-bold text-foreground">
-                      ₹{product.price}
-                    </p>
+                    <div className="flex flex-col items-end">
+                      <p className="font-bold text-foreground">
+                        ₹{product.price}
+                      </p>
+                      {product.originalPrice && product.originalPrice > product.price && (
+                        <p className="text-xs text-muted-foreground line-through">
+                          ₹{product.originalPrice}
+                        </p>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       {product.views} views · {product.downloads} downloads
                     </p>

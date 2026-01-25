@@ -31,6 +31,13 @@ export interface ProductForCheckout {
   title: string;
   description: string;
   price: number;
+  originalPrice?: number;
+  deliveryType: string;
+  externalUrl?: string;
+  sellerContactEmail?: string;
+  sellerContactPhone?: string;
+  sellerContactWhatsapp?: string;
+  subscriptionDuration?: string;
   thumbnailUrl?: string;
   fileUrl?: string;
   seller: {

@@ -65,6 +65,7 @@ export class ProductService {
         title: true,
         description: true,
         price: true,
+        originalPrice: true,
         thumbnailUrl: true,
         isActive: true,
         stock: true,
@@ -172,20 +173,21 @@ export class ProductService {
     let thumbnailUrl: string | null = null
 
     try {
-      // Upload product file to Google Drive (required)
-      if (files?.productFile) {
-        const productFileResult = await UploadService.uploadProductFile(
-          files.productFile,
-          userId,
-          product.id // Now we have the productId
-        )
-        driveFileId = productFileResult.publicId // This is the Drive file ID
-        driveFileName = files.productFile.originalname
-        logger.info(`Product file uploaded to Drive: ${driveFileId}`)
-      } else {
-        // Delete the product if file upload is required but missing
-        await prisma.product.delete({ where: { id: product.id } })
-        throw new ValidationError("Product file is required")
+      // Handle Product File (Required only for 'download' delivery type)
+      if (productData.deliveryType === 'download') {
+        if (files?.productFile) {
+          const productFileResult = await UploadService.uploadProductFile(
+            files.productFile,
+            userId,
+            product.id
+          )
+          driveFileId = productFileResult.publicId
+          driveFileName = files.productFile.originalname
+          logger.info(`Product file uploaded to Drive: ${driveFileId}`)
+        } else {
+          throw new ValidationError("Product file is required for digital downloads")
+          // Cleanup is handled in catch block
+        }
       }
 
       // Upload thumbnail to Cloudinary (optional)
@@ -205,13 +207,25 @@ export class ProductService {
           driveFileName,
           thumbnailUrl,
           fileUrl: driveFileId || "", // Use driveFileId as fileUrl for now
+          deliveryType: productData.deliveryType,
+          externalUrl: productData.externalUrl,
+          sellerContactEmail: productData.sellerContactEmail,
+          sellerContactPhone: productData.sellerContactPhone,
+          sellerContactWhatsapp: productData.sellerContactWhatsapp,
+          subscriptionDuration: productData.subscriptionDuration,
+          originalPrice: productData.originalPrice,
         },
       })
     } catch (error) {
       // Clean up: delete product if file upload fails
-      await prisma.product.delete({ where: { id: product.id } }).catch(() => {})
+      // We check if product exists first to avoid double deletion error
+      const productExists = await prisma.product.findUnique({ where: { id: product.id } });
+      if (productExists) {
+        await prisma.product.delete({ where: { id: product.id } }).catch(() => {})
+      }
+      
       logger.error("File upload failed:", error)
-      throw new ValidationError("Failed to upload files. Please try again.")
+      throw error // Re-throw the original error instead of wrapping it
     }
 
     // Update user's total products count
@@ -292,6 +306,14 @@ export class ProductService {
         ...(productData.stock !== undefined && { stock: productData.stock }),
         ...(driveFileId && { driveFileId, driveFileName, fileUrl: driveFileId }),
         ...(thumbnailUrl && { thumbnailUrl }),
+        // New fields
+        ...(productData.deliveryType && { deliveryType: productData.deliveryType }),
+        ...(productData.externalUrl !== undefined && { externalUrl: productData.externalUrl }),
+        ...(productData.sellerContactEmail !== undefined && { sellerContactEmail: productData.sellerContactEmail }),
+        ...(productData.sellerContactPhone !== undefined && { sellerContactPhone: productData.sellerContactPhone }),
+        ...(productData.sellerContactWhatsapp !== undefined && { sellerContactWhatsapp: productData.sellerContactWhatsapp }),
+        ...(productData.subscriptionDuration !== undefined && { subscriptionDuration: productData.subscriptionDuration }),
+        ...(productData.originalPrice !== undefined && { originalPrice: productData.originalPrice }),
       },
     })
 

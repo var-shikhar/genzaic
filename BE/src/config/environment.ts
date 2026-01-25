@@ -127,6 +127,9 @@ const envSchema = z.object({
   GOOGLE_DRIVE_PRIVATE_KEY: z.string(),
   GOOGLE_DRIVE_SHARED_DRIVE_ID: z.string().optional(), // For Google Workspace shared drives
   USE_GOOGLE_DRIVE: z.string().transform((val) => val === "true").default("false"), // Feature flag
+  
+  // Google AI (for product extraction)
+  GOOGLE_AI_API_KEY: z.string(),
 })
 
 // Parse and validate environment variables
