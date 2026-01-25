@@ -19,7 +19,7 @@ import payoutRoutes from './routes/payout.routes';
 import salesRoutes from './routes/sales.routes';
 import checkoutRoutes from './routes/checkout.routes';
 import buyerRoutes from './routes/buyer.routes';
-import healthRoutes from './routes/health.routes';
+import healthRoutes from './routes/health-check.routes';
 import aiRoutes from './routes/ai.routes';
 import { logger } from './utils/logger';
 
