@@ -18,6 +18,12 @@ async function apiFetch(endpoint: string, options: RequestInit = {}) {
 
   const data = await response.json();
 
+  // Handle 401 Unauthorized - Auto logout
+  if (response.status === 401) {
+    window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+    throw new Error(data.message || "Session expired. Please login again.");
+  }
+
   if (!response.ok) {
     throw new Error(data.message || 'An error occurred');
   }

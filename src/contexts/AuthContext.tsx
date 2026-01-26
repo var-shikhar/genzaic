@@ -79,7 +79,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    // Listen for unauthorized events (401 errors) and auto-logout
+    const handleUnauthorized = () => {
+      if (user) {
+        setUser(null)
+        setBuyerOrders([])
+        setPendingVerificationEmail(null)
+        toast({
+          title: "Session Expired",
+          description: "Please login again to continue",
+          variant: "destructive",
+        })
+      }
+    }
+
+    window.addEventListener("auth:unauthorized", handleUnauthorized)
     initializeAuth()
+
+    return () => {
+      window.removeEventListener("auth:unauthorized", handleUnauthorized)
+    }
   }, [])
 
   const login = async (email: string, password: string): Promise<boolean> => {

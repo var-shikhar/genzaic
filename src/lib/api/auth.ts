@@ -39,7 +39,7 @@ interface ResetPasswordData {
 }
 
 /**
- * Generic fetch wrapper with error handling
+ * Generic fetch wrapper with error handling and auto-logout on 401
  */
 export async function apiFetch<T>(
   endpoint: string,
@@ -56,6 +56,13 @@ export async function apiFetch<T>(
     })
 
     const data = await response.json()
+
+    // Handle 401 Unauthorized - Auto logout
+    if (response.status === 401) {
+      // Trigger logout event that AuthContext will handle
+      window.dispatchEvent(new CustomEvent("auth:unauthorized"))
+      throw new Error(data.message || "Session expired. Please login again.")
+    }
 
     if (!response.ok) {
       throw new Error(data.message || "An error occurred")
