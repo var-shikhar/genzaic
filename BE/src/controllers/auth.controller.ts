@@ -98,7 +98,7 @@ export class AuthController {
         httpOnly: true,
         secure: env.NODE_ENV === "production",
         sameSite: env.COOKIE_SAME_SITE,
-        ...(env.COOKIE_DOMAIN && { domain: env.COOKIE_DOMAIN }), // Only set domain if provided
+        // ...(env.COOKIE_DOMAIN && { domain: env.COOKIE_DOMAIN }), // Only set domain if provided
         maxAge: 15 * 60 * 1000,
         path: "/",
       })
@@ -107,7 +107,7 @@ export class AuthController {
         httpOnly: true,
         secure: env.NODE_ENV === "production",
         sameSite: env.COOKIE_SAME_SITE,
-        ...(env.COOKIE_DOMAIN && { domain: env.COOKIE_DOMAIN }), // Only set domain if provided
+        // ...(env.COOKIE_DOMAIN && { domain: env.COOKIE_DOMAIN }), // Only set domain if provided
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: "/",
       })
