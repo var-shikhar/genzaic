@@ -93,6 +93,7 @@ export class AuthController {
       )
 
       // Set httpOnly cookies
+      console.log(`Logs: Secure: ${env.NODE_ENV}, SameSite: ${env.COOKIE_SAME_SITE}, Domain: ${env.COOKIE_DOMAIN}`)
       res.cookie("accessToken", result.accessToken, {
         httpOnly: true,
         secure: env.NODE_ENV === "production",
