@@ -1,9 +1,4 @@
-/**
- * Storefront API Client
- * Frontend API client for storefront operations
- */
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8081/api"
+import { apiFetch } from "./client"
 
 // Types
 export interface Storefront {
@@ -72,25 +67,6 @@ export interface StorefrontStats {
   slug: string
 }
 
-// API Functions
-async function apiFetch(endpoint: string, options: RequestInit = {}) {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    credentials: "include",
-    headers: {
-      ...options.headers,
-    },
-  })
-
-  const data = await response.json()
-
-  if (!response.ok) {
-    throw new Error(data.message || "API request failed")
-  }
-
-  return data
-}
-
 export const storefrontAPI = {
   /**
    * Get user's storefront
@@ -105,7 +81,7 @@ export const storefrontAPI = {
     }
 
     const queryString = params.toString()
-    return apiFetch(`/storefront${queryString ? `?${queryString}` : ""}`, {
+    return apiFetch<{ storefront: Storefront; message: string }>(`/storefront${queryString ? `?${queryString}` : ""}`, {
       method: "GET",
     })
   },
@@ -114,7 +90,7 @@ export const storefrontAPI = {
    * Get public storefront by slug
    */
   getPublicStorefront: async (slug: string): Promise<{ storefront: Storefront; message: string }> => {
-    return apiFetch(`/storefront/public/${slug}`, {
+    return apiFetch<{ storefront: Storefront; message: string }>(`/storefront/public/${slug}`, {
       method: "GET",
     })
   },
@@ -150,6 +126,8 @@ export const storefrontAPI = {
       formData.append("profileImage", files.profileImage)
     }
 
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8081/api"
+
     const response = await fetch(`${API_BASE_URL}/storefront`, {
       method: "PUT",
       body: formData,
@@ -159,6 +137,9 @@ export const storefrontAPI = {
     const result = await response.json()
 
     if (!response.ok) {
+       if (response.status === 401) {
+            window.dispatchEvent(new CustomEvent("auth:unauthorized"))
+       }
       throw new Error(result.message || "Failed to update storefront")
     }
 
@@ -169,7 +150,7 @@ export const storefrontAPI = {
    * Toggle publish status
    */
   togglePublishStatus: async (): Promise<{ storefront: Storefront; message: string }> => {
-    return apiFetch("/storefront/toggle-publish", {
+    return apiFetch<{ storefront: Storefront; message: string }>("/storefront/toggle-publish", {
       method: "PATCH",
     })
   },
@@ -178,7 +159,7 @@ export const storefrontAPI = {
    * Get storefront stats
    */
   getStorefrontStats: async (): Promise<{ stats: StorefrontStats; message: string }> => {
-    return apiFetch("/storefront/stats", {
+    return apiFetch<{ stats: StorefrontStats; message: string }>("/storefront/stats", {
       method: "GET",
     })
   },
@@ -187,7 +168,7 @@ export const storefrontAPI = {
    * Check slug availability
    */
   checkSlugAvailability: async (slug: string): Promise<{ available: boolean; message: string }> => {
-    return apiFetch(`/storefront/check-slug/${slug}`, {
+    return apiFetch<{ available: boolean; message: string }>(`/storefront/check-slug/${slug}`, {
       method: "GET",
     })
   },

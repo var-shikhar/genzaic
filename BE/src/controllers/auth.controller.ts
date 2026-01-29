@@ -59,7 +59,7 @@ export class AuthController {
         secure: env.NODE_ENV === "production",
         sameSite: env.COOKIE_SAME_SITE,
         ...(env.COOKIE_DOMAIN && { domain: env.COOKIE_DOMAIN }), // Only set domain if provided
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: 12 * 60 * 60 * 1000, // 12 hours
         path: "/",
       })
 
@@ -108,7 +108,7 @@ export class AuthController {
         secure: env.NODE_ENV === "production",
         sameSite: env.COOKIE_SAME_SITE,
         // ...(env.COOKIE_DOMAIN && { domain: env.COOKIE_DOMAIN }), // Only set domain if provided
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        maxAge: 12 * 60 * 60 * 1000, // 12 hours
         path: "/",
       })
 

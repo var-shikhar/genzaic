@@ -1,10 +1,4 @@
-/**
- * Authentication API Client
- * Handles all API calls to the backend authentication endpoints
- */
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8081/api"
+import { apiFetch } from "./client"
 
 interface ApiResponse<T = any> {
   success: boolean
@@ -39,45 +33,6 @@ interface ResetPasswordData {
 }
 
 /**
- * Generic fetch wrapper with error handling and auto-logout on 401
- */
-export async function apiFetch<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<ApiResponse<T>> {
-  try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-      credentials: "include", // IMPORTANT: Send cookies with requests
-    })
-
-    const data = await response.json()
-
-    // Handle 401 Unauthorized - Auto logout
-    if (response.status === 401) {
-      // Trigger logout event that AuthContext will handle
-      window.dispatchEvent(new CustomEvent("auth:unauthorized"))
-      throw new Error(data.message || "Session expired. Please login again.")
-    }
-
-    if (!response.ok) {
-      throw new Error(data.message || "An error occurred")
-    }
-
-    return data
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message)
-    }
-    throw new Error("Network error occurred")
-  }
-}
-
-/**
  * Authentication API endpoints
  */
 export const authAPI = {
@@ -85,7 +40,7 @@ export const authAPI = {
    * Register a new user
    */
   signup: async (data: SignupData): Promise<ApiResponse> => {
-    return apiFetch("/auth/signup", {
+    return apiFetch<ApiResponse>("/auth/signup", {
       method: "POST",
       body: JSON.stringify(data),
     })
@@ -95,7 +50,7 @@ export const authAPI = {
    * Verify email with OTP
    */
   verifyEmail: async (data: VerifyEmailData): Promise<ApiResponse> => {
-    return apiFetch("/auth/verify-email", {
+    return apiFetch<ApiResponse>("/auth/verify-email", {
       method: "POST",
       body: JSON.stringify(data),
     })
@@ -105,7 +60,7 @@ export const authAPI = {
    * Login with email and password
    */
   login: async (data: LoginData): Promise<ApiResponse> => {
-    return apiFetch("/auth/login", {
+    return apiFetch<ApiResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify(data),
     })
@@ -131,6 +86,8 @@ export const authAPI = {
 
   /**
    * Refresh access token
+   * Note: This is usually called automatically by the client interceptor,
+   * but exposed here if manual refresh is needed.
    */
   refreshToken: async (): Promise<ApiResponse> => {
     return apiFetch("/auth/refresh", {

@@ -1,0 +1,16 @@
+[build]
+  command = "npm run build"
+  functions = "functions"
+  publish = "dist"
+
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "EMAIL_SERVICE,FROM_NAME,NODE_ENV,PORT,API_BASE_URL,FRONTEND_URL,LOG_LEVEL,RATE_LIMIT_WINDOW_MS,COOKIE_SAME_SITE,LOG_FILE,PLATFORM_NAME,PLATFORM_URL"
+
+[functions]
+  external_node_modules = ["express", "serverless-http"]
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200

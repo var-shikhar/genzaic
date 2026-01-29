@@ -280,6 +280,12 @@ export default function StorefrontPage() {
             </p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
+            {storefront && !storefront.isPublished && (
+              <span className="text-sm text-orange-600 bg-orange-100 border border-orange-200 px-3 py-1 rounded-full flex items-center gap-1.5 font-medium">
+                <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse" />
+                Unpublished
+              </span>
+            )}
             {hasChanges && (
               <span className="text-sm text-warning flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-warning animate-pulse" />
