@@ -23,7 +23,7 @@ import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { formatINR } from '@/lib/mockData';
 import { checkoutAPI } from '@/lib/api/checkout';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 
 export default function DownloadPage() {
   const { orderId } = useParams<{ orderId: string }>();

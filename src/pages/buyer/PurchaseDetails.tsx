@@ -24,7 +24,7 @@ import { Progress } from '@/components/ui/progress';
 import BuyerLayout from '@/components/layout/BuyerLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatINR } from '@/lib/mockData';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 
 export default function PurchaseDetails() {
   const { orderId } = useParams<{ orderId: string }>();

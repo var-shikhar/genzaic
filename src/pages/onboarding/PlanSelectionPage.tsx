@@ -20,7 +20,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { onboardingAPI } from '@/lib/api/onboarding';
-import { toast as sonnerToast } from 'sonner';
+import { toast } from "@/lib/toast";
 
 export default function PlanSelectionPage() {
   const [selectedPlan, setSelectedPlan] = useState<'creator' | null>('creator');
@@ -53,13 +53,13 @@ export default function PlanSelectionPage() {
               planType: 'creator',
             });
 
-            sonnerToast.success('Welcome to GenZaic Creator Hub!');
+            toast.success('Welcome to GenZaic Creator Hub!');
             navigate('/dashboard');
           }
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to complete onboarding';
-        sonnerToast.error(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setIsProcessing(false);
       }
@@ -69,7 +69,7 @@ export default function PlanSelectionPage() {
   const handleNotifySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (notifyEmail) {
-      sonnerToast.success('You\'re on the list!');
+      toast.success('You\'re on the list!');
       setNotifyDialogOpen(false);
       setNotifyEmail('');
     }

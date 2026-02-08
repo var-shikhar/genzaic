@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import { useAuth } from "@/contexts/AuthContext"
 import { checkoutAPI, ProductForCheckout } from "@/lib/api/checkout"
 
@@ -61,7 +61,7 @@ export default function ProductDetailPage() {
         const errorMessage =
           error instanceof Error ? error.message : "Failed to load product"
         console.error("Failed to load product:", error)
-        toast.error(errorMessage)
+        toast.error(errorMessage, "product.createError")
         setHasError(true)
       } finally {
         setIsLoading(false)

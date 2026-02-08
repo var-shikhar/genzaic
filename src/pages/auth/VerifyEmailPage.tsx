@@ -1,7 +1,7 @@
 import AuthLayout from "@/components/auth/AuthLayout"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/AuthContext"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "@/lib/toast"
 import { authAPI } from "@/lib/api/auth"
 import { motion } from "framer-motion"
 import { CheckCircle, Loader2, Mail } from "lucide-react"
@@ -17,7 +17,7 @@ const VerifyEmailPage = () => {
 
   const navigate = useNavigate()
   const location = useLocation()
-  const { toast } = useToast()
+
   const { verifyOTP, pendingVerificationEmail, user } = useAuth()
 
   const email =
@@ -87,24 +87,23 @@ const VerifyEmailPage = () => {
     const code = otp.join("")
 
     if (code.length !== 6) {
-      toast({
-        title: "Invalid code",
-        description: "Please enter the complete 6-digit code.",
-        variant: "destructive",
-      })
+      toast.error(undefined, "validation.requiredField")
       return
     }
 
     setIsLoading(true)
 
     try {
-      const success = await verifyOTP(email, code)
-      if (success) {
+      const result = await verifyOTP(email, code)
+      if (result.success) {
         setIsVerified(true)
+      } else {
+        // Show backend error message
+        toast.error(result.message, "auth.verificationError")
       }
     } catch (error) {
-      // Error toast is already shown by AuthContext
-      console.error("Verification error:", error)
+      const errorMsg = error instanceof Error ? error.message : undefined
+      toast.error(errorMsg, "auth.verificationError")
     } finally {
       setIsLoading(false)
     }
@@ -115,23 +114,12 @@ const VerifyEmailPage = () => {
       const response = await authAPI.resendOTP(email)
       if (response.success) {
         setResendTimer(60)
-        toast({
-          title: "Code resent!",
-          description: "A new verification code has been sent to your email.",
-        })
+        toast.success(undefined, "auth.verificationResent")
       } else {
-        toast({
-          title: "Failed to resend",
-          description: response.message || "Please try again later.",
-          variant: "destructive",
-        })
+        toast.error(response.message, "auth.verificationError")
       }
     } catch (error) {
-      toast({
-        title: "Failed to resend",
-        description: "Something went wrong. Please try again later.",
-        variant: "destructive",
-      })
+      toast.error(undefined, "general.error")
     }
   }
 

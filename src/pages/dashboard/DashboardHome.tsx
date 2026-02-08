@@ -17,7 +17,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { dashboardAPI, DashboardStats, RecentOrder } from '@/lib/api/dashboard';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 
 export default function DashboardHome() {
   const { user } = useAuth();

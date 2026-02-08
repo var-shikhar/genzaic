@@ -45,7 +45,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { salesAPI, Order, DownloadLog, SalesStats } from "@/lib/api/sales"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import { format } from "date-fns"
 
 // Helper to format currency in INR

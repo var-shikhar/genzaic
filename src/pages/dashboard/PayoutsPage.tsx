@@ -16,7 +16,7 @@ import {
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { payoutsAPI, type Payout, type PayoutStats } from "@/lib/api/payouts"
 import { Button } from "@/components/ui/button"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 
 export default function PayoutsPage() {
   const [isLoading, setIsLoading] = useState(true)
@@ -40,7 +40,7 @@ export default function PayoutsPage() {
         setPayouts(payoutsResponse.payouts || [])
       } catch (error: any) {
         console.error("Failed to load payout data:", error)
-        toast.error(error.message || "Failed to load payout data")
+        toast.error(error.message, "payout.requestError")
         setHasError(true)
       } finally {
         setIsLoading(false)

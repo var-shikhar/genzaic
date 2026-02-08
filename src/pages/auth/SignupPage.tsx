@@ -4,7 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth, UserRole } from "@/contexts/AuthContext"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "@/lib/toast"
 import { Eye, EyeOff, Loader2, Lock, Mail, User, ShoppingBag, Store } from "lucide-react"
 import { useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
@@ -24,64 +24,42 @@ const SignupPage = () => {
   const [role, setRole] = useState<UserRole>(initialRole)
 
   const navigate = useNavigate()
-  const { toast } = useToast()
   const { signup } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (password !== confirmPassword) {
-      toast({
-        title: "Password mismatch",
-        description: "Passwords do not match. Please try again.",
-        variant: "destructive",
-      })
+      toast.error(undefined, "validation.passwordMismatch")
       return
     }
 
     if (!agreeTerms) {
-      toast({
-        title: "Terms required",
-        description: "Please agree to the terms and conditions.",
-        variant: "destructive",
-      })
+      toast.error(undefined, "validation.requiredField")
       return
     }
 
     setIsLoading(true)
 
     try {
-      const success = await signup(name, email, password, role)
-      if (success) {
-        toast({
-          title: "Account created!",
-          description: "Please check your email to verify your account.",
-        })
+      const result = await signup(name, email, password, role)
+      if (result.success) {
+        toast.success(result.message, "auth.signupSuccess")
         // All users (buyers and sellers) need to verify their email
         navigate("/verify-email", { state: { email } })
       } else {
-        toast({
-          title: "Signup failed",
-          description: "Could not create account. Please try again.",
-          variant: "destructive",
-        })
+        toast.error(result.message, "auth.signupError")
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
-      })
+      const errorMsg = error instanceof Error ? error.message : undefined;
+      toast.error(errorMsg, "general.error")
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleGoogleSignup = () => {
-    toast({
-      title: "Google Sign-Up",
-      description: "Google OAuth will be integrated in production.",
-    })
+    toast.info(undefined, "general.info")
   }
 
   return (

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from "@/lib/toast";
 import { parseProductText, ExtractedProduct } from '@/lib/api/ai';
 
 interface EditableExtractedProduct extends ExtractedProduct {
@@ -24,7 +24,7 @@ interface AIExtractionModalProps {
 }
 
 export function AIExtractionModal({ isOpen, onClose, onUseProduct }: AIExtractionModalProps) {
-  const { toast } = useToast();
+
   const [rawText, setRawText] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedProducts, setExtractedProducts] = useState<EditableExtractedProduct[]>([]);

@@ -1,10 +1,11 @@
 /**
  * Email Service
  * Handles sending emails using Nodemailer with Handlebars templates
- * Supports Ethereal (dev), SMTP, and SendGrid
+ * Supports Ethereal (dev), SMTP, SendGrid, and Resend
  */
 
 import nodemailer, { Transporter } from "nodemailer"
+import { Resend } from "resend"
 import { promises as fs } from "fs"
 import path from "path"
 import Handlebars from "handlebars"
@@ -14,6 +15,7 @@ import { logger } from "@/utils/logger"
 
 export class EmailService {
   private static transporter: Transporter
+  private static resendClient: Resend | null = null
   private static isInitialized = false
 
   /**
@@ -68,12 +70,19 @@ export class EmailService {
         })
 
         logger.info("📧 Email service initialized with SendGrid")
+      } else if (emailConfig.service === "resend" && emailConfig.resend) {
+        // Resend for production
+        this.resendClient = new Resend(emailConfig.resend.apiKey)
+        
+        logger.info("📧 Email service initialized with Resend")
       } else {
         throw new Error("Invalid email service configuration")
       }
 
-      // Verify connection
-      await this.transporter.verify()
+      // Verify connection (skip for Resend as it doesn't have a verify method)
+      if (emailConfig.service !== "resend") {
+        await this.transporter.verify()
+      }
       this.isInitialized = true
       logger.info("✅ Email service verified and ready")
     } catch (error) {
@@ -109,6 +118,41 @@ export class EmailService {
   }
 
   /**
+   * Send email via Resend
+   */
+  private static async sendViaResend(
+    to: string,
+    subject: string,
+    html: string
+  ) {
+    if (!this.resendClient) {
+      throw new Error("Resend client not initialized")
+    }
+
+    try {
+      const { data, error } = await this.resendClient.emails.send({
+        from: `${emailConfig.from.name} <${emailConfig.from.email}>`,
+        to,
+        subject,
+        html,
+      })
+
+      if (error) {
+        logger.error(`❌ Resend API error:`, error)
+        throw new Error(`Resend API error: ${error.message}`)
+      }
+
+      logger.info(`✅ Email sent via Resend to ${to}`)
+      logger.info(`📧 Message ID: ${data?.id}`)
+
+      return { messageId: data?.id }
+    } catch (error) {
+      logger.error(`❌ Failed to send email via Resend:`, error)
+      throw error
+    }
+  }
+
+  /**
    * Send email verification OTP
    */
   static async sendVerificationEmail(email: string, name: string, otp: string) {
@@ -124,14 +168,24 @@ export class EmailService {
       expiryMinutes: env.OTP_EXPIRY_MINUTES,
     })
 
-    const mailOptions = {
-      from: `"${emailConfig.from.name}" <${emailConfig.from.email}>`,
-      to: email,
-      subject: `Verify Your Email - ${env.PLATFORM_NAME}`,
-      html,
-    }
+    const subject = `Verify Your Email - ${env.PLATFORM_NAME}`
 
     try {
+      // Use Resend if configured
+      if (emailConfig.service === "resend") {
+        const result = await this.sendViaResend(email, subject, html)
+        logger.info(`📧 OTP: ${otp}`)
+        return result
+      }
+
+      // Otherwise use Nodemailer
+      const mailOptions = {
+        from: `"${emailConfig.from.name}" <${emailConfig.from.email}>`,
+        to: email,
+        subject,
+        html,
+      }
+
       const info = await this.transporter.sendMail(mailOptions)
 
       logger.info(`✅ Verification email sent to ${email}`)
@@ -174,14 +228,22 @@ export class EmailService {
       expiryHours: env.PASSWORD_RESET_EXPIRY_HOURS,
     })
 
-    const mailOptions = {
-      from: `"${emailConfig.from.name}" <${emailConfig.from.email}>`,
-      to: email,
-      subject: `Reset Your Password - ${env.PLATFORM_NAME}`,
-      html,
-    }
+    const subject = `Reset Your Password - ${env.PLATFORM_NAME}`
 
     try {
+      // Use Resend if configured
+      if (emailConfig.service === "resend") {
+        return await this.sendViaResend(email, subject, html)
+      }
+
+      // Otherwise use Nodemailer
+      const mailOptions = {
+        from: `"${emailConfig.from.name}" <${emailConfig.from.email}>`,
+        to: email,
+        subject,
+        html,
+      }
+
       const info = await this.transporter.sendMail(mailOptions)
 
       logger.info(`✅ Password reset email sent to ${email}`)
@@ -222,14 +284,22 @@ export class EmailService {
       isSeller: role === "seller",
     })
 
-    const mailOptions = {
-      from: `"${emailConfig.from.name}" <${emailConfig.from.email}>`,
-      to: email,
-      subject: `Welcome to ${env.PLATFORM_NAME}!`,
-      html,
-    }
+    const subject = `Welcome to ${env.PLATFORM_NAME}!`
 
     try {
+      // Use Resend if configured
+      if (emailConfig.service === "resend") {
+        return await this.sendViaResend(email, subject, html)
+      }
+
+      // Otherwise use Nodemailer
+      const mailOptions = {
+        from: `"${emailConfig.from.name}" <${emailConfig.from.email}>`,
+        to: email,
+        subject,
+        html,
+      }
+
       const info = await this.transporter.sendMail(mailOptions)
 
       logger.info(`✅ Welcome email sent to ${email}`)
@@ -258,11 +328,20 @@ export class EmailService {
       await this.initialize()
     }
 
+    const subject = "Test Email from GenZaic"
+    const html = "<h1>Test Email</h1><p>If you received this, the email service is working correctly!</p>"
+
+    // Use Resend if configured
+    if (emailConfig.service === "resend") {
+      return await this.sendViaResend(to, subject, html)
+    }
+
+    // Otherwise use Nodemailer
     const mailOptions = {
       from: `"${emailConfig.from.name}" <${emailConfig.from.email}>`,
       to,
-      subject: "Test Email from GenZaic",
-      html: "<h1>Test Email</h1><p>If you received this, the email service is working correctly!</p>",
+      subject,
+      html,
     }
 
     const info = await this.transporter.sendMail(mailOptions)

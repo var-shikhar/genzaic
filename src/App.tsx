@@ -1,4 +1,3 @@
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,7 +6,6 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 // Pages
 import AboutPage from "./pages/AboutPage";
-import AdminPanel from "./pages/admin/AdminPanel";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
@@ -196,7 +194,6 @@ const AppRoutes = () => (
         </ProtectedRoute>
       }
     />
-    <Route path="/admin" element={<AdminPanel />} />
     <Route path="/store/:storeUrl" element={<PublicStorefront />} />
     <Route path="/store/:storeUrl/product/:productId" element={<ProductDetailPage />} />
     <Route path="/checkout/:productId" element={<CheckoutPage />} />
@@ -234,7 +231,6 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      <Sonner />
       <BrowserRouter>
         <AppRoutes />
       </BrowserRouter>

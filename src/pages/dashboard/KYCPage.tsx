@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/contexts/AuthContext"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "@/lib/toast"
 import {
   Tooltip,
   TooltipContent,
@@ -42,8 +42,7 @@ interface KYCFormData {
 }
 
 export default function KYCPage() {
-  const { user, updateUser } = useAuth()
-  const { toast } = useToast()
+  const { user, updateUser } = useAuth();
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [kycData, setKycData] = useState<KYCFormData>({
@@ -132,11 +131,7 @@ export default function KYCPage() {
     if (file) {
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "File Too Large",
-          description: "Please upload a file smaller than 5MB.",
-          variant: "destructive",
-        })
+        toast.error("File Too Large", "general.error")
         return
       }
       setKycData({ ...kycData, documentFile: file })
@@ -148,20 +143,12 @@ export default function KYCPage() {
 
     // Validate document
     if (kycData.documentType === "pan" && !kycData.panNumber) {
-      toast({
-        title: "PAN Number Required",
-        description: "Please enter your PAN number.",
-        variant: "destructive",
-      })
+      toast.error("PAN Number Required", "general.error")
       return
     }
 
     if (kycData.documentType === "aadhaar" && !kycData.aadhaarNumber) {
-      toast({
-        title: "Aadhaar Number Required",
-        description: "Please enter your Aadhaar number.",
-        variant: "destructive",
-      })
+      toast.error("Aadhaar Number Required", "general.error")
       return
     }
 
@@ -171,20 +158,12 @@ export default function KYCPage() {
       !kycData.bankName ||
       !kycData.accountHolderName
     ) {
-      toast({
-        title: "Bank Details Required",
-        description: "Please fill in all bank account details.",
-        variant: "destructive",
-      })
+      toast.error("Bank Details Required", "general.error")
       return
     }
 
     if (kycData.accountNumber !== kycData.confirmAccountNumber) {
-      toast({
-        title: "Account Numbers Mismatch",
-        description: "Please ensure both account numbers match.",
-        variant: "destructive",
-      })
+      toast.error("Account Numbers Mismatch", "general.error")
       return
     }
 
@@ -213,10 +192,7 @@ export default function KYCPage() {
       // Update user context
       updateUser({ kycStatus: "pending" })
 
-      toast({
-        title: "🎉 KYC Submitted Successfully!",
-        description: response.message,
-      })
+      toast.success("KYC Submitted Successfully!", "general.success")
 
       // Reload KYC data
       const updatedKyc = await kycAPI.getKyc()
@@ -224,11 +200,7 @@ export default function KYCPage() {
         setExistingKyc(updatedKyc.kyc)
       }
     } catch (error: any) {
-      toast({
-        title: "Submission Failed",
-        description: error.message || "Failed to submit KYC. Please try again.",
-        variant: "destructive",
-      })
+      toast.error("Submission Failed", "general.error")
     } finally {
       setIsSubmitting(false)
     }
@@ -260,16 +232,9 @@ export default function KYCPage() {
         bankName: "",
       })
       updateUser({ kycStatus: "not_submitted" })
-      toast({
-        title: "Upload form opened",
-        description: "You can upload your documents again now.",
-      })
+      toast.success("Upload form opened", "general.success")
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to reset KYC data.",
-        variant: "destructive",
-      })
+      toast.error("Error", "general.error")
     }
   }
 
@@ -440,11 +405,7 @@ export default function KYCPage() {
                 type="button"
                 variant="ghost"
                 onClick={() =>
-                  toast({
-                    title: "All set",
-                    description:
-                      "We'll notify you when verification is complete.",
-                  })
+                  toast.success("All set", "general.success")
                 }
               >
                 Okay, I'll wait

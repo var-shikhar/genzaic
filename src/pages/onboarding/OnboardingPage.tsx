@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/popover"
 import { onboardingAPI } from "@/lib/api/onboarding"
 import { kycAPI } from "@/lib/api/kyc"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import { FileUpload } from "@/components/ui/file-upload"
 
 const steps = [

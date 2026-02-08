@@ -24,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { productsAPI, type Product } from "@/lib/api/products"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 
 export default function ProductsPage() {
   const navigate = useNavigate()

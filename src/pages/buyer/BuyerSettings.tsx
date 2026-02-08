@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import BuyerLayout from '@/components/layout/BuyerLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+  import { toast } from "@/lib/toast";
 import { useNavigate } from 'react-router-dom';
 
 export default function BuyerSettings() {

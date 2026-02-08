@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { formatINR } from "@/lib/mockData"
 import { storefrontAPI, type Storefront } from "@/lib/api/storefront"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import { useAuth } from "@/contexts/AuthContext"
 
 type ProductCategory =
@@ -126,7 +126,7 @@ export default function PublicStorefront() {
         
         setAllProducts(enhancedProducts)
       } catch (error) {
-        toast.error("Store not found")
+        toast.error("Store not found", "general.notFound")
         console.error("Error loading storefront:", error)
       } finally {
         setLoading(false)

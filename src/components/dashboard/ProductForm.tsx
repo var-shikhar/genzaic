@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AIExtractionModal } from "@/components/dashboard/AIExtractionModal"
 import { DeliveryTypeSelector, DeliveryType } from "@/components/dashboard/DeliveryTypeSelector"
 import { ExtractedProduct } from "@/lib/api/ai"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import { Product, CreateProductData } from "@/lib/api/products"
 
 const subscriptionDurations = [

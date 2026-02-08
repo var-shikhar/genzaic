@@ -70,7 +70,7 @@ const envSchema = z.object({
     .default("true"),
 
   // Email
-  EMAIL_SERVICE: z.enum(["ethereal", "sendgrid", "smtp"]).default("ethereal"),
+  EMAIL_SERVICE: z.enum(["ethereal", "sendgrid", "smtp", "resend"]).default("ethereal"),
 
   // OTP
   OTP_LENGTH: z
@@ -121,6 +121,9 @@ const envSchema = z.object({
   SENDGRID_API_KEY: z.string().optional(),
   SENDGRID_FROM_EMAIL: z.string().email().optional(),
   SENDGRID_FROM_NAME: z.string().optional(),
+
+  // Optional Resend settings
+  RESEND_API_KEY: z.string().optional(),
 
   // Google Drive
   GOOGLE_DRIVE_CLIENT_EMAIL: z.string().email(),

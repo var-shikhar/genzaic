@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from "@/lib/toast";
 import { DeliveryType } from '@/lib/mockData';
 
 const deliveryTypeOptions = [
@@ -34,7 +34,7 @@ const deliveryTypeOptions = [
 
 export default function AddProductPage() {
   const navigate = useNavigate();
-  const { toast } = useToast();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [productData, setProductData] = useState({
     title: '',

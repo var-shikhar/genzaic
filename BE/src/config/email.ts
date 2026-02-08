@@ -6,7 +6,7 @@
 import { env } from './environment';
 
 export interface EmailConfig {
-  service: 'ethereal' | 'sendgrid' | 'smtp';
+  service: 'ethereal' | 'sendgrid' | 'smtp' | 'resend';
   from: {
     email: string;
     name: string;
@@ -21,6 +21,9 @@ export interface EmailConfig {
     };
   };
   sendgrid?: {
+    apiKey: string;
+  };
+  resend?: {
     apiKey: string;
   };
 }
@@ -47,6 +50,12 @@ export const emailConfig: EmailConfig = {
     env.EMAIL_SERVICE === 'sendgrid' && env.SENDGRID_API_KEY
       ? {
           apiKey: env.SENDGRID_API_KEY,
+        }
+      : undefined,
+  resend:
+    env.EMAIL_SERVICE === 'resend' && env.RESEND_API_KEY
+      ? {
+          apiKey: env.RESEND_API_KEY,
         }
       : undefined,
 };

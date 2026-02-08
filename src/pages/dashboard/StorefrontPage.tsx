@@ -32,7 +32,7 @@ import { FileUpload } from "@/components/ui/file-upload"
 import { useAuth } from "@/contexts/AuthContext"
 import { formatINR } from "@/lib/mockData"
 import { storefrontAPI, type Storefront } from "@/lib/api/storefront"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 
 const themes = [
   {

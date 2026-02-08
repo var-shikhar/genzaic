@@ -1,4 +1,4 @@
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "@/lib/toast"
 import { authAPI } from "@/lib/api/auth"
 import { buyerAPI, type BuyerOrder as ApiBuyerOrder } from "@/lib/api/buyer"
 import {
@@ -21,17 +21,17 @@ interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (email: string, password: string) => Promise<boolean>
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>
   signup: (
     name: string,
     email: string,
     password: string,
     role?: UserRole
-  ) => Promise<boolean>
+  ) => Promise<{ success: boolean; message?: string }>
   logout: () => Promise<void>
   updateUser: (updates: Partial<User>) => void
   updateStorefrontSettings: (settings: Partial<StorefrontSettings>) => void
-  verifyOTP: (email: string, otp: string) => Promise<boolean>
+  verifyOTP: (email: string, otp: string) => Promise<{ success: boolean; message?: string }>
   becomeSeller: () => void
   buyerOrders: BuyerOrder[]
   addBuyerOrder: (order: BuyerOrder) => void
@@ -41,7 +41,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { toast } = useToast()
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [buyerOrders, setBuyerOrders] = useState<BuyerOrder[]>([])
@@ -85,11 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null)
         setBuyerOrders([])
         setPendingVerificationEmail(null)
-        toast({
-          title: "Session Expired",
-          description: "Please login again to continue",
-          variant: "destructive",
-        })
+        toast.error("Session Expired", "auth.loginError")
       }
     }
 
@@ -101,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     try {
       setIsLoading(true)
       const response = await authAPI.login({ email, password })
@@ -110,16 +105,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(response.data.user)
         // Fetch buyer orders after successful login
         await fetchBuyerOrders()
-        return true
+        return { success: true, message: response.message }
       }
 
-      return false
+      return { success: false, message: response.message }
     } catch (error) {
       const errorMessage =
         error instanceof Error
           ? error.message
           : "Login failed. Please try again."
-      return false
+      return { success: false, message: errorMessage }
     } finally {
       setIsLoading(false)
     }
@@ -130,18 +125,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string,
     role: UserRole = "seller"
-  ): Promise<boolean> => {
+  ): Promise<{ success: boolean; message?: string }> => {
     try {
       setIsLoading(true)
       const response = await authAPI.signup({ name, email, password, role })
 
       if (response.success) {
         setPendingVerificationEmail(email)
-        return true
+        return { success: true, message: response.message }
       }
-      return false
-    } catch (_) {
-      return false
+      return { success: false, message: response.message }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : undefined
+      return { success: false, message: errorMessage }
     } finally {
       setIsLoading(false)
     }
@@ -183,10 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null)
       setBuyerOrders([]) // Clear buyer orders on logout
       setPendingVerificationEmail(null)
-      toast({
-        title: "Logout",
-        description: "Logged out successfully",
-      })
+      toast.success(undefined, "auth.logoutSuccess")
     } catch (error) {
       // Clear local state even if API call fails
       setUser(null)
@@ -216,7 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const verifyOTP = async (email: string, otp: string): Promise<boolean> => {
+  const verifyOTP = async (email: string, otp: string): Promise<{ success: boolean; message?: string }> => {
     try {
       setIsLoading(true)
       const response = await authAPI.verifyEmail({ email, otp })
@@ -224,12 +217,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.success && response.data) {
         setUser(response.data.user)
         setPendingVerificationEmail(null)
-        return true
+        return { success: true, message: response.message }
       }
 
-      return false
-    } catch (_) {
-      return false
+      return { success: false, message: response.message }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : undefined
+      return { success: false, message: errorMessage }
     } finally {
       setIsLoading(false)
     }

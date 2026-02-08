@@ -19,7 +19,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { formatINR, PLATFORM_FEE_RATE } from "@/lib/mockData"
 import { userAPI, type User as UserType } from "@/lib/api/user"
 import { storefrontAPI } from "@/lib/api/storefront"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 
 export default function SettingsPage() {
   const { user: authUser, setUser } = useAuth()

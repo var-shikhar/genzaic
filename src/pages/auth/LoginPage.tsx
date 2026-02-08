@@ -4,7 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from "@/lib/toast";
 import { Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -17,7 +17,6 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,36 +24,23 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      const success = await login(email, password);
-      if (success) {
-        toast({
-          title: 'Welcome back!',
-          description: 'Successfully logged in to your account.',
-        });
+      const result = await login(email, password);
+      if (result.success) {
+        toast.success(result.message, 'auth.loginSuccess');
         navigate('/dashboard');
       } else {
-        toast({
-          title: 'Login failed',
-          description: 'Invalid email or password. Please try again.',
-          variant: 'destructive',
-        });
+        toast.error(result.message, 'auth.loginError');
       }
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Something went wrong. Please try again.',
-        variant: 'destructive',
-      });
+      const errorMsg = error instanceof Error ? error.message : undefined;
+      toast.error(errorMsg, 'general.error');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleGoogleLogin = () => {
-    toast({
-      title: 'Google Sign-In',
-      description: 'Google OAuth will be integrated in production.',
-    });
+    toast.info(undefined, 'general.info');
   };
 
   return (

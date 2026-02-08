@@ -2,7 +2,7 @@ import AuthLayout from "@/components/auth/AuthLayout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "@/lib/toast"
 import { ArrowLeft, CheckCircle, Loader2, Mail } from "lucide-react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
@@ -12,7 +12,7 @@ const ForgotPasswordPage = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
 
-  const { toast } = useToast()
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -21,10 +21,7 @@ const ForgotPasswordPage = () => {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1500))
 
-    toast({
-      title: "Reset link sent!",
-      description: "Check your email for password reset instructions.",
-    })
+    toast.success(undefined, "auth.passwordResetSent")
 
     setIsSubmitted(true)
     setIsLoading(false)
