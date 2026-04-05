@@ -218,7 +218,7 @@ export default async function ProductDetailPage({
                     </div>
                   </div>
                   <Button asChild variant="outline" size="sm">
-                    <Link href={`/store/${seller?.storeUrl ?? params.storeUrl}`}>
+                    <Link href={`/store/${seller?.storeUrl ?? storeUrl}`}>
                       View Store
                     </Link>
                   </Button>

@@ -1,7 +1,6 @@
 import { z } from "zod"
 
-export const productSchema = z
-  .object({
+const productBaseSchema = z.object({
     title: z.string().min(3, "Title must be at least 3 characters").max(500),
     description: z.string().max(5000).optional(),
     price: z.coerce.number().min(0, "Price must be positive"),
@@ -22,6 +21,8 @@ export const productSchema = z
     isActive: z.boolean().default(true),
     tagIds: z.array(z.string().uuid("Invalid tag ID")).optional().default([]),
   })
+
+export const productSchema = productBaseSchema
   .superRefine((data, ctx) => {
     if (data.deliveryType === "external_link" && !data.externalUrl) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "External URL is required", path: ["externalUrl"] })
@@ -38,7 +39,7 @@ export const productSchema = z
     }
   })
 
-export const updateProductSchema = productSchema.partial().extend({
+export const updateProductSchema = productBaseSchema.partial().extend({
   title: z.string().min(3).max(500).optional(),
   price: z.coerce.number().min(0).optional(),
   deliveryType: z.enum(["download", "external_link", "manual"]).optional(),

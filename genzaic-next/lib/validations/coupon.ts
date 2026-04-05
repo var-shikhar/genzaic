@@ -1,7 +1,6 @@
 import { z } from "zod"
 
-export const createCouponSchema = z
-  .object({
+const couponBaseSchema = z.object({
     code: z
       .string()
       .min(3, "Code must be at least 3 characters")
@@ -27,6 +26,8 @@ export const createCouponSchema = z
     validTo: z.coerce.date({ required_error: "End date is required" }),
     isActive: z.boolean().default(true),
   })
+
+export const createCouponSchema = couponBaseSchema
   .superRefine((data, ctx) => {
     // Percentage must be between 0 and 100
     if (data.type === "percentage" && data.value > 100) {
@@ -61,7 +62,7 @@ export const applyCouponSchema = z.object({
   orderSubtotal: z.coerce.number().positive("Order subtotal must be positive"),
 })
 
-export const updateCouponSchema = createCouponSchema
+export const updateCouponSchema = couponBaseSchema
   .partial()
   .omit({ code: true, scope: true })
 

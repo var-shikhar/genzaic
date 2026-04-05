@@ -21,7 +21,7 @@ export default function DownloadPage() {
   const handleDownload = async () => {
     if (!order?.downloadLink) return
     try {
-      await recordDownload(params.orderId).unwrap()
+      await recordDownload(orderId).unwrap()
       window.open(order.downloadLink, "_blank")
       setDownloaded(true)
     } catch {

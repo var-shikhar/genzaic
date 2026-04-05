@@ -7,7 +7,7 @@ import Image from "next/image"
 import { motion } from "framer-motion"
 import {
   Users, Package, ShoppingCart, Search, Filter,
-  ArrowUpDown, Instagram, Twitter, Youtube, Globe, Loader2,
+  ArrowUpDown, Instagram, Twitter, Youtube, Globe, Loader2, Star,
 } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useGetPublicStorefrontQuery } from "@/store/api/storefrontApi"
@@ -89,7 +89,7 @@ export default function PublicStorefrontPage() {
       const q = search.toLowerCase()
       list = list.filter((p) => p.title.toLowerCase().includes(q) || (p.description ?? "").toLowerCase().includes(q))
     }
-    if (category !== "all") list = list.filter((p) => p.category === category)
+    if (category !== "all") list = list.filter((p) => p.categoryId === category)
     if (priceRange !== "all") {
       if (priceRange === "2500+") {
         list = list.filter((p) => Number(p.price) >= 2500)
@@ -104,7 +104,7 @@ export default function PublicStorefrontPage() {
       case "price-low": list.sort((a, b) => Number(a.price) - Number(b.price)); break
       case "price-high": list.sort((a, b) => Number(b.price) - Number(a.price)); break
       case "newest": list.sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()); break
-      case "rating": list.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)); break
+      case "rating": list.sort((a, b) => Number(b.avgRating ?? 0) - Number(a.avgRating ?? 0)); break
       default: list.sort((a, b) => (b.downloads ?? 0) - (a.downloads ?? 0))
     }
     return list
@@ -201,13 +201,13 @@ export default function PublicStorefrontPage() {
                 {(storefront.seller?.totalSales ?? 0) > 0 && (
                   <div className="flex items-center gap-1">
                     <ShoppingCart className="w-4 h-4" />
-                    <span>{storefront.seller.totalSales} sales</span>
+                    <span>{storefront.seller?.totalSales} sales</span>
                   </div>
                 )}
                 {(storefront.seller?.followersCount ?? 0) > 0 && (
                   <div className="flex items-center gap-1">
                     <Users className="w-4 h-4" />
-                    <span>{storefront.seller.followersCount} followers</span>
+                    <span>{storefront.seller?.followersCount} followers</span>
                   </div>
                 )}
                 <div className="flex items-center gap-1">
@@ -336,9 +336,9 @@ export default function PublicStorefrontPage() {
                   >
                     {/* Thumbnail */}
                     <div className="aspect-video bg-muted relative overflow-hidden">
-                      {product.thumbnailUrl ? (
+                      {product.coverImageUrl ? (
                         <Image
-                          src={product.thumbnailUrl}
+                          src={product.coverImageUrl}
                           alt={product.title}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -353,9 +353,9 @@ export default function PublicStorefrontPage() {
                           Sale
                         </span>
                       )}
-                      {product.isFeatured && (
+                      {Number(product.avgRating) >= 4.5 && (
                         <span className="absolute top-3 right-3 bg-yellow-500 text-white text-xs font-medium px-2.5 py-1 rounded-full">
-                          Featured
+                          Top Rated
                         </span>
                       )}
                     </div>
@@ -364,8 +364,8 @@ export default function PublicStorefrontPage() {
                     <div className="p-5">
                       <div className="flex items-center gap-1 mb-2">
                         <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                        <span className="text-sm font-medium">{product.rating ?? 0}</span>
-                        <span className="text-sm text-muted-foreground">({product.reviewCount ?? 0} reviews)</span>
+                        <span className="text-sm font-medium">{product.avgRating ?? 0}</span>
+                        <span className="text-sm text-muted-foreground">({product.totalReviews ?? 0} reviews)</span>
                       </div>
                       <h3 className="font-semibold line-clamp-1 mb-1">{product.title}</h3>
                       <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{product.description}</p>

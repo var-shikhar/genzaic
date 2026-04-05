@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
+import type { Product } from "@/lib/db/schema"
 
 export interface Storefront {
   id: string
@@ -38,7 +39,7 @@ export const storefrontApi = createApi({
       query: () => "/storefront",
       providesTags: ["Storefront"],
     }),
-    getPublicStorefront: builder.query<Storefront & { products: any[] }, string>({
+    getPublicStorefront: builder.query<Storefront & { products: Product[]; seller?: { id: string; name: string; avatarUrl?: string | null; followersCount: number; totalSales: number } }, string>({
       query: (slug) => `/storefront/public/${slug}`,
     }),
     updateStorefront: builder.mutation<Storefront, FormData>({
@@ -47,7 +48,7 @@ export const storefrontApi = createApi({
         try {
           const { data } = await queryFulfilled
           dispatch(storefrontApi.util.updateQueryData("getStorefront", undefined, () => data))
-        } catch {}
+        } catch { /* optimistic update failed, invalidation will refetch */ }
       },
       invalidatesTags: ["Storefront"],
     }),
@@ -61,7 +62,7 @@ export const storefrontApi = createApi({
               draft.isPublished = data.isPublished
             })
           )
-        } catch {}
+        } catch { /* optimistic update failed, invalidation will refetch */ }
       },
       invalidatesTags: ["Storefront"],
     }),
