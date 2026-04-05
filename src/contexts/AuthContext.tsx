@@ -78,6 +78,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    initializeAuth()
+  }, [])
+
+  useEffect(() => {
     // Listen for unauthorized events (401 errors) and auto-logout
     const handleUnauthorized = () => {
       if (user) {
@@ -89,12 +93,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     window.addEventListener("auth:unauthorized", handleUnauthorized)
-    initializeAuth()
 
     return () => {
       window.removeEventListener("auth:unauthorized", handleUnauthorized)
     }
-  }, [])
+  }, [user]) // Depends on user, so it re-runs if user changes
 
   const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     try {

@@ -6,6 +6,7 @@
 import { Request, Response, NextFunction } from "express"
 import { AuthService } from "@/services/auth.service"
 import { env } from "@/config/environment"
+import { UnauthorizedError } from "@/utils/errors"
 
 export class AuthController {
   /**
@@ -215,7 +216,7 @@ export class AuthController {
       const refreshToken = req.cookies.refreshToken
 
       if (!refreshToken) {
-        throw new Error("Refresh token not found")
+        throw new UnauthorizedError("Refresh token not found")
       }
 
       const result = await AuthService.refreshAccessToken(refreshToken)
