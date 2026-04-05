@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { db, orders, downloadLogs, products } from "@/lib/db"
+import { db, orders, orderItems, downloadLogs, products } from "@/lib/db"
 import { eq } from "drizzle-orm"
 import { z } from "zod"
 
@@ -24,11 +24,20 @@ export async function POST(req: NextRequest) {
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1)
     if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 })
 
-    if (order.deliveryType !== "download") {
+    // Get the first order item (for single-product orders)
+    const items = await db
+      .select()
+      .from(orderItems)
+      .where(eq(orderItems.orderId, orderId))
+
+    const item = items[0]
+    if (!item) return NextResponse.json({ error: "Order item not found" }, { status: 404 })
+
+    if (item.deliveryType !== "download") {
       return NextResponse.json({ error: "This order is not a downloadable product" }, { status: 400 })
     }
 
-    if (order.downloadCount >= order.maxDownloads) {
+    if (item.downloadCount >= item.maxDownloads) {
       return NextResponse.json({ error: "Download limit exceeded" }, { status: 403 })
     }
 
@@ -39,36 +48,36 @@ export async function POST(req: NextRequest) {
 
     // Record the download log entry
     await db.insert(downloadLogs).values({
-      orderId,
-      productTitle: order.productTitle,
+      orderItemId: item.id,
+      productTitle: item.productTitle,
       buyerName: order.buyerName,
       buyerEmail: order.buyerEmail,
       ipAddress,
       userAgent,
     })
 
-    // Increment download count on order and mark as delivered
+    // Increment download count on order item and mark as delivered
     await db
-      .update(orders)
+      .update(orderItems)
       .set({
-        downloadCount: order.downloadCount + 1,
+        downloadCount: item.downloadCount + 1,
         deliveryStatus: "delivered",
         updatedAt: new Date(),
       })
-      .where(eq(orders.id, orderId))
+      .where(eq(orderItems.id, item.id))
 
     // Increment global product downloads counter
     const [prod] = await db
       .select({ downloads: products.downloads })
       .from(products)
-      .where(eq(products.id, order.productId))
+      .where(eq(products.id, item.productId))
       .limit(1)
 
     if (prod) {
       await db
         .update(products)
         .set({ downloads: prod.downloads + 1 })
-        .where(eq(products.id, order.productId))
+        .where(eq(products.id, item.productId))
     }
 
     return NextResponse.json({ message: "Download recorded" })

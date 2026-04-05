@@ -64,7 +64,7 @@ export function ProductForm({ product, mode }: ProductFormProps) {
       sellerContactEmail: product?.sellerContactEmail ?? "",
       sellerContactPhone: product?.sellerContactPhone ?? "",
       sellerContactWhatsapp: product?.sellerContactWhatsapp ?? "",
-      subscriptionDuration: (product?.subscriptionDuration as any) ?? undefined,
+      subscriptionDuration: (product?.subscriptionDuration as ProductInput["subscriptionDuration"]) ?? undefined,
       seoTitle: product?.seoTitle ?? "",
       seoKeywords: product?.seoKeywords ?? "",
       isActive: product?.isActive ?? true,
@@ -107,8 +107,9 @@ export function ProductForm({ product, mode }: ProductFormProps) {
         toast.success("Product updated successfully!")
       }
       router.push("/dashboard/products")
-    } catch (error: any) {
-      toast.error(error?.data?.error || "Something went wrong")
+    } catch (error: unknown) {
+      const err = error as { data?: { error?: string } }
+      toast.error(err?.data?.error || "Something went wrong")
     }
   }
 

@@ -26,17 +26,17 @@ function StatCard({
 }) {
   return (
     <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <div className="p-2 rounded-lg bg-primary/10">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</p>
+          <div className="p-1.5 sm:p-2 rounded-lg bg-primary/10">
             <Icon className="h-4 w-4 text-primary" />
           </div>
         </div>
         {loading ? (
-          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-7 w-20" />
         ) : (
-          <p className="text-2xl font-bold">{value}</p>
+          <p className="text-xl sm:text-2xl font-bold">{value}</p>
         )}
         {change && !loading && (
           <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
@@ -56,12 +56,12 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Welcome back! Here&apos;s what&apos;s happening.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Welcome back! Here&apos;s what&apos;s happening.</p>
         </div>
-        <Button asChild className="gradient-primary text-white gap-2">
+        <Button asChild className="gradient-primary text-white gap-2 w-full sm:w-auto shadow-md shadow-primary/20">
           <Link href="/dashboard/products/new">
             <Plus className="h-4 w-4" /> Add Product
           </Link>
@@ -122,39 +122,41 @@ export default function DashboardPage() {
               <p className="text-sm text-muted-foreground mt-1">Share your storefront to start selling</p>
             </div>
           ) : (
+            <div className="overflow-x-auto -mx-6 px-6">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Product</TableHead>
-                  <TableHead>Buyer</TableHead>
+                  <TableHead className="hidden sm:table-cell">Buyer</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
+                  <TableHead className="hidden sm:table-cell">Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {recentOrders.map((order) => (
                   <TableRow key={order.id}>
-                    <TableCell className="font-medium max-w-[200px] truncate">{order.productTitle}</TableCell>
-                    <TableCell>
+                    <TableCell className="font-medium max-w-[150px] sm:max-w-[200px] truncate">{order.productTitle}</TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <div>
                         <p className="text-sm">{order.buyerName}</p>
                         <p className="text-xs text-muted-foreground">{order.buyerEmail}</p>
                       </div>
                     </TableCell>
-                    <TableCell>{formatCurrency(order.totalAmount)}</TableCell>
+                    <TableCell className="text-sm">{formatCurrency(order.totalAmount)}</TableCell>
                     <TableCell>
-                      <Badge variant={order.status === "completed" ? "success" : order.status === "refunded" ? "destructive" : "warning"}>
+                      <Badge variant={order.status === "completed" ? "success" : "warning"}>
                         {order.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
+                    <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">
                       {formatRelativeTime(order.createdAt)}
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

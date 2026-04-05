@@ -63,7 +63,7 @@ export default function BuyerSettingsPage() {
   }
 
   const currentProfile = profile
-  const isSeller = session?.user?.isSeller ?? currentProfile?.isSeller ?? false
+  const isSeller = (session?.user as Record<string, unknown>)?.isSeller ?? currentProfile?.isSeller ?? false
 
   return (
     <div className="max-w-2xl">

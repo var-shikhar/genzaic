@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
 
     if (!storefront) {
       const [user] = await db
-        .select({ storeUrl: users.storeUrl, name: users.name })
+        .select({ name: users.name })
         .from(users)
         .where(eq(users.id, userId))
         .limit(1)
@@ -113,7 +113,6 @@ export async function POST(req: NextRequest) {
         .insert(storefronts)
         .values({
           userId,
-          storeUrl: user?.storeUrl ?? undefined,
           storeName: user?.name ?? undefined,
         })
         .returning({ id: storefronts.id })
@@ -122,14 +121,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Handle thumbnail upload
-    let thumbnailUrl: string | undefined
-    let thumbnailFileId: string | undefined
+    let coverImageUrl: string | undefined
+    let coverImageFileId: string | undefined
     const thumbnail = formData.get("thumbnail") as File | null
     if (thumbnail && thumbnail.size > 0) {
       const buffer = Buffer.from(await thumbnail.arrayBuffer())
       const result = await uploadToImageKit(buffer, thumbnail.name, IMAGEKIT_FOLDERS.THUMBNAILS)
-      thumbnailUrl = result.url
-      thumbnailFileId = result.fileId
+      coverImageUrl = result.url
+      coverImageFileId = result.fileId
     }
 
     // Handle product file upload (for downloadable products)
@@ -165,8 +164,8 @@ export async function POST(req: NextRequest) {
         seoKeywords: seoKeywords ?? null,
         stock: stock ?? null,
         isActive: isActive ?? true,
-        thumbnailUrl: thumbnailUrl ?? null,
-        thumbnailFileId: thumbnailFileId ?? null,
+        coverImageUrl: coverImageUrl ?? null,
+        coverImageFileId: coverImageFileId ?? null,
         fileUrl: fileUrl ?? null,
         fileId: fileId ?? null,
       })

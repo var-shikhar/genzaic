@@ -48,10 +48,11 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
         id: users.id,
         name: users.name,
         avatarUrl: users.avatarUrl,
-        storeUrl: users.storeUrl,
+        storeUrl: storefronts.storeUrl,
         totalSales: users.totalSales,
       })
       .from(users)
+      .leftJoin(storefronts, eq(storefronts.userId, users.id))
       .where(eq(users.id, storefront.userId))
       .limit(1)
 

@@ -32,7 +32,8 @@ export default function ForgotPasswordPage() {
       setSentToEmail(data.email)
       setEmailSent(true)
       toast.success("Password reset link sent!")
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as { data?: { message?: string } }
       const message = error?.data?.message || "Failed to send reset link. Please try again."
       toast.error(message)
     }
@@ -40,37 +41,37 @@ export default function ForgotPasswordPage() {
 
   if (emailSent) {
     return (
-      <div className="space-y-6 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-green-500/10 flex items-center justify-center mx-auto">
-          <CheckCircle2 className="w-8 h-8 text-green-500" />
+      <div className="space-y-5 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-green-500/10 flex items-center justify-center mx-auto">
+          <CheckCircle2 className="w-7 h-7 text-green-500" />
         </div>
 
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-foreground">Check your inbox</h1>
+        <div className="space-y-1.5">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Check your inbox</h1>
           <p className="text-muted-foreground text-sm">
             We sent a password reset link to
           </p>
-          <p className="font-medium text-foreground">{sentToEmail}</p>
+          <p className="font-medium text-foreground text-sm">{sentToEmail}</p>
         </div>
 
-        <div className="bg-muted/50 rounded-xl p-4 text-left space-y-2">
-          <p className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">Didn't receive it?</span> Check your spam folder
-            or click the button below to try again.
+        <div className="bg-muted/50 rounded-lg p-3 text-left">
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Didn&apos;t receive it?</span> Check your spam folder
+            or click below to try again.
           </p>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           <Button
             onClick={() => setEmailSent(false)}
             variant="outline"
-            className="w-full h-11"
+            className="w-full h-10 text-sm"
           >
             Try a different email
           </Button>
           <Link href="/login">
-            <Button variant="ghost" className="w-full h-11 gap-2">
-              <ArrowLeft className="w-4 h-4" />
+            <Button variant="ghost" className="w-full h-9 gap-1.5 text-xs">
+              <ArrowLeft className="w-3.5 h-3.5" />
               Back to login
             </Button>
           </Link>
@@ -80,20 +81,20 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+    <div className="space-y-5">
+      <div className="space-y-1.5">
+        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
           <Mail className="w-6 h-6 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold text-foreground">Forgot password?</h1>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Forgot password?</h1>
         <p className="text-muted-foreground text-sm">
-          Enter your email and we'll send you a link to reset your password.
+          Enter your email and we&apos;ll send you a reset link.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email address</Label>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="email" className="text-xs">Email address</Label>
           <Input
             id="email"
             type="email"
@@ -101,16 +102,16 @@ export default function ForgotPasswordPage() {
             autoComplete="email"
             autoFocus
             {...register("email")}
-            className={errors.email ? "border-destructive" : ""}
+            className={`h-9 text-sm ${errors.email ? "border-destructive" : ""}`}
           />
           {errors.email && (
-            <p className="text-xs text-destructive">{errors.email.message}</p>
+            <p className="text-[10px] text-destructive">{errors.email.message}</p>
           )}
         </div>
 
         <Button
           type="submit"
-          className="w-full h-11 gradient-primary hover:opacity-90 transition-opacity"
+          className="w-full h-10 gradient-primary hover:opacity-90 transition-opacity text-sm"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -125,8 +126,8 @@ export default function ForgotPasswordPage() {
       </form>
 
       <Link href="/login">
-        <Button variant="ghost" className="w-full h-11 gap-2">
-          <ArrowLeft className="w-4 h-4" />
+        <Button variant="ghost" className="w-full h-9 gap-1.5 text-xs">
+          <ArrowLeft className="w-3.5 h-3.5" />
           Back to login
         </Button>
       </Link>

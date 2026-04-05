@@ -59,8 +59,9 @@ export default function KYCPage() {
     try {
       await submitKyc(formData).unwrap()
       toast.success("KYC submitted successfully! We'll review it within 2-3 business days.")
-    } catch (error: any) {
-      toast.error(error?.data?.error || "Submission failed")
+    } catch (error: unknown) {
+      const err = error as { data?: { error?: string } }
+      toast.error(err?.data?.error || "Submission failed")
     }
   }
 

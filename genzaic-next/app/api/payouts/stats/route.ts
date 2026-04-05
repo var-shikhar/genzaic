@@ -17,9 +17,9 @@ export async function GET(_req: NextRequest) {
       .limit(1)
 
     const [earningsResult, completedPayoutsResult, pendingPayoutsResult, kycRecord] = await Promise.all([
-      // Total earnings from completed orders
+      // Total earnings from completed orders (use subtotal instead of old amount)
       db
-        .select({ totalEarnings: sum(orders.amount) })
+        .select({ totalEarnings: sum(orders.subtotal) })
         .from(orders)
         .where(and(eq(orders.sellerId, userId), eq(orders.status, "completed"))),
 

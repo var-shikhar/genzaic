@@ -16,21 +16,21 @@ export async function GET(_req: NextRequest) {
     const lastMonthStart = startOfMonth(subMonths(now, 1))
 
     const [allOrders, completedOrders, thisMonthOrders, lastMonthOrders] = await Promise.all([
-      // All orders: total count and sum of amounts
+      // All orders: total count and sum of subtotals
       db
-        .select({ total: count(), totalRevenue: sum(orders.amount) })
+        .select({ total: count(), totalRevenue: sum(orders.subtotal) })
         .from(orders)
         .where(eq(orders.sellerId, userId)),
 
       // Completed orders only
       db
-        .select({ total: count(), totalRevenue: sum(orders.amount) })
+        .select({ total: count(), totalRevenue: sum(orders.subtotal) })
         .from(orders)
         .where(and(eq(orders.sellerId, userId), eq(orders.status, "completed"))),
 
       // This month's completed orders
       db
-        .select({ total: count(), totalRevenue: sum(orders.amount) })
+        .select({ total: count(), totalRevenue: sum(orders.subtotal) })
         .from(orders)
         .where(
           and(
@@ -42,7 +42,7 @@ export async function GET(_req: NextRequest) {
 
       // Last month's completed orders
       db
-        .select({ total: count(), totalRevenue: sum(orders.amount) })
+        .select({ total: count(), totalRevenue: sum(orders.subtotal) })
         .from(orders)
         .where(
           and(

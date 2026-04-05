@@ -15,9 +15,10 @@ export async function GET(_req: NextRequest) {
         onboardingComplete: users.onboardingComplete,
         isSeller: users.isSeller,
         planType: users.planType,
-        storeUrl: users.storeUrl,
+        storeUrl: storefronts.storeUrl,
       })
       .from(users)
+      .leftJoin(storefronts, eq(storefronts.userId, users.id))
       .where(eq(users.id, userId))
       .limit(1)
 

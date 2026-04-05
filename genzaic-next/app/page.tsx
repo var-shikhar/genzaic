@@ -1,7 +1,8 @@
 "use client"
 
+import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion"
 import {
   ArrowRight,
   Upload,
@@ -16,282 +17,553 @@ import {
   Store,
   Rocket,
   IndianRupee,
+  Menu,
+  X,
+  Mail,
+  ShieldCheck,
+  BadgeCheck,
+  Headphones,
+  Download,
+  Star,
+  Users,
+  Package,
+  BarChart3,
+  Heart,
+  ChevronRight,
+  ShoppingBag,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Spotlight } from "@/components/ui/spotlight"
+import { TextGenerateEffect } from "@/components/ui/text-generate-effect"
+import { BackgroundBeams } from "@/components/ui/background-beams"
+import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards"
+import { MovingBorderCard } from "@/components/ui/moving-border"
+import StorePreviewSection from "@/components/landing/StorePreviewSection"
+
+/* ─── data ─── */
+const testimonials = [
+  {
+    quote:
+      "GenZaic made it so easy to set up my digital store. I was selling my design templates within 10 minutes of signing up!",
+    name: "Priya Sharma",
+    title: "UI/UX Designer, Bangalore",
+  },
+  {
+    quote:
+      "The auto GST invoicing saved me hours every month. Now I can focus on creating content instead of managing paperwork.",
+    name: "Rahul Verma",
+    title: "Course Creator, Delhi",
+  },
+  {
+    quote:
+      "I switched from Gumroad to GenZaic and my conversion rate doubled. UPI support makes a huge difference in India.",
+    name: "Ananya Patel",
+    title: "Template Designer, Mumbai",
+  },
+  {
+    quote:
+      "Finally a platform that understands Indian creators. The payouts are reliable and the dashboard is beautiful.",
+    name: "Karthik Nair",
+    title: "Developer & Educator, Chennai",
+  },
+  {
+    quote:
+      "My students love buying from my GenZaic store. The instant delivery and clean checkout flow keeps them coming back.",
+    name: "Meera Joshi",
+    title: "Yoga Instructor, Pune",
+  },
+]
+
+const features = [
+  {
+    icon: Shield,
+    title: "Bank-Grade KYC",
+    desc: "PAN & bank account verification with military-grade encryption.",
+    color: "from-blue-500/80 to-blue-600/80",
+    iconBg: "bg-blue-500/10 text-blue-600",
+  },
+  {
+    icon: CreditCard,
+    title: "Indian Payments",
+    desc: "UPI, cards, net banking, wallets — every method your customers use.",
+    color: "from-violet-500/80 to-purple-600/80",
+    iconBg: "bg-violet-500/10 text-violet-600",
+  },
+  {
+    icon: FileText,
+    title: "Auto GST Invoicing",
+    desc: "Compliant invoices generated for every sale. Tax season? Handled.",
+    color: "from-emerald-500/80 to-green-600/80",
+    iconBg: "bg-emerald-500/10 text-emerald-600",
+  },
+  {
+    icon: Globe,
+    title: "Custom Storefront",
+    desc: "Your own branded store URL with customizable themes & layouts.",
+    color: "from-pink-500/80 to-rose-600/80",
+    iconBg: "bg-pink-500/10 text-pink-600",
+  },
+  {
+    icon: Zap,
+    title: "Instant Delivery",
+    desc: "Automatic secure file delivery the moment payment clears.",
+    color: "from-amber-500/80 to-yellow-600/80",
+    iconBg: "bg-amber-500/10 text-amber-600",
+  },
+  {
+    icon: BarChart3,
+    title: "Analytics Dashboard",
+    desc: "Track sales, views, downloads, and revenue in real-time.",
+    color: "from-cyan-500/80 to-teal-600/80",
+    iconBg: "bg-cyan-500/10 text-cyan-600",
+  },
+]
+
+/* ─── animations ─── */
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, delay: i * 0.1, ease: "easeOut" as const },
+  }),
+}
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.6, ease: "easeOut" as const },
+  },
+}
 
 export default function LandingPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const heroRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20)
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  })
+  const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"])
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0])
+
   const scrollToSection = (
     e: React.MouseEvent<HTMLAnchorElement>,
-    sectionId: string
+    sectionId: string,
   ) => {
     e.preventDefault()
-    const element = document.getElementById(sectionId)
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" })
-    }
+    setMobileMenuOpen(false)
+    document
+      .getElementById(sectionId)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
+  const navLinks = [
+    { label: "Features", id: "features" },
+    { label: "How It Works", id: "how-it-works" },
+    { label: "Pricing", id: "pricing" },
+    { label: "Marketplace", id: "marketplace" },
+  ]
+
   return (
-    <div className="min-h-screen bg-background scroll-smooth">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-background scroll-smooth overflow-x-hidden">
+      {/* NAV */}
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-background/95 backdrop-blur-xl border-b border-border/30 shadow-sm" : "bg-transparent border-b border-transparent"}`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">G</span>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl gradient-primary flex items-center justify-center shadow-md shadow-primary/20">
+              <span className="text-white font-bold text-base sm:text-lg">
+                G
+              </span>
             </div>
-            <span className="font-display font-bold text-xl text-foreground">GenZaic</span>
+            <span
+              className={`font-display font-bold text-lg sm:text-xl transition-colors duration-300 ${scrolled ? "text-foreground" : "text-white"}`}
+            >
+              GenZaic
+            </span>
           </Link>
-
-          <div className="hidden md:flex items-center gap-8">
-            <a
-              href="#features"
-              onClick={(e) => scrollToSection(e, "features")}
-              className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            >
-              Features
-            </a>
-            <a
-              href="#how-it-works"
-              onClick={(e) => scrollToSection(e, "how-it-works")}
-              className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            >
-              How It Works
-            </a>
-            <a
-              href="#pricing"
-              onClick={(e) => scrollToSection(e, "pricing")}
-              className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            >
-              Pricing
-            </a>
-            <a
-              href="#marketplace"
-              onClick={(e) => scrollToSection(e, "marketplace")}
-              className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            >
-              Marketplace
-            </a>
+          <div className="hidden md:flex items-center gap-6 lg:gap-8">
+            {navLinks.map((link) => (
+              <a
+                key={link.id}
+                href={`#${link.id}`}
+                onClick={(e) => scrollToSection(e, link.id)}
+                className={`text-sm transition-colors duration-300 ${scrolled ? "text-muted-foreground hover:text-foreground" : "text-white/80 hover:text-white"}`}
+              >
+                {link.label}
+              </a>
+            ))}
           </div>
-
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" asChild>
+          <div className="hidden sm:flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className={
+                scrolled ? "" : "text-white hover:text-white hover:bg-white/10"
+              }
+            >
               <Link href="/login">Login</Link>
             </Button>
-            <Button asChild className="gradient-primary hover:opacity-90 transition-opacity">
-              <Link href="/signup?role=seller">Sell on GenZaic</Link>
+            <Button
+              size="sm"
+              asChild
+              className="gradient-primary hover:opacity-90 shadow-md shadow-primary/20"
+            >
+              <Link href="/signup?role=seller">Start Selling</Link>
             </Button>
           </div>
+          <button
+            className={`sm:hidden p-2 -mr-2 transition-colors duration-300 ${scrolled ? "text-muted-foreground" : "text-white"}`}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <Menu className="w-5 h-5" />
+            )}
+          </button>
         </div>
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="sm:hidden border-t border-border/30 bg-background/95 backdrop-blur-xl overflow-hidden"
+            >
+              <div className="px-4 py-3 space-y-1">
+                {navLinks.map((link) => (
+                  <a
+                    key={link.id}
+                    href={`#${link.id}`}
+                    onClick={(e) => scrollToSection(e, link.id)}
+                    className="block px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg"
+                  >
+                    {link.label}
+                  </a>
+                ))}
+                <div className="pt-3 border-t border-border/30 flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    className="flex-1"
+                  >
+                    <Link href="/login">Login</Link>
+                  </Button>
+                  <Button
+                    size="sm"
+                    asChild
+                    className="flex-1 gradient-primary hover:opacity-90"
+                  >
+                    <Link href="/signup?role=seller">Start Selling</Link>
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-accent/50 to-background" />
-        <div className="absolute top-20 left-1/4 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-secondary/10 rounded-full blur-3xl" />
-
-        <div className="container mx-auto relative z-10">
+      {/* HERO — dark */}
+      <section ref={heroRef} className="relative section-dark">
+        <div className="overflow-hidden absolute inset-0">
+          <Spotlight
+            className="-top-40 left-0 md:left-60 md:-top-20"
+            fill="rgba(139,92,246,0.35)"
+          />
+          <div className="absolute inset-0 bg-grid-pattern-light" />
+          {/* Animated background gradient */}
+          <div className="absolute inset-0 hero-gradient-animate" />
+          {/* Floating orbs */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center max-w-4xl mx-auto"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/30 mb-6">
-              <IndianRupee className="w-4 h-4 text-green-500" />
-              <span className="text-base font-bold text-green-500">0 Setup Fee — Start Free Today!</span>
-            </div>
+            animate={{ x: [0, 80, -60, 0], y: [0, -70, 50, 0], scale: [1, 1.3, 0.8, 1] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-[15%] left-[10%] w-72 sm:w-[400px] h-72 sm:h-[400px] bg-purple-600/30 rounded-full blur-[80px]"
+          />
+          <motion.div
+            animate={{ x: [0, -70, 60, 0], y: [0, 60, -80, 0], scale: [1, 0.8, 1.25, 1] }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute bottom-[10%] right-[5%] w-80 sm:w-[450px] h-80 sm:h-[450px] bg-indigo-500/25 rounded-full blur-[80px]"
+          />
+          <motion.div
+            animate={{ x: [0, 50, -40, 0], y: [0, -50, 40, 0], opacity: [0.15, 0.3, 0.15] }}
+            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-60 sm:w-[350px] h-60 sm:h-[350px] bg-pink-500/20 rounded-full blur-[80px]"
+          />
+        </div>
 
-            <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight mb-6">
-              The Digital Storefront for{" "}
-              <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                Indian Creators
+        <motion.div
+          style={{ y: heroY, opacity: heroOpacity }}
+          className="relative z-10 py-28 sm:py-36 px-4"
+        >
+          <div className="max-w-5xl mx-auto text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/15 mb-6 sm:mb-8 backdrop-blur-sm"
+            >
+              <IndianRupee className="w-3.5 h-3.5 text-green-400" />
+              <span className="text-xs sm:text-sm font-medium text-green-300">
+                Zero Setup Fee — Start Free Today!
               </span>
-            </h1>
+            </motion.div>
 
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-              Sell PDFs, templates, code & digital products with ease.
-              <span className="text-foreground font-medium"> UPI-ready, GST-ready</span> — built for creators who mean business.
-            </p>
+            <TextGenerateEffect
+              words="Sell Digital Products. Build & Grow Your Online Store."
+              highlightWords={["Digital", "Products.", "Store."]}
+              highlightClassName="bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent [-webkit-text-fill-color:transparent]"
+              className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.15] tracking-tight text-white mb-4 sm:mb-6"
+            />
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button size="lg" asChild className="gradient-primary hover:opacity-90 transition-opacity text-lg px-8 h-14">
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8, duration: 0.6 }}
+              className="text-sm sm:text-base md:text-lg text-gray-300 max-w-2xl mx-auto mt-4 sm:mt-6 mb-8 sm:mb-10 leading-relaxed px-2"
+            >
+              The all-in-one platform for Indian creators to sell PDFs,
+              templates, code &amp; digital products.{" "}
+              <span className="text-white font-semibold">
+                Create your store. Accept UPI. Get paid.
+              </span>
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1, duration: 0.5 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4"
+            >
+              <Button
+                size="lg"
+                asChild
+                className="gradient-primary hover:opacity-90 text-sm sm:text-base px-6 sm:px-8 h-11 sm:h-12 w-full sm:w-auto shadow-lg shadow-purple-500/30 group"
+              >
                 <Link href="/signup">
-                  Start Selling Today
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                  Start Selling Free
+                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" asChild className="text-lg px-8 h-14">
-                <Link href="/login">Creator Login</Link>
+              <Button
+                size="lg"
+                variant="outline"
+                asChild
+                className="text-sm sm:text-base px-6 sm:px-8 h-11 sm:h-12 w-full sm:w-auto border-white/20 text-white hover:bg-white/10 bg-transparent"
+              >
+                <Link href="/signup?role=buyer">
+                  <ShoppingBag className="mr-2 w-4 h-4" />
+                  Browse Products
+                </Link>
               </Button>
-            </div>
+            </motion.div>
 
-            <div className="flex items-center justify-center gap-6 mt-8 text-sm text-muted-foreground flex-wrap">
-              <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-500" />
-                <span>Zero setup fees</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-500" />
-                <span>Pay only when you earn</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-500" />
-                <span>Auto GST invoicing</span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Hero Preview */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="mt-16 relative"
-          >
-            <div className="bg-card rounded-2xl border border-border shadow-xl overflow-hidden max-w-5xl mx-auto">
-              <div className="bg-muted/50 px-4 py-3 flex items-center gap-2 border-b border-border">
-                <div className="w-3 h-3 rounded-full bg-red-400/60" />
-                <div className="w-3 h-3 rounded-full bg-yellow-400/60" />
-                <div className="w-3 h-3 rounded-full bg-green-400/60" />
-                <div className="flex-1 mx-4">
-                  <div className="bg-background rounded-md px-4 py-1.5 text-sm text-muted-foreground max-w-md mx-auto text-center">
-                    yourstore.genzaic.com
-                  </div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.3, duration: 0.5 }}
+              className="flex items-center justify-center gap-3 sm:gap-5 mt-8 text-xs sm:text-sm text-gray-400 flex-wrap px-4"
+            >
+              {[
+                "Zero setup fees",
+                "UPI & Card payments",
+                "Auto GST invoicing",
+                "Instant delivery",
+              ].map((t) => (
+                <div key={t} className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
+                  <span>{t}</span>
                 </div>
-              </div>
-              <div className="p-8 bg-gradient-to-br from-background to-accent/30 min-h-[300px] flex items-center justify-center">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl">
-                  {[
-                    { title: "React UI Kit", price: "₹1,999", gradient: "from-purple-500 to-indigo-500" },
-                    { title: "Business Templates", price: "₹499", gradient: "from-pink-500 to-rose-500" },
-                    { title: "Design System", price: "₹2,499", gradient: "from-orange-500 to-amber-500" },
-                  ].map((product, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 + i * 0.1 }}
-                      className="bg-card rounded-xl p-4 border border-border shadow-md"
-                    >
-                      <div className={`h-24 bg-gradient-to-br ${product.gradient} rounded-lg mb-3`} />
-                      <h3 className="font-semibold text-foreground">{product.title}</h3>
-                      <p className="text-primary font-bold">{product.price}</p>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+              ))}
+            </motion.div>
+          </div>
+        </motion.div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-20 px-4 scroll-mt-20">
-        <div className="container mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Built for Indian Creators
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Everything you need to run a professional digital business in India.
-            </p>
-          </motion.div>
+      {/* STORE PREVIEW — Apple-style scroll-driven parallax */}
+      <StorePreviewSection />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+      {/* STATS — light */}
+      <section className="pt-12 sm:pt-16 pb-10 sm:pb-14 bg-background bg-grid-pattern relative">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
             {[
-              { icon: Shield, title: "Secure KYC", description: "Bank-grade verification with PAN & bank account validation." },
-              { icon: FileText, title: "Auto GST Invoicing", description: "Compliant invoices generated automatically for every sale." },
-              { icon: CreditCard, title: "Indian Payments", description: "UPI, credit/debit cards, net banking, and wallet support." },
-              { icon: Zap, title: "Instant Delivery", description: "Automatic file delivery with secure download links." },
-              { icon: Globe, title: "Your Brand, Your Store", description: "Custom storefront URL with professional themes." },
-              { icon: Check, title: "T+7 Bank Payouts", description: "Reliable payouts to your bank account within one week." },
-              { icon: Globe, title: "Community Access", description: "Connect with fellow creators and grow together." },
-              { icon: Sparkles, title: "Customer Reviews", description: "Build trust with ratings and reviews on your products." },
-            ].map((feature, i) => (
+              { value: "500+", label: "Active Creators", icon: Users },
+              { value: "2,000+", label: "Products Listed", icon: Package },
+              { value: "\u20B90", label: "Setup Fee", icon: IndianRupee },
+              { value: "4.9/5", label: "Creator Rating", icon: Star },
+            ].map((stat, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                className="bg-card rounded-xl p-6 border border-border hover:border-primary/30 transition-colors group"
+                variants={fadeUp}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-50px" }}
+                custom={i}
+                className="text-center"
               >
-                <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
-                  <feature.icon className="w-6 h-6 text-primary" />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-2">
+                  <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 </div>
-                <h3 className="font-semibold text-foreground mb-2">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground">{feature.description}</p>
+                <div className="font-display text-2xl sm:text-3xl md:text-4xl font-bold gradient-text">
+                  {stat.value}
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                  {stat.label}
+                </p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section id="how-it-works" className="py-20 px-4 bg-muted/30 scroll-mt-20">
-        <div className="container mx-auto">
+      {/* FEATURES — dark */}
+      <section
+        id="features"
+        className="py-16 sm:py-24 px-4 scroll-mt-20 section-dark relative overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-dot-pattern-dark" />
+        <BackgroundBeams className="opacity-30" />
+        <div className="max-w-6xl mx-auto relative z-10">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
             viewport={{ once: true }}
-            className="text-center mb-16"
+            custom={0}
+            className="text-center mb-10 sm:mb-16"
           >
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Launch Your Store in 3 Simple Steps
+            <p className="text-xs sm:text-sm font-semibold text-purple-400 mb-2 tracking-widest uppercase">
+              Features
+            </p>
+            <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 sm:mb-4 tracking-tight">
+              Everything You Need to{" "}
+              <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+                Sell Digital Products
+              </span>
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Get your digital products online and start earning in minutes, not days.
+            <p className="text-gray-400 text-sm sm:text-base max-w-xl mx-auto">
+              Built from the ground up for Indian creators. UPI payments, GST
+              invoices, and more — all out of the box.
             </p>
           </motion.div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {features.map((f, i) => (
+              <motion.div
+                key={i}
+                variants={fadeUp}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-30px" }}
+                custom={i}
+                className="group relative bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-5 sm:p-6 hover:bg-white/10 hover:border-purple-500/30 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+              >
+                <div
+                  className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${f.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+                />
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/10 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <f.icon className="w-5 h-5 text-purple-300" />
+                </div>
+                <h3 className="font-semibold text-white text-sm sm:text-base mb-1.5">
+                  {f.title}
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
+                  {f.desc}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+      {/* HOW IT WORKS — light */}
+      <section
+        id="how-it-works"
+        className="py-16 sm:py-24 px-4 scroll-mt-20 bg-background relative"
+      >
+        <div className="absolute inset-0 bg-cross-pattern" />
+        <div className="max-w-5xl mx-auto relative z-10">
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={0}
+            className="text-center mb-10 sm:mb-16"
+          >
+            <p className="text-xs sm:text-sm font-semibold text-primary mb-2 tracking-widest uppercase">
+              Get Started
+            </p>
+            <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 sm:mb-4 tracking-tight">
+              Launch Your Store in{" "}
+              <span className="gradient-text">3 Simple Steps</span>
+            </h2>
+            <p className="text-muted-foreground text-sm sm:text-base max-w-xl mx-auto">
+              From sign-up to first sale in minutes. No technical skills
+              required.
+            </p>
+          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 relative">
+            <div className="hidden md:block absolute top-16 left-[20%] right-[20%] h-0.5 bg-gradient-to-r from-violet-300 via-pink-300 to-amber-300 rounded-full" />
             {[
               {
                 icon: Upload,
-                title: "Upload Your Products",
-                description: "Add your digital products — PDFs, templates, code, designs. Set your price in INR.",
-                gradient: "from-purple-500 to-indigo-500",
+                title: "Upload Products",
+                desc: "Add your digital products — PDFs, templates, code, designs. Set pricing in INR with categories and descriptions.",
+                gradient: "from-violet-500 to-indigo-600",
                 step: "01",
               },
               {
                 icon: Palette,
-                title: "Design Your Store",
-                description: "Choose from beautiful pre-built themes. Your store is mobile-ready instantly.",
-                gradient: "from-pink-500 to-rose-500",
+                title: "Customize Store",
+                desc: "Pick a theme, add brand colors, get a custom store URL. Works beautifully on every screen size.",
+                gradient: "from-pink-500 to-rose-600",
                 step: "02",
               },
               {
                 icon: CreditCard,
-                title: "Get Paid Instantly",
-                description: "Accept UPI, cards, wallets. Auto GST invoicing. T+1 payouts to your bank.",
+                title: "Start Earning",
+                desc: "Accept UPI, cards, and wallets instantly. Auto GST invoicing. Bank payouts within a week.",
                 gradient: "from-orange-500 to-amber-500",
                 step: "03",
               },
             ].map((item, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="relative"
+                variants={fadeUp}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-30px" }}
+                custom={i}
+                className="relative group"
               >
-                <div className="bg-card rounded-2xl p-8 border border-border shadow-md hover:shadow-lg transition-shadow h-full">
-                  <div className="absolute -top-4 -left-4 w-12 h-12 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-lg shadow-lg">
+                <div className="absolute -inset-2 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative bg-white rounded-2xl p-6 sm:p-8 border border-border/50 shadow-sm hover:shadow-xl transition-all duration-300 h-full">
+                  <div className="absolute -top-3 -left-3 w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-white font-bold text-xs shadow-lg shadow-primary/25 z-10">
                     {item.step}
                   </div>
-                  <div className={`w-14 h-14 bg-gradient-to-br ${item.gradient} rounded-xl flex items-center justify-center mb-6 mt-4`}>
-                    <item.icon className="w-7 h-7 text-white" />
+                  <div
+                    className={`w-12 h-12 bg-gradient-to-br ${item.gradient} rounded-xl flex items-center justify-center mb-5 mt-2 group-hover:scale-110 transition-transform duration-300`}
+                  >
+                    <item.icon className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="font-display text-xl font-bold text-foreground mb-3">{item.title}</h3>
-                  <p className="text-muted-foreground">{item.description}</p>
+                  <h3 className="font-display text-base sm:text-lg font-bold text-foreground mb-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
+                    {item.desc}
+                  </p>
                 </div>
               </motion.div>
             ))}
@@ -299,149 +571,232 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20 px-4 relative overflow-hidden scroll-mt-20">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-primary/5" />
-        <div className="absolute top-10 right-1/4 w-64 h-64 bg-green-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 left-1/4 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
-
-        <div className="container mx-auto relative z-10">
+      {/* TESTIMONIALS — dark */}
+      <section className="py-16 sm:py-24 relative overflow-hidden section-dark">
+        <div className="absolute inset-0 bg-grid-pattern-light" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-purple-600/10 rounded-full blur-[150px]" />
+        <div className="max-w-6xl mx-auto px-4 relative z-10">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
             viewport={{ once: true }}
-            className="text-center mb-12"
+            custom={0}
+            className="text-center mb-8 sm:mb-12"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/30 mb-6">
-              <Sparkles className="w-4 h-4 text-green-500" />
-              <span className="text-sm font-bold text-green-500">Our USP — Zero Risk, Maximum Reward</span>
-            </div>
-            <h2 className="font-display text-3xl md:text-5xl font-bold text-foreground mb-4">
-              Start for <span className="text-green-500">₹0</span> — Pay Only When You Earn
+            <p className="text-xs sm:text-sm font-semibold text-purple-400 mb-2 tracking-widest uppercase">
+              Testimonials
+            </p>
+            <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">
+              Loved by{" "}
+              <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+                Indian Creators
+              </span>
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              No hidden fees. No monthly charges. We only succeed when you succeed.
+            <p className="text-gray-400 text-sm sm:text-base max-w-lg mx-auto">
+              Join hundreds of creators who trust GenZaic for their digital
+              business.
             </p>
           </motion.div>
+        </div>
+        <InfiniteMovingCards
+          items={testimonials}
+          direction="right"
+          speed="slow"
+        />
+      </section>
 
+      {/* PRICING — light */}
+      <section
+        id="pricing"
+        className="py-16 sm:py-24 px-4 scroll-mt-20 bg-background relative overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-grid-pattern" />
+        <div className="absolute top-10 right-1/4 w-48 sm:w-64 h-48 sm:h-64 bg-green-500/5 rounded-full blur-[100px]" />
+        <div className="absolute bottom-10 left-1/4 w-60 sm:w-80 h-60 sm:h-80 bg-primary/5 rounded-full blur-[100px]" />
+        <div className="max-w-5xl mx-auto relative z-10">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
             viewport={{ once: true }}
-            className="max-w-3xl mx-auto"
+            custom={0}
+            className="text-center mb-8 sm:mb-12"
           >
-            <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-primary via-green-500 to-primary rounded-3xl blur-lg opacity-30 animate-pulse" />
-              <div className="relative bg-card rounded-3xl border-2 border-green-500/50 shadow-2xl overflow-hidden">
-                <div className="gradient-primary px-8 py-6 text-center">
-                  <h3 className="font-display text-2xl font-bold text-white mb-2">Creator Plan</h3>
-                  <p className="text-white/80">Everything you need to start selling</p>
-                </div>
-
-                <div className="px-8 py-12 text-center border-b border-border">
-                  <span className="text-7xl md:text-9xl font-display font-bold text-green-500">₹0</span>
-                  <p className="text-xl text-muted-foreground mt-4">Setup Fee — Start Free Today!</p>
-                  <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-                    No upfront costs, no hidden fees. Pay only when you earn.
-                  </p>
-                </div>
-
-                <div className="px-8 py-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      "Unlimited products",
-                      "Unlimited sales",
-                      "Auto GST invoicing",
-                      "T+7 bank payouts",
-                      "UPI & card payments",
-                      "Professional storefront",
-                      "Secure file delivery",
-                      "Analytics dashboard",
-                      "Community access",
-                      "Customer reviews & ratings",
-                    ].map((feature, i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                          <Check className="w-3 h-3 text-green-500" />
-                        </div>
-                        <span className="text-foreground">{feature}</span>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-500/10 border border-green-500/20 mb-5">
+              <Sparkles className="w-3.5 h-3.5 text-green-600" />
+              <span className="text-xs sm:text-sm font-semibold text-green-600">
+                Zero Risk, Maximum Reward
+              </span>
+            </div>
+            <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 tracking-tight">
+              Start for <span className="text-green-500">{"\u20B9"}0</span> —
+              Pay Only When You Earn
+            </h2>
+            <p className="text-muted-foreground text-sm sm:text-base max-w-lg mx-auto">
+              No hidden fees. No monthly charges. We only succeed when you do.
+            </p>
+          </motion.div>
+          <motion.div
+            variants={scaleIn}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="max-w-lg mx-auto"
+          >
+            <MovingBorderCard
+              borderRadius="1.5rem"
+              className="overflow-hidden"
+              duration={3000}
+            >
+              <div className="gradient-primary px-5 sm:px-8 py-5 text-center">
+                <h3 className="font-display text-lg sm:text-xl font-bold text-white mb-0.5">
+                  Creator Plan
+                </h3>
+                <p className="text-white/80 text-xs sm:text-sm">
+                  Everything you need to start selling
+                </p>
+              </div>
+              <div className="px-5 sm:px-8 py-8 text-center border-b border-border/60">
+                <span className="text-5xl sm:text-6xl md:text-7xl font-display font-bold text-green-500">
+                  {"\u20B9"}0
+                </span>
+                <p className="text-sm sm:text-base text-muted-foreground mt-2">
+                  Setup Fee — Start Free Today!
+                </p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+                  Pay a small commission only when you make a sale.
+                </p>
+              </div>
+              <div className="px-5 sm:px-8 py-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {[
+                    "Unlimited products",
+                    "Unlimited sales",
+                    "Auto GST invoicing",
+                    "T+7 bank payouts",
+                    "UPI & card payments",
+                    "Custom storefront",
+                    "Secure file delivery",
+                    "Analytics dashboard",
+                    "Customer reviews",
+                    "Priority support",
+                  ].map((feature, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full bg-green-500/15 flex items-center justify-center flex-shrink-0">
+                        <Check className="w-2.5 h-2.5 text-green-600" />
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="px-8 pb-8">
-                  <Button size="lg" asChild className="w-full h-14 text-lg gradient-primary hover:opacity-90 transition-opacity">
-                    <Link href="/signup">
-                      <Rocket className="w-5 h-5 mr-2" />
-                      Start Selling — It's Free!
-                    </Link>
-                  </Button>
-                  <p className="text-center text-sm text-muted-foreground mt-4">
-                    No credit card required • Setup in under 5 minutes
-                  </p>
+                      <span className="text-xs sm:text-sm text-foreground">
+                        {feature}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
+              <div className="px-5 sm:px-8 pb-6">
+                <Button
+                  size="lg"
+                  asChild
+                  className="w-full h-11 sm:h-12 text-sm sm:text-base gradient-primary hover:opacity-90 shadow-lg shadow-primary/25 group"
+                >
+                  <Link href="/signup">
+                    <Rocket className="w-4 h-4 mr-2" />
+                    Start Selling — It&apos;s Free!
+                    <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </Button>
+                <p className="text-center text-[10px] sm:text-xs text-muted-foreground mt-2.5">
+                  No credit card required &bull; Setup in under 5 minutes
+                </p>
+              </div>
+            </MovingBorderCard>
           </motion.div>
         </div>
       </section>
 
-      {/* Marketplace Section */}
-      <section id="marketplace" className="py-20 px-4 bg-muted/30 scroll-mt-20">
-        <div className="container mx-auto">
+      {/* MARKETPLACE — dark */}
+      <section
+        id="marketplace"
+        className="py-16 sm:py-24 px-4 scroll-mt-20 section-dark relative overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-dot-pattern-dark" />
+        <div className="max-w-4xl mx-auto relative z-10">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
             viewport={{ once: true }}
-            className="text-center max-w-3xl mx-auto"
+            custom={0}
+            className="text-center"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/30 mb-6">
-              <Store className="w-4 h-4 text-yellow-500" />
-              <span className="text-sm font-bold text-yellow-500">Coming Soon</span>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 mb-5">
+              <Store className="w-3.5 h-3.5 text-yellow-400" />
+              <span className="text-xs sm:text-sm font-semibold text-yellow-300">
+                Coming Soon
+              </span>
             </div>
-
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-              GenZaic Marketplace
+            <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">
+              GenZaic{" "}
+              <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+                Marketplace
+              </span>
             </h2>
-            <p className="text-muted-foreground text-lg mb-8 max-w-xl mx-auto">
-              Discover and sell digital products in India's first creator-focused marketplace.
-              Get discovered by millions of potential buyers.
+            <p className="text-gray-400 text-sm sm:text-base mb-8 max-w-lg mx-auto">
+              Discover and sell in India&apos;s first creator-focused
+              marketplace. Get found by millions of buyers.
             </p>
-
-            <div className="bg-card rounded-2xl border border-border p-8 md:p-12">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-5 sm:p-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
                 {[
-                  { icon: Globe, title: "Reach Millions", description: "Get discovered by buyers searching for digital products." },
-                  { icon: Sparkles, title: "Featured Listings", description: "Top products get featured on our homepage." },
-                  { icon: CreditCard, title: "Unified Payments", description: "Zero setup fee, same fast payouts." },
+                  {
+                    icon: Globe,
+                    title: "Reach Millions",
+                    desc: "Get discovered by buyers across India.",
+                  },
+                  {
+                    icon: Sparkles,
+                    title: "Featured Listings",
+                    desc: "Top products featured on homepage & socials.",
+                  },
+                  {
+                    icon: CreditCard,
+                    title: "Unified Payments",
+                    desc: "Same zero setup fee, same fast payouts.",
+                  },
                 ].map((item, i) => (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
+                    variants={fadeUp}
+                    initial="hidden"
+                    whileInView="visible"
                     viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    className="text-center"
+                    custom={i}
+                    className="text-center group"
                   >
-                    <div className="w-14 h-14 rounded-xl bg-yellow-500/10 flex items-center justify-center mx-auto mb-4">
-                      <item.icon className="w-7 h-7 text-yellow-500" />
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                      <item.icon className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />
                     </div>
-                    <h3 className="font-semibold text-foreground mb-2">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                    <h3 className="font-semibold text-white text-sm mb-1">
+                      {item.title}
+                    </h3>
+                    <p className="text-xs text-gray-400 leading-relaxed">
+                      {item.desc}
+                    </p>
                   </motion.div>
                 ))}
               </div>
-
-              <div className="mt-10 pt-8 border-t border-border">
-                <p className="text-muted-foreground mb-4">Be the first to know when we launch</p>
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
+              <div className="mt-8 pt-6 border-t border-white/10">
+                <p className="text-xs sm:text-sm text-gray-400 mb-3">
+                  Be the first to know when we launch
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 max-w-sm mx-auto">
                   <input
                     type="email"
                     placeholder="Enter your email"
-                    className="w-full sm:flex-1 px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full sm:flex-1 px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/30 transition-all"
                   />
-                  <Button className="w-full sm:w-auto gradient-primary hover:opacity-90 transition-opacity">
+                  <Button className="w-full sm:w-auto gradient-primary hover:opacity-90 text-sm px-5">
+                    <Mail className="w-3.5 h-3.5 mr-1.5" />
                     Notify Me
                   </Button>
                 </div>
@@ -451,28 +806,48 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto">
+      {/* CTA — light */}
+      <section className="relative overflow-hidden bg-background">
+        <div className="absolute inset-0 bg-dot-pattern" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-purple-500/10 rounded-full blur-[150px]" />
+        <div className="relative z-10 py-16 sm:py-24 px-4">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            variants={scaleIn}
+            initial="hidden"
+            whileInView="visible"
             viewport={{ once: true }}
-            className="rounded-3xl p-12 md:p-16 text-center relative overflow-hidden"
-            style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}
+            className="max-w-3xl mx-auto text-center"
           >
-            <div className="relative z-10">
-              <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-4">
-                Ready to Start Selling?
-              </h2>
-              <p className="text-white/80 text-lg max-w-xl mx-auto mb-8">
-                Start your digital business with GenZaic.{" "}
-                <span className="font-bold text-white">Zero setup fee — start today!</span>
-              </p>
-              <Button size="lg" asChild className="bg-white text-primary hover:bg-white/90 text-lg px-8 h-14">
+            <h2 className="font-display text-2xl sm:text-3xl md:text-5xl font-bold text-foreground mb-4 tracking-tight">
+              Ready to <span className="gradient-text">Start Selling?</span>
+            </h2>
+            <p className="text-muted-foreground text-sm sm:text-base max-w-lg mx-auto mb-8">
+              Join hundreds of creators building their digital business on
+              GenZaic.{" "}
+              <span className="font-bold text-foreground">
+                Zero setup fee — start today!
+              </span>
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Button
+                size="lg"
+                asChild
+                className="gradient-primary hover:opacity-90 text-sm sm:text-base px-6 sm:px-8 h-11 sm:h-12 w-full sm:w-auto shadow-lg shadow-purple-500/20 group"
+              >
                 <Link href="/signup">
                   Create Your Free Store
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                asChild
+                className="text-sm sm:text-base px-6 sm:px-8 h-11 sm:h-12 w-full sm:w-auto"
+              >
+                <Link href="/login">
+                  Creator Login
+                  <ChevronRight className="ml-1 w-4 h-4" />
                 </Link>
               </Button>
             </div>
@@ -480,26 +855,253 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 px-4 border-t border-border">
-        <div className="container mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">G</span>
+      {/* Creator Journey CTA */}
+      <section className="relative bg-background">
+        <div className="absolute inset-0 bg-dot-pattern" />
+        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-8 gradient-primary rounded-2xl px-6 sm:px-8 py-6 shadow-lg shadow-purple-500/20">
+            <div className="text-center sm:text-left">
+              <h3 className="font-display font-bold text-white text-base sm:text-lg mb-1">
+                Start your creator journey today
+              </h3>
+              <p className="text-white/70 text-xs sm:text-sm">
+                Join 500+ creators selling on GenZaic. Zero setup fee.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              asChild
+              className="bg-white text-primary hover:bg-white/90 text-sm px-6 h-10 flex-shrink-0 group"
+            >
+              <Link href="/signup">
+                Get Started Free
+                <ArrowRight className="ml-2 w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER — dark */}
+      <footer className="section-dark-alt relative">
+        {/* Gradient accent top line */}
+        <div className="h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent" />
+        <div className="absolute inset-0 bg-dot-pattern-dark" />
+
+        {/* Main footer grid */}
+        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-10">
+            {/* Brand — takes 2 cols on lg */}
+            <div className="col-span-2">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg shadow-purple-500/20">
+                  <span className="text-white font-bold text-base">G</span>
+                </div>
+                <span className="font-display font-bold text-xl text-white">
+                  GenZaic
+                </span>
               </div>
-              <span className="font-display font-bold text-xl text-foreground">GenZaic</span>
+              <p className="text-sm text-gray-400 leading-relaxed mb-5 max-w-xs">
+                India&apos;s digital storefront for creators — sell PDFs,
+                templates, code &amp; digital products with zero setup fees.
+                UPI-ready, GST-ready.
+              </p>
+              <div className="flex items-center gap-2.5 mb-5">
+                {[
+                  {
+                    icon: (
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
+                      </svg>
+                    ),
+                    label: "Twitter",
+                  },
+                  {
+                    icon: (
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                      </svg>
+                    ),
+                    label: "Instagram",
+                  },
+                  {
+                    icon: (
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" />
+                      </svg>
+                    ),
+                    label: "YouTube",
+                  },
+                ].map((social, i) => (
+                  <a
+                    key={i}
+                    href="#"
+                    aria-label={social.label}
+                    className="w-9 h-9 rounded-lg bg-white/[0.06] hover:bg-purple-500/20 hover:text-purple-400 border border-white/[0.06] flex items-center justify-center text-gray-400 transition-all duration-200"
+                  >
+                    {social.icon}
+                  </a>
+                ))}
+              </div>
+              {/* Contact in brand col */}
+              <div className="space-y-2">
+                <a
+                  href="mailto:support@genzaic.com"
+                  className="text-xs sm:text-sm text-gray-400 hover:text-purple-400 transition-colors flex items-center gap-2"
+                >
+                  <Mail className="w-3.5 h-3.5 flex-shrink-0 text-purple-400/60" />
+                  support@genzaic.com
+                </a>
+                <p className="text-xs sm:text-sm text-gray-500 flex items-center gap-2">
+                  <Heart className="w-3.5 h-3.5 flex-shrink-0 text-red-400/60" />
+                  Made with love in India
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap justify-center">
-              <Link href="/about" className="hover:text-foreground transition-colors">About</Link>
-              <Link href="/disclaimer" className="hover:text-foreground transition-colors">Disclaimer</Link>
-              <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-foreground transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-foreground transition-colors">Contact</a>
-            </div>
+            {/* Link columns */}
+            {[
+              {
+                title: "Product",
+                links: [
+                  { label: "Features", href: "#features" },
+                  { label: "How It Works", href: "#how-it-works" },
+                  { label: "Pricing", href: "#pricing" },
+                  { label: "Marketplace", href: "#marketplace" },
+                ],
+              },
+              {
+                title: "For Creators",
+                links: [
+                  { label: "Start Selling", href: "/signup?role=seller" },
+                  { label: "Dashboard", href: "/dashboard" },
+                  { label: "Upload Products", href: "/dashboard/products/new" },
+                  { label: "KYC Verification", href: "/dashboard/kyc" },
+                ],
+              },
+              {
+                title: "Company",
+                links: [
+                  { label: "About Us", href: "/about" },
+                  { label: "Privacy Policy", href: "/privacy-policy" },
+                  { label: "Terms of Service", href: "/terms" },
+                  { label: "Refund Policy", href: "/refund-policy" },
+                  { label: "Disclaimer", href: "/disclaimer" },
+                ],
+              },
+            ].map((col) => (
+              <div key={col.title}>
+                <h4 className="font-display font-semibold text-white mb-4 text-xs uppercase tracking-wider">
+                  {col.title}
+                </h4>
+                <ul className="space-y-2.5">
+                  {col.links.map((link) => (
+                    <li key={link.label}>
+                      <Link
+                        href={link.href}
+                        className="text-sm text-gray-400 hover:text-purple-400 transition-colors duration-200"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
 
-            <p className="text-sm text-muted-foreground">© 2025 GenZaic. Made with ❤️ in India</p>
+        {/* Trust badges */}
+        <div className="relative z-10 border-t border-white/[0.06]">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[
+                {
+                  icon: ShieldCheck,
+                  title: "SSL Secured",
+                  desc: "256-bit encryption",
+                  color: "text-emerald-400",
+                  bg: "bg-emerald-400/10",
+                },
+                {
+                  icon: BadgeCheck,
+                  title: "GSTIN Verified",
+                  desc: "Tax-compliant business",
+                  color: "text-blue-400",
+                  bg: "bg-blue-400/10",
+                },
+                {
+                  icon: Headphones,
+                  title: "Creator Support",
+                  desc: "Dedicated help",
+                  color: "text-amber-400",
+                  bg: "bg-amber-400/10",
+                },
+                {
+                  icon: Download,
+                  title: "Instant Delivery",
+                  desc: "Secure downloads",
+                  color: "text-violet-400",
+                  bg: "bg-violet-400/10",
+                },
+              ].map((badge, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 rounded-xl bg-white/[0.03] border border-white/[0.04] px-3 py-3"
+                >
+                  <div
+                    className={`w-8 h-8 rounded-lg ${badge.bg} flex items-center justify-center flex-shrink-0`}
+                  >
+                    <badge.icon className={`w-4 h-4 ${badge.color}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-gray-200 leading-tight">
+                      {badge.title}
+                    </p>
+                    <p className="text-[10px] text-gray-500 leading-tight mt-0.5 hidden sm:block">
+                      {badge.desc}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="relative z-10 border-t border-white/[0.06]">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-500">
+              <p>
+                &copy; {new Date().getFullYear()} GenZaic. All rights reserved.
+                <span className="mx-2 text-gray-700">&bull;</span>
+                Crafted by{" "}
+                <a
+                  href="https://shikharvarshney.netlify.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-purple-400 transition-colors"
+                >
+                  Shikhar
+                </a>
+              </p>
+              <p className="text-gray-600 flex items-center gap-1">
+                Made with <span className="text-red-400">&hearts;</span> in
+                India
+              </p>
+            </div>
           </div>
         </div>
       </footer>

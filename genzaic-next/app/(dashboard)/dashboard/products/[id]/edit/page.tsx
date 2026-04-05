@@ -1,11 +1,13 @@
 "use client"
 
+import { useParams } from "next/navigation"
 import { useGetProductQuery } from "@/store/api/productsApi"
 import { ProductForm } from "@/components/dashboard/ProductForm"
 import { Skeleton } from "@/components/ui/skeleton"
 
-export default function EditProductPage({ params }: { params: { id: string } }) {
-  const { data: product, isLoading } = useGetProductQuery(params.id)
+export default function EditProductPage() {
+  const { id } = useParams<{ id: string }>()
+  const { data: product, isLoading } = useGetProductQuery(id)
 
   if (isLoading) {
     return (

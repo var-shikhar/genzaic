@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { db, products, storefronts, orders } from "@/lib/db"
-import { eq, and } from "drizzle-orm"
+import { db, products, storefronts, orders, orderItems } from "@/lib/db"
+import { eq, and, sql } from "drizzle-orm"
 import { checkoutSchema } from "@/lib/validations/checkout"
 import { auth } from "@/lib/auth"
 
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { productId, buyerName, buyerEmail, buyerPhone, buyerGstin, paymentMethod } = parsed.data
+    const { productId, buyerName, buyerEmail, buyerPhone, buyerGstin } = parsed.data
 
     // Get product
     const [product] = await db
@@ -53,16 +53,16 @@ export async function POST(req: NextRequest) {
     // GST is always 18% on the product price (digital goods/services)
     const gstAmount = parseFloat((baseAmount * GST_RATE).toFixed(2))
 
-    let amount: number
+    let subtotal: number
     let totalAmount: number
 
     if (storefront.platformFeeMode === "buyer") {
       // Buyer pays the fee on top: price + platform fee + GST
-      amount = baseAmount
+      subtotal = baseAmount
       totalAmount = parseFloat((baseAmount + platformFee + gstAmount).toFixed(2))
     } else {
-      // Seller absorbs the fee — buyer pays price + GST only
-      amount = baseAmount
+      // Seller absorbs the fee -- buyer pays price + GST only
+      subtotal = baseAmount
       totalAmount = parseFloat((baseAmount + gstAmount).toFixed(2))
     }
 
@@ -73,28 +73,43 @@ export async function POST(req: NextRequest) {
     // Use the actual product file URL as the download link
     const downloadLink = product.deliveryType === "download" ? product.fileUrl : null
 
+    // Generate a unique order number
+    const orderNumber = `GZ-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+
+    // Create order
     const [order] = await db
       .insert(orders)
       .values({
+        orderNumber,
         sellerId: storefront.userId,
         buyerId: buyerId,
-        productId,
-        productTitle: product.title,
-        productThumbnail: product.thumbnailUrl,
-        productDescription: product.description,
         buyerEmail,
         buyerName,
         buyerPhone: buyerPhone ?? null,
         buyerGstin: buyerGstin ?? null,
-        amount: String(amount),
+        subtotal: String(subtotal),
         gstAmount: String(gstAmount),
         platformFee: String(platformFee),
+        discountAmount: "0",
         totalAmount: String(totalAmount),
         status: "pending",
+      })
+      .returning()
+
+    // Create order item
+    const [item] = await db
+      .insert(orderItems)
+      .values({
+        orderId: order.id,
+        productId,
+        productTitle: product.title,
+        productThumbnail: product.coverImageUrl,
+        productDescription: product.description,
+        price: String(baseAmount),
+        quantity: 1,
         deliveryType: product.deliveryType,
         deliveryStatus: "pending",
         externalUrl: product.externalUrl,
-        paymentMethod: paymentMethod ?? null,
         downloadLink,
         maxDownloads: 5,
         downloadCount: 0,
@@ -109,7 +124,18 @@ export async function POST(req: NextRequest) {
         .where(eq(products.id, productId))
     }
 
-    return NextResponse.json(order, { status: 201 })
+    // Return a response shape that matches the frontend expectations
+    return NextResponse.json(
+      {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        totalAmount: order.totalAmount,
+        status: order.status,
+        deliveryType: item.deliveryType,
+        items: [item],
+      },
+      { status: 201 }
+    )
   } catch (error) {
     console.error("POST /api/checkout/create-order error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

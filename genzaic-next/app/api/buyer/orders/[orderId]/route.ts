@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { db, orders, storefronts, users } from "@/lib/db"
+import { db, orders, orderItems, storefronts, users } from "@/lib/db"
 import { eq } from "drizzle-orm"
 
 type RouteContext = { params: Promise<{ orderId: string }> }
@@ -37,45 +37,49 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
+    // Get order items
+    const items = await db
+      .select()
+      .from(orderItems)
+      .where(eq(orderItems.orderId, orderId))
+
+    const firstItem = items[0] ?? null
+
     const [seller] = await db
       .select({
         name: users.name,
-        storeUrl: users.storeUrl,
+        storeUrl: storefronts.storeUrl,
         email: users.email,
-      })
-      .from(users)
-      .where(eq(users.id, order.sellerId))
-      .limit(1)
-
-    const [storefront] = await db
-      .select({
         storeName: storefronts.storeName,
         contactPhone: storefronts.contactPhone,
         contactWhatsapp: storefronts.contactWhatsapp,
       })
-      .from(storefronts)
-      .where(eq(storefronts.userId, order.sellerId))
+      .from(users)
+      .leftJoin(storefronts, eq(storefronts.userId, users.id))
+      .where(eq(users.id, order.sellerId))
       .limit(1)
 
     return NextResponse.json({
       id: order.id,
-      productId: order.productId,
-      productTitle: order.productTitle,
-      productThumbnail: order.productThumbnail,
-      productDescription: order.productDescription,
+      orderNumber: order.orderNumber,
+      productId: firstItem?.productId ?? null,
+      productTitle: firstItem?.productTitle ?? "Unknown",
+      productThumbnail: firstItem?.productThumbnail ?? null,
+      productDescription: firstItem?.productDescription ?? null,
       sellerName: seller?.name ?? "Unknown",
       sellerStoreUrl: seller?.storeUrl ?? null,
       sellerEmail: seller?.email ?? null,
-      sellerPhone: storefront?.contactPhone ?? null,
-      sellerWhatsapp: storefront?.contactWhatsapp ?? null,
+      sellerPhone: seller?.contactPhone ?? null,
+      sellerWhatsapp: seller?.contactWhatsapp ?? null,
       totalAmount: order.totalAmount,
       purchasedAt: order.createdAt,
-      downloadCount: order.downloadCount,
-      maxDownloads: order.maxDownloads,
-      downloadLink: order.downloadLink,
-      deliveryType: order.deliveryType,
-      externalUrl: order.externalUrl,
-      deliveryStatus: order.deliveryStatus,
+      downloadCount: firstItem?.downloadCount ?? 0,
+      maxDownloads: firstItem?.maxDownloads ?? 5,
+      downloadLink: firstItem?.downloadLink ?? null,
+      deliveryType: firstItem?.deliveryType ?? "download",
+      externalUrl: firstItem?.externalUrl ?? null,
+      deliveryStatus: firstItem?.deliveryStatus ?? null,
+      items,
     })
   } catch (error) {
     console.error("GET /api/buyer/orders/[orderId] error:", error)

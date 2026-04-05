@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { db, orders, downloadLogs } from "@/lib/db"
-import { eq, and, desc } from "drizzle-orm"
+import { db, orders, orderItems, downloadLogs } from "@/lib/db"
+import { eq, and, desc, inArray } from "drizzle-orm"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -22,14 +22,23 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 
     if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 })
 
-    // Fetch download logs for this order
-    const logs = await db
+    // Fetch order items
+    const items = await db
       .select()
-      .from(downloadLogs)
-      .where(eq(downloadLogs.orderId, id))
-      .orderBy(desc(downloadLogs.downloadedAt))
+      .from(orderItems)
+      .where(eq(orderItems.orderId, id))
 
-    return NextResponse.json({ ...order, downloadLogs: logs })
+    // Fetch download logs for all order items
+    const itemIds = items.map((item) => item.id)
+    const logs = itemIds.length
+      ? await db
+          .select()
+          .from(downloadLogs)
+          .where(inArray(downloadLogs.orderItemId, itemIds))
+          .orderBy(desc(downloadLogs.downloadedAt))
+      : []
+
+    return NextResponse.json({ ...order, items, downloadLogs: logs })
   } catch (error) {
     console.error("GET /api/sales/orders/[id] error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

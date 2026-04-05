@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { db, storefronts, users } from "@/lib/db"
+import { db, storefronts } from "@/lib/db"
 import { eq } from "drizzle-orm"
 import { storefrontSchema } from "@/lib/validations/storefront"
 import { uploadToImageKit, deleteFromImageKit, IMAGEKIT_FOLDERS } from "@/lib/imagekit"
@@ -109,18 +109,10 @@ export async function PUT(req: NextRequest) {
         .where(eq(storefronts.userId, userId))
         .returning()
     } else {
-      // Also get the user's storeUrl to seed into storefront
-      const [user] = await db
-        .select({ storeUrl: users.storeUrl })
-        .from(users)
-        .where(eq(users.id, userId))
-        .limit(1)
-
       ;[upserted] = await db
         .insert(storefronts)
         .values({
           userId,
-          storeUrl: user?.storeUrl ?? null,
           ...dataToWrite,
         })
         .returning()

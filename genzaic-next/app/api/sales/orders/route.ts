@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { db, orders } from "@/lib/db"
-import { eq, and, desc, ilike, or, count } from "drizzle-orm"
+import { db, orders, orderItems } from "@/lib/db"
+import { eq, and, desc, ilike, or, count, sql } from "drizzle-orm"
 
 // GET /api/sales/orders - paginated order list for the seller
 export async function GET(req: NextRequest) {
@@ -20,13 +20,12 @@ export async function GET(req: NextRequest) {
     const conditions = [eq(orders.sellerId, userId)]
 
     if (status && ["pending", "completed", "refunded"].includes(status)) {
-      conditions.push(eq(orders.status, status as "pending" | "completed" | "refunded"))
+      conditions.push(eq(orders.status, status as "pending" | "completed"))
     }
 
     if (search) {
       conditions.push(
         or(
-          ilike(orders.productTitle, `%${search}%`),
           ilike(orders.buyerName, `%${search}%`),
           ilike(orders.buyerEmail, `%${search}%`)
         )!
@@ -40,19 +39,14 @@ export async function GET(req: NextRequest) {
       db
         .select({
           id: orders.id,
-          productTitle: orders.productTitle,
-          productThumbnail: orders.productThumbnail,
+          orderNumber: orders.orderNumber,
           buyerName: orders.buyerName,
           buyerEmail: orders.buyerEmail,
           buyerPhone: orders.buyerPhone,
-          amount: orders.amount,
+          subtotal: orders.subtotal,
           gstAmount: orders.gstAmount,
           totalAmount: orders.totalAmount,
           status: orders.status,
-          deliveryType: orders.deliveryType,
-          deliveryStatus: orders.deliveryStatus,
-          paymentMethod: orders.paymentMethod,
-          downloadCount: orders.downloadCount,
           createdAt: orders.createdAt,
         })
         .from(orders)
@@ -62,8 +56,36 @@ export async function GET(req: NextRequest) {
         .offset(offset),
     ])
 
+    // Enrich each order with its first item's product info
+    const enrichedRows = await Promise.all(
+      rows.map(async (row) => {
+        const items = await db
+          .select({
+            productTitle: orderItems.productTitle,
+            productThumbnail: orderItems.productThumbnail,
+            deliveryType: orderItems.deliveryType,
+            deliveryStatus: orderItems.deliveryStatus,
+            downloadCount: orderItems.downloadCount,
+          })
+          .from(orderItems)
+          .where(eq(orderItems.orderId, row.id))
+          .limit(1)
+
+        const firstItem = items[0] ?? null
+
+        return {
+          ...row,
+          productTitle: firstItem?.productTitle ?? "Unknown",
+          productThumbnail: firstItem?.productThumbnail ?? null,
+          deliveryType: firstItem?.deliveryType ?? "download",
+          deliveryStatus: firstItem?.deliveryStatus ?? null,
+          downloadCount: firstItem?.downloadCount ?? 0,
+        }
+      })
+    )
+
     return NextResponse.json({
-      orders: rows,
+      orders: enrichedRows,
       total: Number(totalResult[0]?.count ?? 0),
       page,
       limit,

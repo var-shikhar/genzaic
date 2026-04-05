@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { db, users } from "@/lib/db"
+import { db, users, storefronts } from "@/lib/db"
 import { eq } from "drizzle-orm"
 import { updateProfileSchema } from "@/lib/validations/user"
 import { uploadToImageKit, deleteFromImageKit, IMAGEKIT_FOLDERS } from "@/lib/imagekit"
@@ -20,7 +20,7 @@ export async function GET(_req: NextRequest) {
         avatarUrl: users.avatarUrl,
         role: users.role,
         isSeller: users.isSeller,
-        storeUrl: users.storeUrl,
+        storeUrl: storefronts.storeUrl,
         planType: users.planType,
         kycStatus: users.kycStatus,
         onboardingComplete: users.onboardingComplete,
@@ -31,6 +31,7 @@ export async function GET(_req: NextRequest) {
         createdAt: users.createdAt,
       })
       .from(users)
+      .leftJoin(storefronts, eq(storefronts.userId, users.id))
       .where(eq(users.id, userId))
       .limit(1)
 
@@ -68,8 +69,9 @@ export async function PUT(req: NextRequest) {
     }
 
     const [existing] = await db
-      .select({ avatarUrl: users.avatarUrl, avatarFileId: users.avatarFileId, storeUrl: users.storeUrl })
+      .select({ avatarUrl: users.avatarUrl, avatarFileId: users.avatarFileId, storeUrl: storefronts.storeUrl })
       .from(users)
+      .leftJoin(storefronts, eq(storefronts.userId, users.id))
       .where(eq(users.id, userId))
       .limit(1)
 
@@ -78,11 +80,11 @@ export async function PUT(req: NextRequest) {
     // Check storeUrl uniqueness if it's being changed
     if (parsed.data.storeUrl && parsed.data.storeUrl !== existing.storeUrl) {
       const [taken] = await db
-        .select({ id: users.id })
-        .from(users)
-        .where(eq(users.storeUrl, parsed.data.storeUrl))
+        .select({ userId: storefronts.userId })
+        .from(storefronts)
+        .where(eq(storefronts.storeUrl, parsed.data.storeUrl))
         .limit(1)
-      if (taken && taken.id !== userId) {
+      if (taken && taken.userId !== userId) {
         return NextResponse.json({ error: "Store URL is already taken" }, { status: 409 })
       }
     }
@@ -107,9 +109,13 @@ export async function PUT(req: NextRequest) {
       updatedAt: new Date(),
     }
     if (parsed.data.name !== undefined) updateData.name = parsed.data.name
-    if (parsed.data.storeUrl !== undefined) updateData.storeUrl = parsed.data.storeUrl
 
     await db.update(users).set(updateData).where(eq(users.id, userId))
+
+    // Update storeUrl on storefronts table if provided
+    if (parsed.data.storeUrl !== undefined) {
+      await db.update(storefronts).set({ storeUrl: parsed.data.storeUrl, updatedAt: new Date() }).where(eq(storefronts.userId, userId))
+    }
 
     const [updated] = await db
       .select({
@@ -119,7 +125,7 @@ export async function PUT(req: NextRequest) {
         avatarUrl: users.avatarUrl,
         role: users.role,
         isSeller: users.isSeller,
-        storeUrl: users.storeUrl,
+        storeUrl: storefronts.storeUrl,
         planType: users.planType,
         kycStatus: users.kycStatus,
         onboardingComplete: users.onboardingComplete,
@@ -130,6 +136,7 @@ export async function PUT(req: NextRequest) {
         createdAt: users.createdAt,
       })
       .from(users)
+      .leftJoin(storefronts, eq(storefronts.userId, users.id))
       .where(eq(users.id, userId))
       .limit(1)
 

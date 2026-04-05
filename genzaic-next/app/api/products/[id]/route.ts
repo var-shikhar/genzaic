@@ -85,17 +85,17 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
     }
 
     // Handle thumbnail upload/replacement
-    let thumbnailUrl = existing.thumbnailUrl
-    let thumbnailFileId = existing.thumbnailFileId
+    let coverImageUrl = existing.coverImageUrl
+    let coverImageFileId = existing.coverImageFileId
     const thumbnail = formData.get("thumbnail") as File | null
     if (thumbnail && thumbnail.size > 0) {
-      if (existing.thumbnailFileId) {
-        await deleteFromImageKit(existing.thumbnailFileId).catch(() => {})
+      if (existing.coverImageFileId) {
+        await deleteFromImageKit(existing.coverImageFileId).catch(() => {})
       }
       const buffer = Buffer.from(await thumbnail.arrayBuffer())
       const result = await uploadToImageKit(buffer, thumbnail.name, IMAGEKIT_FOLDERS.THUMBNAILS)
-      thumbnailUrl = result.url
-      thumbnailFileId = result.fileId
+      coverImageUrl = result.url
+      coverImageFileId = result.fileId
     }
 
     // Handle product file upload/replacement
@@ -114,8 +114,8 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
 
     const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
-      thumbnailUrl,
-      thumbnailFileId,
+      coverImageUrl,
+      coverImageFileId,
       fileUrl,
       fileId,
     }
@@ -178,8 +178,8 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
     if (!existing) return NextResponse.json({ error: "Product not found" }, { status: 404 })
 
     // Delete files from ImageKit if present
-    if (existing.thumbnailFileId) {
-      await deleteFromImageKit(existing.thumbnailFileId).catch(() => {})
+    if (existing.coverImageFileId) {
+      await deleteFromImageKit(existing.coverImageFileId).catch(() => {})
     }
     if (existing.fileId) {
       await deleteFromImageKit(existing.fileId).catch(() => {})

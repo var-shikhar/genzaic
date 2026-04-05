@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { db, orders, downloadLogs } from "@/lib/db"
+import { db, orders, orderItems, downloadLogs } from "@/lib/db"
 import { eq, desc, count, inArray } from "drizzle-orm"
 
 // GET /api/sales/downloads - download logs for all of the seller's orders
@@ -27,14 +27,26 @@ export async function GET(req: NextRequest) {
 
     const orderIds = sellerOrders.map((o) => o.id)
 
-    const whereClause = inArray(downloadLogs.orderId, orderIds)
+    // Get all order item IDs for these orders
+    const sellerOrderItems = await db
+      .select({ id: orderItems.id })
+      .from(orderItems)
+      .where(inArray(orderItems.orderId, orderIds))
+
+    if (sellerOrderItems.length === 0) {
+      return NextResponse.json({ logs: [], total: 0, page, limit })
+    }
+
+    const itemIds = sellerOrderItems.map((oi) => oi.id)
+
+    const whereClause = inArray(downloadLogs.orderItemId, itemIds)
 
     const [totalResult, logs] = await Promise.all([
       db.select({ count: count() }).from(downloadLogs).where(whereClause),
       db
         .select({
           id: downloadLogs.id,
-          orderId: downloadLogs.orderId,
+          orderItemId: downloadLogs.orderItemId,
           productTitle: downloadLogs.productTitle,
           buyerName: downloadLogs.buyerName,
           buyerEmail: downloadLogs.buyerEmail,

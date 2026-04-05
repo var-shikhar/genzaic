@@ -36,20 +36,21 @@ export default function ResetPasswordPage() {
       setSuccess(true)
       toast.success("Password reset successfully!")
       setTimeout(() => router.push("/login"), 2000)
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as { data?: { error?: string } }
       toast.error(error?.data?.error || "Failed to reset password. The link may have expired.")
     }
   }
 
   if (!token) {
     return (
-      <div className="space-y-6 text-center">
-        <h1 className="text-2xl font-bold text-foreground">Invalid Reset Link</h1>
+      <div className="space-y-5 text-center">
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Invalid Reset Link</h1>
         <p className="text-muted-foreground text-sm">
           This password reset link is invalid or missing a token.
         </p>
         <Link href="/forgot-password">
-          <Button className="w-full h-11 gradient-primary">Request a new reset link</Button>
+          <Button className="w-full h-10 gradient-primary text-sm">Request a new reset link</Button>
         </Link>
       </div>
     )
@@ -57,70 +58,70 @@ export default function ResetPasswordPage() {
 
   if (success) {
     return (
-      <div className="space-y-6 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-green-500/10 flex items-center justify-center mx-auto">
-          <CheckCircle2 className="w-8 h-8 text-green-500" />
+      <div className="space-y-5 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-green-500/10 flex items-center justify-center mx-auto">
+          <CheckCircle2 className="w-7 h-7 text-green-500" />
         </div>
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-foreground">Password reset!</h1>
+        <div className="space-y-1.5">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Password reset!</h1>
           <p className="text-muted-foreground text-sm">
-            Your password has been updated. Redirecting you to login...
+            Your password has been updated. Redirecting to login...
           </p>
         </div>
         <Link href="/login">
-          <Button className="w-full h-11 gradient-primary">Go to Login</Button>
+          <Button className="w-full h-10 gradient-primary text-sm">Go to Login</Button>
         </Link>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+    <div className="space-y-5">
+      <div className="space-y-1.5">
+        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
           <KeyRound className="w-6 h-6 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold text-foreground">Set new password</h1>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Set new password</h1>
         <p className="text-muted-foreground text-sm">
           Enter a new password for your account.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
         <input type="hidden" {...register("token")} />
 
-        <div className="space-y-2">
-          <Label htmlFor="password">New Password</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="password" className="text-xs">New Password</Label>
           <Input
             id="password"
             type="password"
-            placeholder="••••••••"
+            placeholder="Min 8 chars, 1 upper, 1 number"
             autoFocus
             {...register("password")}
-            className={errors.password ? "border-destructive" : ""}
+            className={`h-9 text-sm ${errors.password ? "border-destructive" : ""}`}
           />
           {errors.password && (
-            <p className="text-xs text-destructive">{errors.password.message}</p>
+            <p className="text-[10px] text-destructive">{errors.password.message}</p>
           )}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="confirmPassword">Confirm New Password</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="confirmPassword" className="text-xs">Confirm New Password</Label>
           <Input
             id="confirmPassword"
             type="password"
-            placeholder="••••••••"
+            placeholder="Re-enter password"
             {...register("confirmPassword")}
-            className={errors.confirmPassword ? "border-destructive" : ""}
+            className={`h-9 text-sm ${errors.confirmPassword ? "border-destructive" : ""}`}
           />
           {errors.confirmPassword && (
-            <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>
+            <p className="text-[10px] text-destructive">{errors.confirmPassword.message}</p>
           )}
         </div>
 
         <Button
           type="submit"
-          className="w-full h-11 gradient-primary hover:opacity-90 transition-opacity"
+          className="w-full h-10 gradient-primary hover:opacity-90 transition-opacity text-sm"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -135,8 +136,8 @@ export default function ResetPasswordPage() {
       </form>
 
       <Link href="/login">
-        <Button variant="ghost" className="w-full h-11 gap-2">
-          <ArrowLeft className="w-4 h-4" />
+        <Button variant="ghost" className="w-full h-9 gap-1.5 text-xs">
+          <ArrowLeft className="w-3.5 h-3.5" />
           Back to login
         </Button>
       </Link>

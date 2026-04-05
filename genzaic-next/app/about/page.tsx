@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowRight, Heart, Sparkles, Users, Zap } from "lucide-react"
+import Footer from "@/components/layout/Footer"
 
 export const metadata = {
   title: "About GenZaic",
@@ -16,7 +17,9 @@ export default function AboutPage() {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">G</span>
+              <span className="text-primary-foreground font-bold text-lg">
+                G
+              </span>
             </div>
             <span className="font-bold text-xl text-foreground">GenZaic</span>
           </Link>
@@ -24,7 +27,10 @@ export default function AboutPage() {
             <Button variant="ghost" asChild>
               <Link href="/login">Login</Link>
             </Button>
-            <Button asChild className="gradient-primary hover:opacity-90 transition-opacity">
+            <Button
+              asChild
+              className="gradient-primary hover:opacity-90 transition-opacity"
+            >
               <Link href="/signup">Get Started</Link>
             </Button>
           </div>
@@ -39,7 +45,9 @@ export default function AboutPage() {
         <div className="container mx-auto relative z-10 max-w-3xl">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
             <Heart className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-primary">Made with love in India</span>
+            <span className="text-sm font-medium text-primary">
+              Made with love in India
+            </span>
           </div>
           <h1 className="font-bold text-4xl md:text-6xl text-foreground mb-6 leading-tight">
             About{" "}
@@ -48,8 +56,10 @@ export default function AboutPage() {
             </span>
           </h1>
           <p className="text-lg text-muted-foreground leading-relaxed">
-            GenZaic is India's premier digital product marketplace built specifically for the next generation
-            of creators. We believe every creator deserves a fair shot at building a sustainable digital business.
+            GenZaic is India's premier digital product marketplace built
+            specifically for the next generation of creators. We believe every
+            creator deserves a fair shot at building a sustainable digital
+            business.
           </p>
         </div>
       </section>
@@ -58,14 +68,19 @@ export default function AboutPage() {
       <section className="py-16 px-4">
         <div className="container mx-auto max-w-4xl">
           <div className="bg-card rounded-2xl border border-border p-8 md:p-12">
-            <h2 className="font-bold text-2xl md:text-3xl text-foreground mb-4">Our Mission</h2>
+            <h2 className="font-bold text-2xl md:text-3xl text-foreground mb-4">
+              Our Mission
+            </h2>
             <p className="text-muted-foreground text-lg leading-relaxed mb-6">
-              We're on a mission to empower Indian creators to monetize their knowledge, skills, and creativity
-              through a platform that truly understands the Indian market — from UPI payments to GST compliance.
+              We're on a mission to empower Indian creators to monetize their
+              knowledge, skills, and creativity through a platform that truly
+              understands the Indian market — from UPI payments to GST
+              compliance.
             </p>
             <p className="text-muted-foreground text-lg leading-relaxed">
-              GenZaic removes all barriers to entry. No setup fees, no monthly costs. Just create, upload,
-              and start earning. We only make money when you make money.
+              GenZaic removes all barriers to entry. No setup fees, no monthly
+              costs. Just create, upload, and start earning. We only make money
+              when you make money.
             </p>
           </div>
         </div>
@@ -104,12 +119,17 @@ export default function AboutPage() {
                   "No hidden fees, no surprises. We believe in honest pricing and clear communication. What you see is exactly what you get.",
               },
             ].map((value, i) => (
-              <Card key={i} className="border-border hover:border-primary/30 transition-colors">
+              <Card
+                key={i}
+                className="border-border hover:border-primary/30 transition-colors"
+              >
                 <CardContent className="p-6">
                   <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                     <value.icon className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="font-semibold text-foreground text-lg mb-2">{value.title}</h3>
+                  <h3 className="font-semibold text-foreground text-lg mb-2">
+                    {value.title}
+                  </h3>
                   <p className="text-muted-foreground">{value.description}</p>
                 </CardContent>
               </Card>
@@ -128,9 +148,16 @@ export default function AboutPage() {
               { number: "100%", label: "UPI Support" },
               { number: "T+7", label: "Bank Payouts" },
             ].map((stat, i) => (
-              <div key={i} className="bg-card rounded-xl border border-border p-6">
-                <div className="text-3xl font-bold text-primary mb-2">{stat.number}</div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
+              <div
+                key={i}
+                className="bg-card rounded-xl border border-border p-6"
+              >
+                <div className="text-3xl font-bold text-primary mb-2">
+                  {stat.number}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {stat.label}
+                </div>
               </div>
             ))}
           </div>
@@ -140,11 +167,18 @@ export default function AboutPage() {
       {/* CTA */}
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-2xl text-center">
-          <h2 className="font-bold text-3xl text-foreground mb-4">Ready to Join GenZaic?</h2>
+          <h2 className="font-bold text-3xl text-foreground mb-4">
+            Ready to Join GenZaic?
+          </h2>
           <p className="text-muted-foreground text-lg mb-8">
-            Start selling your digital products today. Zero setup fees, unlimited potential.
+            Start selling your digital products today. Zero setup fees,
+            unlimited potential.
           </p>
-          <Button size="lg" asChild className="gradient-primary hover:opacity-90 transition-opacity h-12 px-8">
+          <Button
+            size="lg"
+            asChild
+            className="gradient-primary hover:opacity-90 transition-opacity h-12 px-8"
+          >
             <Link href="/signup">
               Create Your Free Store
               <ArrowRight className="ml-2 w-5 h-5" />
@@ -154,12 +188,7 @@ export default function AboutPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-4 border-t border-border text-center">
-        <p className="text-sm text-muted-foreground">
-          © 2025 GenZaic. All rights reserved.{" "}
-          <Link href="/" className="text-primary hover:underline">Back to Home</Link>
-        </p>
-      </footer>
+      <Footer />
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { db, storefronts, users } from "@/lib/db"
-import { eq, and, ne } from "drizzle-orm"
+import { db, storefronts } from "@/lib/db"
+import { eq } from "drizzle-orm"
 import { checkSlugSchema } from "@/lib/validations/storefront"
 
 type RouteContext = { params: Promise<{ slug: string }> }
@@ -27,18 +27,10 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       .where(eq(storefronts.storeUrl, slug))
       .limit(1)
 
-    // Check users table storeUrl
-    const [existingUser] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.storeUrl, slug))
-      .limit(1)
-
     // Available if not taken, or if taken by the current user themselves
     const takenByStorefront = existingStorefront && existingStorefront.userId !== userId
-    const takenByUser = existingUser && existingUser.id !== userId
 
-    const available = !takenByStorefront && !takenByUser
+    const available = !takenByStorefront
 
     return NextResponse.json({ available })
   } catch (error) {

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -18,11 +18,12 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { formatCurrency, calculateGST, calculatePlatformFee } from "@/lib/utils"
 
-export default function CheckoutPage({ params }: { params: { productId: string } }) {
+export default function CheckoutPage() {
+  const { productId } = useParams<{ productId: string }>()
   const router = useRouter()
   const { data: session } = useSession()
-  const user = session?.user as any
-  const { data: product, isLoading } = useGetCheckoutProductQuery(params.productId)
+  const user = session?.user as { name?: string | null; email?: string | null } | undefined
+  const { data: product, isLoading } = useGetCheckoutProductQuery(productId)
   const [createOrder, { isLoading: isCreating }] = useCreateOrderMutation()
 
   const price = product ? parseFloat(product.price) : 0
@@ -34,7 +35,7 @@ export default function CheckoutPage({ params }: { params: { productId: string }
   const form = useForm<CheckoutInput>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
-      productId: params.productId,
+      productId: productId,
       buyerName: user?.name ?? "",
       buyerEmail: user?.email ?? "",
       buyerPhone: "",
@@ -45,7 +46,7 @@ export default function CheckoutPage({ params }: { params: { productId: string }
   const onSubmit = async (values: CheckoutInput) => {
     try {
       const order = await createOrder({
-        productId: params.productId,
+        productId: productId,
         buyerName: values.buyerName,
         buyerEmail: values.buyerEmail,
         buyerPhone: values.buyerPhone || undefined,
@@ -57,8 +58,9 @@ export default function CheckoutPage({ params }: { params: { productId: string }
       } else {
         router.push(`/my-purchases/${order.id}`)
       }
-    } catch (error: any) {
-      toast.error(error?.data?.error || "Checkout failed")
+    } catch (error: unknown) {
+      const err = error as { data?: { error?: string } }
+      toast.error(err?.data?.error || "Checkout failed")
     }
   }
 

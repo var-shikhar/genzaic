@@ -26,7 +26,7 @@ const fmt = (n: number) => `₹${n.toLocaleString("en-IN")}`
 
 export default function SettingsPage() {
   const { data: session, update } = useSession()
-  const user = session?.user as any
+  const user = session?.user as { name?: string | null; email?: string | null; image?: string | null; storeUrl?: string | null; isSeller?: boolean } | undefined
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [platformFeeMode, setPlatformFeeMode] = useState<"seller" | "buyer">("seller")
@@ -59,8 +59,9 @@ export default function SettingsPage() {
       const updated = await updateProfile(formData).unwrap()
       await update({ name: updated.name, image: updated.avatarUrl })
       toast.success("Profile updated!")
-    } catch (error: any) {
-      toast.error(error?.data?.error || "Update failed")
+    } catch (error: unknown) {
+      const err = error as { data?: { error?: string } }
+      toast.error(err?.data?.error || "Update failed")
     }
   }
 
@@ -69,8 +70,9 @@ export default function SettingsPage() {
       await changePassword({ currentPassword: values.currentPassword, newPassword: values.newPassword }).unwrap()
       toast.success("Password changed successfully!")
       passwordForm.reset()
-    } catch (error: any) {
-      toast.error(error?.data?.error || "Password change failed")
+    } catch (error: unknown) {
+      const err = error as { data?: { error?: string } }
+      toast.error(err?.data?.error || "Password change failed")
     }
   }
 
@@ -122,7 +124,7 @@ export default function SettingsPage() {
             <div className="relative">
               {avatarPreview || user?.image ? (
                 <div className="relative w-20 h-20 rounded-full overflow-hidden">
-                  <Image src={avatarPreview || user.image} alt="Avatar" fill className="object-cover" />
+                  <Image src={(avatarPreview || user?.image)!} alt="Avatar" fill className="object-cover" />
                   {avatarPreview && (
                     <button
                       onClick={() => { setAvatarPreview(null); setAvatarFile(null) }}

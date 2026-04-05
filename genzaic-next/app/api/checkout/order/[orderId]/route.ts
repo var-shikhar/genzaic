@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { db, orders } from "@/lib/db"
+import { db, orders, orderItems } from "@/lib/db"
 import { eq } from "drizzle-orm"
 
 type RouteContext = { params: Promise<{ orderId: string }> }
@@ -12,17 +12,11 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     const [order] = await db
       .select({
         id: orders.id,
-        productTitle: orders.productTitle,
-        productThumbnail: orders.productThumbnail,
+        orderNumber: orders.orderNumber,
         buyerName: orders.buyerName,
         buyerEmail: orders.buyerEmail,
         totalAmount: orders.totalAmount,
         status: orders.status,
-        deliveryType: orders.deliveryType,
-        downloadLink: orders.downloadLink,
-        externalUrl: orders.externalUrl,
-        downloadCount: orders.downloadCount,
-        maxDownloads: orders.maxDownloads,
         createdAt: orders.createdAt,
       })
       .from(orders)
@@ -31,7 +25,30 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 
     if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 })
 
-    return NextResponse.json(order)
+    // Get first order item for product-level info
+    const items = await db
+      .select()
+      .from(orderItems)
+      .where(eq(orderItems.orderId, orderId))
+
+    const firstItem = items[0] ?? null
+
+    return NextResponse.json({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      productTitle: firstItem?.productTitle ?? "Unknown",
+      productThumbnail: firstItem?.productThumbnail ?? null,
+      buyerName: order.buyerName,
+      buyerEmail: order.buyerEmail,
+      totalAmount: order.totalAmount,
+      status: order.status,
+      deliveryType: firstItem?.deliveryType ?? "download",
+      downloadLink: firstItem?.downloadLink ?? null,
+      externalUrl: firstItem?.externalUrl ?? null,
+      downloadCount: firstItem?.downloadCount ?? 0,
+      maxDownloads: firstItem?.maxDownloads ?? 5,
+      createdAt: order.createdAt,
+    })
   } catch (error) {
     console.error("GET /api/checkout/order/[orderId] error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

@@ -6,6 +6,7 @@ export const productSchema = z
     description: z.string().max(5000).optional(),
     price: z.coerce.number().min(0, "Price must be positive"),
     originalPrice: z.coerce.number().min(0).optional().nullable(),
+    categoryId: z.string().uuid("Invalid category ID").optional().nullable(),
     deliveryType: z.enum(["download", "external_link", "manual"]),
     externalUrl: z.string().url("Must be a valid URL").optional().nullable(),
     sellerContactEmail: z.string().email("Invalid email").optional().nullable(),
@@ -19,6 +20,7 @@ export const productSchema = z
     seoKeywords: z.string().max(1000).optional().nullable(),
     stock: z.coerce.number().int().min(0).optional().nullable(),
     isActive: z.boolean().default(true),
+    tagIds: z.array(z.string().uuid("Invalid tag ID")).optional().default([]),
   })
   .superRefine((data, ctx) => {
     if (data.deliveryType === "external_link" && !data.externalUrl) {

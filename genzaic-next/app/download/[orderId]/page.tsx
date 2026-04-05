@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Download, CheckCircle, Package, AlertCircle } from "lucide-react"
@@ -11,9 +12,10 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatCurrency } from "@/lib/utils"
 
-export default function DownloadPage({ params }: { params: { orderId: string } }) {
+export default function DownloadPage() {
+  const { orderId } = useParams<{ orderId: string }>()
   const [downloaded, setDownloaded] = useState(false)
-  const { data: order, isLoading } = useGetOrderForDownloadQuery(params.orderId)
+  const { data: order, isLoading } = useGetOrderForDownloadQuery(orderId)
   const [recordDownload] = useRecordDownloadMutation()
 
   const handleDownload = async () => {

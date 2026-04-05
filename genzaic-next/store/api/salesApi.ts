@@ -2,18 +2,18 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 
 export interface SalesOrder {
   id: string
+  orderNumber: string
   productTitle: string
   productThumbnail?: string | null
   buyerName: string
   buyerEmail: string
   buyerPhone?: string | null
-  amount: string
+  subtotal: string
   gstAmount: string
   totalAmount: string
-  status: "pending" | "completed" | "refunded"
+  status: "pending" | "completed"
   deliveryType: "download" | "external_link" | "manual"
   deliveryStatus?: "pending" | "delivered" | null
-  paymentMethod?: string | null
   downloadCount: number
   createdAt: string
 }

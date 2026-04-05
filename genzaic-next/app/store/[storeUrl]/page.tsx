@@ -64,8 +64,8 @@ export default function PublicStorefrontPage() {
   const [discountOnly, setDiscountOnly] = useState(false)
 
   // API returns storefront fields spread at root level with seller and products alongside
-  const storefront = data ? (data as any) : null
-  const products: any[] = (data as any)?.products ?? []
+  const storefront = data ?? null
+  const products = data?.products ?? []
 
   const themeId = storefront?.themeId ?? "modern"
   const themeColor = storefront?.primaryColor ?? "#073f7c"
@@ -79,7 +79,8 @@ export default function PublicStorefrontPage() {
   const isLight = themeId === "minimal"
 
   // isOwnStore — hide buy button if viewer owns this store
-  const isOwnStore = !!(session?.user as any)?.storeUrl && (session?.user as any)?.storeUrl === params.storeUrl
+  const userWithStore = session?.user as { storeUrl?: string | null } | undefined
+  const isOwnStore = !!userWithStore?.storeUrl && userWithStore?.storeUrl === params.storeUrl
 
   const filteredProducts = useMemo(() => {
     let list = products.map((p) => ({ ...p, hasDiscount: p.originalPrice && Number(p.originalPrice) > Number(p.price) }))

@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-const publicRoutes = ["/", "/about", "/disclaimer", "/login", "/signup", "/forgot-password", "/verify-email", "/reset-password"]
+const publicRoutes = ["/", "/about", "/disclaimer", "/privacy-policy", "/terms", "/refund-policy", "/login", "/signup", "/forgot-password", "/verify-email", "/reset-password"]
 const publicPrefixes = ["/store", "/checkout", "/download", "/api/auth", "/api/storefront/public", "/api/checkout/product"]
 const sellerRoutes = ["/dashboard", "/onboarding", "/plan-selection"]
 const buyerRoutes = ["/my-purchases"]

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { format } from "date-fns"
 import {
   TrendingUp, ShoppingCart, Calendar, Clock, Search, Download,
-  Eye, FileText, X, Package, Mail, Phone, CreditCard,
+  Eye, FileText, X, Package, Mail, Phone,
   CheckCircle2, XCircle, AlertCircle, ArrowUpDown, Filter,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -336,7 +336,7 @@ export default function SalesPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(downloadLogs ?? []).map((log: any) => (
+                    {(downloadLogs ?? []).map((log: { id: string; productTitle: string; buyerName: string; buyerEmail: string; downloadedAt: string; ipAddress?: string | null }) => (
                       <TableRow key={log.id}>
                         <TableCell className="font-medium">{log.productTitle}</TableCell>
                         <TableCell>{log.buyerName}</TableCell>
@@ -450,8 +450,8 @@ export default function SalesPage() {
                       <h3 className="font-semibold mb-3">Payment Details</h3>
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Base Amount</span>
-                          <span>{formatINR(selectedOrder.amount)}</span>
+                          <span className="text-muted-foreground">Subtotal</span>
+                          <span>{formatINR(selectedOrder.subtotal)}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">GST (18%)</span>
@@ -462,12 +462,6 @@ export default function SalesPage() {
                           <span>Total</span>
                           <span className="text-primary">{formatINR(selectedOrder.totalAmount)}</span>
                         </div>
-                        {selectedOrder.paymentMethod && (
-                          <div className="flex items-center gap-2 pt-1">
-                            <CreditCard className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Paid via {selectedOrder.paymentMethod}</span>
-                          </div>
-                        )}
                       </div>
                     </div>
 

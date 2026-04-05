@@ -96,7 +96,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const user = session?.user as any
+  const user = session?.user as { name?: string | null; email?: string | null; image?: string | null; storeUrl?: string | null } | undefined
 
   const handleLogout = async () => {
     await signOut({ redirect: false })

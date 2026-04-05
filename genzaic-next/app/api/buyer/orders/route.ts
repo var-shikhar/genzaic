@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { db, orders, storefronts, users } from "@/lib/db"
+import { db, orders, orderItems, storefronts, users } from "@/lib/db"
 import { eq, desc } from "drizzle-orm"
 
 // GET /api/buyer/orders - all orders placed by the authenticated buyer
@@ -19,55 +19,57 @@ export async function GET(_req: NextRequest) {
 
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
-    // Fetch all orders where buyerId matches OR buyerEmail matches (for guest orders linked later)
+    // Fetch all orders where buyerEmail matches (for guest orders linked later)
     const buyerOrders = await db
       .select()
       .from(orders)
       .where(eq(orders.buyerEmail, user.email))
       .orderBy(desc(orders.createdAt))
 
-    // Enrich with seller info
+    // Enrich with seller info and first order item
     const enriched = await Promise.all(
       buyerOrders.map(async (order) => {
         const [seller] = await db
           .select({
             name: users.name,
-            storeUrl: users.storeUrl,
+            storeUrl: storefronts.storeUrl,
             email: users.email,
-          })
-          .from(users)
-          .where(eq(users.id, order.sellerId))
-          .limit(1)
-
-        const [storefront] = await db
-          .select({
             storeName: storefronts.storeName,
             contactPhone: storefronts.contactPhone,
             contactWhatsapp: storefronts.contactWhatsapp,
           })
-          .from(storefronts)
-          .where(eq(storefronts.userId, order.sellerId))
+          .from(users)
+          .leftJoin(storefronts, eq(storefronts.userId, users.id))
+          .where(eq(users.id, order.sellerId))
           .limit(1)
+
+        const items = await db
+          .select()
+          .from(orderItems)
+          .where(eq(orderItems.orderId, order.id))
+
+        const firstItem = items[0] ?? null
 
         return {
           id: order.id,
-          productId: order.productId,
-          productTitle: order.productTitle,
-          productThumbnail: order.productThumbnail,
-          productDescription: order.productDescription,
+          orderNumber: order.orderNumber,
+          productId: firstItem?.productId ?? null,
+          productTitle: firstItem?.productTitle ?? "Unknown",
+          productThumbnail: firstItem?.productThumbnail ?? null,
+          productDescription: firstItem?.productDescription ?? null,
           sellerName: seller?.name ?? "Unknown",
           sellerStoreUrl: seller?.storeUrl ?? null,
           sellerEmail: seller?.email ?? null,
-          sellerPhone: storefront?.contactPhone ?? null,
-          sellerWhatsapp: storefront?.contactWhatsapp ?? null,
+          sellerPhone: seller?.contactPhone ?? null,
+          sellerWhatsapp: seller?.contactWhatsapp ?? null,
           totalAmount: order.totalAmount,
           purchasedAt: order.createdAt,
-          downloadCount: order.downloadCount,
-          maxDownloads: order.maxDownloads,
-          downloadLink: order.downloadLink,
-          deliveryType: order.deliveryType,
-          externalUrl: order.externalUrl,
-          deliveryStatus: order.deliveryStatus,
+          downloadCount: firstItem?.downloadCount ?? 0,
+          maxDownloads: firstItem?.maxDownloads ?? 5,
+          downloadLink: firstItem?.downloadLink ?? null,
+          deliveryType: firstItem?.deliveryType ?? "download",
+          externalUrl: firstItem?.externalUrl ?? null,
+          deliveryStatus: firstItem?.deliveryStatus ?? null,
         }
       })
     )

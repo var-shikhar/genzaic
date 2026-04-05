@@ -50,7 +50,8 @@ export default function VerifyEmailPage() {
       await verifyOTP({ email, otp }).unwrap()
       toast.success("Email verified successfully!")
       router.push("/login?verified=true")
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as { data?: { message?: string } }
       const message = error?.data?.message || "Invalid or expired OTP. Please try again."
       toast.error(message)
       setOtp("")
@@ -65,7 +66,6 @@ export default function VerifyEmailPage() {
       setCanResend(false)
       setOtp("")
 
-      // Restart countdown
       const timer = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
@@ -76,7 +76,8 @@ export default function VerifyEmailPage() {
           return prev - 1
         })
       }, 1000)
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as { data?: { message?: string } }
       const message = error?.data?.message || "Failed to resend OTP. Please try again."
       toast.error(message)
     }
@@ -87,26 +88,22 @@ export default function VerifyEmailPage() {
     : ""
 
   return (
-    <div className="space-y-6 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-        <Mail className="w-8 h-8 text-primary" />
+    <div className="space-y-5 text-center">
+      <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+        <Mail className="w-7 h-7 text-primary" />
       </div>
 
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold text-foreground">Check your email</h1>
+      <div className="space-y-1.5">
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Check your email</h1>
         <p className="text-muted-foreground text-sm">
-          We sent a 6-digit verification code to
+          We sent a 6-digit code to
         </p>
-        <p className="font-medium text-foreground">{maskedEmail}</p>
+        <p className="font-medium text-foreground text-sm">{maskedEmail}</p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="flex justify-center">
-          <InputOTP
-            maxLength={6}
-            value={otp}
-            onChange={setOtp}
-          >
+          <InputOTP maxLength={6} value={otp} onChange={setOtp}>
             <InputOTPGroup>
               <InputOTPSlot index={0} />
               <InputOTPSlot index={1} />
@@ -120,7 +117,7 @@ export default function VerifyEmailPage() {
 
         <Button
           onClick={handleVerify}
-          className="w-full h-11 gradient-primary hover:opacity-90 transition-opacity"
+          className="w-full h-10 gradient-primary hover:opacity-90 transition-opacity text-sm"
           disabled={isVerifying || otp.length !== 6}
         >
           {isVerifying ? (
@@ -134,33 +131,34 @@ export default function VerifyEmailPage() {
         </Button>
       </div>
 
-      <div className="space-y-3">
-        <p className="text-sm text-muted-foreground">Didn't receive the code?</p>
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">Didn&apos;t receive the code?</p>
 
         {canResend ? (
           <Button
             variant="ghost"
+            size="sm"
             onClick={handleResend}
             disabled={isResending}
-            className="h-9 gap-2"
+            className="h-8 gap-1.5 text-xs"
           >
             {isResending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="w-3.5 h-3.5" />
             )}
             Resend Code
           </Button>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Resend in{" "}
             <span className="font-medium text-primary tabular-nums">{countdown}s</span>
           </p>
         )}
       </div>
 
-      <div className="pt-2 border-t border-border">
-        <p className="text-xs text-muted-foreground">
+      <div className="pt-2 border-t border-border/60">
+        <p className="text-[11px] text-muted-foreground">
           Wrong email?{" "}
           <button
             onClick={() => router.push("/signup")}

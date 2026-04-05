@@ -27,7 +27,7 @@ export async function GET(_req: NextRequest) {
         .where(eq(products.storefrontId, storefront.id)),
       db
         .select({
-          totalRevenue: sum(orders.amount),
+          totalRevenue: sum(orders.subtotal),
           totalOrders: count(),
         })
         .from(orders)

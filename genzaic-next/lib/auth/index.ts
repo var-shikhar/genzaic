@@ -1,11 +1,20 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
-import { db, users, sessions } from "@/lib/db"
+import { db, users, sessions, storefronts } from "@/lib/db"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { loginSchema } from "@/lib/validations/auth"
 import { randomBytes } from "crypto"
+
+interface ExtendedUser {
+  role?: string
+  isSeller?: boolean
+  storeUrl?: string | null
+  planType?: string | null
+  kycStatus?: string | null
+  onboardingComplete?: boolean
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -38,6 +47,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           .set({ lastLoginAt: new Date() })
           .where(eq(users.id, user.id))
 
+        const [storefront] = await db
+          .select({ storeUrl: storefronts.storeUrl })
+          .from(storefronts)
+          .where(eq(storefronts.userId, user.id))
+          .limit(1)
+
         return {
           id: user.id,
           email: user.email,
@@ -45,7 +60,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           image: user.avatarUrl,
           role: user.role,
           isSeller: user.isSeller,
-          storeUrl: user.storeUrl,
+          storeUrl: storefront?.storeUrl ?? null,
           planType: user.planType,
           kycStatus: user.kycStatus,
           onboardingComplete: user.onboardingComplete,
@@ -57,12 +72,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id
-        token.role = (user as any).role
-        token.isSeller = (user as any).isSeller
-        token.storeUrl = (user as any).storeUrl
-        token.planType = (user as any).planType
-        token.kycStatus = (user as any).kycStatus
-        token.onboardingComplete = (user as any).onboardingComplete
+        token.role = (user as ExtendedUser).role
+        token.isSeller = (user as ExtendedUser).isSeller
+        token.storeUrl = (user as ExtendedUser).storeUrl
+        token.planType = (user as ExtendedUser).planType
+        token.kycStatus = (user as ExtendedUser).kycStatus
+        token.onboardingComplete = (user as ExtendedUser).onboardingComplete
       }
       if (trigger === "update" && session) {
         return { ...token, ...session.user }
@@ -72,12 +87,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string
-        ;(session.user as any).role = token.role
-        ;(session.user as any).isSeller = token.isSeller
-        ;(session.user as any).storeUrl = token.storeUrl
-        ;(session.user as any).planType = token.planType
-        ;(session.user as any).kycStatus = token.kycStatus
-        ;(session.user as any).onboardingComplete = token.onboardingComplete
+        ;(session.user as ExtendedUser).role = token.role as string
+        ;(session.user as ExtendedUser).isSeller = token.isSeller as boolean
+        ;(session.user as ExtendedUser).storeUrl = token.storeUrl as string | null
+        ;(session.user as ExtendedUser).planType = token.planType as string | null
+        ;(session.user as ExtendedUser).kycStatus = token.kycStatus as string | null
+        ;(session.user as ExtendedUser).onboardingComplete = token.onboardingComplete as boolean
       }
       return session
     },
