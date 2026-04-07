@@ -1,11 +1,22 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter, Bricolage_Grotesque } from "next/font/google"
 import "./globals.css"
 import { Providers } from "@/store/providers"
 import { Toaster } from "@/components/ui/sonner"
 import { auth } from "@/lib/auth"
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+})
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+  weight: ["400", "500", "600", "700", "800"],
+})
 
 export const metadata: Metadata = {
   title: { default: "GenZaic - Sell Digital Products", template: "%s | GenZaic" },
@@ -24,7 +35,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${bricolage.variable} font-sans antialiased`}>
         <Providers session={session}>
           {children}
           <Toaster richColors position="top-right" />

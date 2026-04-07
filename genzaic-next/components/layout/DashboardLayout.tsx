@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { getInitials } from "@/lib/utils"
 
 const navItems = [
@@ -135,6 +136,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className="flex-1" />
 
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
             </Button>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { format } from "date-fns"
 import {
@@ -209,9 +210,15 @@ export default function SalesPage() {
                           <TableCell className="font-mono text-xs">{order.id.slice(0, 8)}...</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted shrink-0">
+                              <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-muted shrink-0">
                                 {order.productThumbnail ? (
-                                  <img src={order.productThumbnail} alt={order.productTitle} className="w-full h-full object-cover" />
+                                  <Image
+                                    src={order.productThumbnail}
+                                    alt={order.productTitle}
+                                    fill
+                                    sizes="40px"
+                                    className="object-cover"
+                                  />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center">
                                     <Package className="w-4 h-4 text-muted-foreground" />
@@ -405,9 +412,15 @@ export default function SalesPage() {
                     <div>
                       <h3 className="font-semibold mb-3">Product</h3>
                       <div className="flex gap-4">
-                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted shrink-0">
+                        <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted shrink-0">
                           {selectedOrder.productThumbnail ? (
-                            <img src={selectedOrder.productThumbnail} alt={selectedOrder.productTitle} className="w-full h-full object-cover" />
+                            <Image
+                              src={selectedOrder.productThumbnail}
+                              alt={selectedOrder.productTitle}
+                              fill
+                              sizes="64px"
+                              className="object-cover"
+                            />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <Package className="w-6 h-6 text-muted-foreground" />

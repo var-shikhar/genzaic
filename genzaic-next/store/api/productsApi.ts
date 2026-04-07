@@ -69,11 +69,32 @@ export const productsApi = createApi({
     createProduct: builder.mutation<Product, FormData>({
       query: (body) => ({ url: "/products", method: "POST", body }),
       invalidatesTags: [{ type: "Product", id: "LIST" }, "ProductStats"],
+      // Post-success patch: insert the created product into every active
+      // getProducts cache so the dashboard list updates instantly without
+      // waiting for the LIST refetch.
+      async onQueryStarted(_arg, { dispatch, queryFulfilled, getState }) {
+        try {
+          const { data: created } = await queryFulfilled
+          for (const { endpointName, originalArgs } of productsApi.util.selectInvalidatedBy(getState(), [
+            { type: "Product", id: "LIST" },
+          ])) {
+            if (endpointName !== "getProducts") continue
+            dispatch(
+              productsApi.util.updateQueryData("getProducts", originalArgs as Parameters<typeof productsApi.endpoints.getProducts.initiate>[0], (draft) => {
+                draft.products.unshift(created)
+                draft.total += 1
+              })
+            )
+          }
+        } catch {
+          // Mutation failed — invalidation will refetch a clean list.
+        }
+      },
     }),
     updateProduct: builder.mutation<Product, { id: string; body: FormData }>({
       query: ({ id, body }) => ({ url: `/products/${id}`, method: "PUT", body }),
       invalidatesTags: (_, __, { id }) => [{ type: "Product", id }, { type: "Product", id: "LIST" }],
-      async onQueryStarted({ id }, { dispatch, queryFulfilled, getState }) {
+      async onQueryStarted({ id }, { dispatch, queryFulfilled }) {
         try {
           const { data: updatedProduct } = await queryFulfilled
           dispatch(
@@ -85,33 +106,53 @@ export const productsApi = createApi({
     deleteProduct: builder.mutation<void, string>({
       query: (id) => ({ url: `/products/${id}`, method: "DELETE" }),
       invalidatesTags: (_, __, id) => [{ type: "Product", id }, { type: "Product", id: "LIST" }, "ProductStats"],
-      async onQueryStarted(id, { dispatch, queryFulfilled }) {
-        const patchResult = dispatch(
-          productsApi.util.updateQueryData("getProducts", {}, (draft) => {
-            draft.products = draft.products.filter((p) => p.id !== id)
-            draft.total = draft.total - 1
-          })
-        )
+      // Optimistic remove: filter the deleted product from every active list
+      // cache (no matter what page/search/status args). Roll back on failure.
+      async onQueryStarted(id, { dispatch, queryFulfilled, getState }) {
+        const patches: { undo: () => void }[] = []
+        for (const { endpointName, originalArgs } of productsApi.util.selectInvalidatedBy(getState(), [
+          { type: "Product", id: "LIST" },
+        ])) {
+          if (endpointName !== "getProducts") continue
+          patches.push(
+            dispatch(
+              productsApi.util.updateQueryData("getProducts", originalArgs as Parameters<typeof productsApi.endpoints.getProducts.initiate>[0], (draft) => {
+                draft.products = draft.products.filter((p) => p.id !== id)
+                draft.total = Math.max(0, draft.total - 1)
+              })
+            )
+          )
+        }
         try {
           await queryFulfilled
         } catch {
-          patchResult.undo()
+          patches.forEach((p) => p.undo())
         }
       },
     }),
     toggleProductStatus: builder.mutation<Product, string>({
       query: (id) => ({ url: `/products/${id}/toggle-status`, method: "PATCH" }),
-      async onQueryStarted(id, { dispatch, queryFulfilled }) {
-        const patchResult = dispatch(
-          productsApi.util.updateQueryData("getProducts", {}, (draft) => {
-            const product = draft.products.find((p) => p.id === id)
-            if (product) product.isActive = !product.isActive
-          })
-        )
+      // Optimistic toggle: flip isActive on every active list cache. Reverts
+      // on server failure so the Switch UI snaps back.
+      async onQueryStarted(id, { dispatch, queryFulfilled, getState }) {
+        const patches: { undo: () => void }[] = []
+        for (const { endpointName, originalArgs } of productsApi.util.selectInvalidatedBy(getState(), [
+          { type: "Product", id: "LIST" },
+        ])) {
+          if (endpointName !== "getProducts") continue
+          patches.push(
+            dispatch(
+              productsApi.util.updateQueryData("getProducts", originalArgs as Parameters<typeof productsApi.endpoints.getProducts.initiate>[0], (draft) => {
+                const product = draft.products.find((p) => p.id === id)
+                if (product) product.isActive = !product.isActive
+              })
+            )
+          )
+        }
         try {
           await queryFulfilled
         } catch {
-          patchResult.undo()
+          patches.forEach((p) => p.undo())
         }
       },
       invalidatesTags: (_, __, id) => [{ type: "Product", id }],

@@ -7,7 +7,7 @@ import Image from "next/image"
 import { motion } from "framer-motion"
 import {
   Users, Package, ShoppingCart, Search, Filter,
-  ArrowUpDown, Instagram, Twitter, Youtube, Globe, Loader2, Star,
+  ArrowUpDown, Instagram, Twitter, Youtube, Globe, Loader2, Star, RefreshCcw, AlertCircle,
 } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useGetPublicStorefrontQuery } from "@/store/api/storefrontApi"
@@ -55,7 +55,7 @@ const formatINR = (n: number | string) =>
 export default function PublicStorefrontPage() {
   const params = useParams<{ storeUrl: string }>()
   const { data: session } = useSession()
-  const { data, isLoading, isError } = useGetPublicStorefrontQuery(params.storeUrl)
+  const { data, isLoading, isError, error, refetch, isFetching } = useGetPublicStorefrontQuery(params.storeUrl)
 
   const [search, setSearch] = useState("")
   const [category, setCategory] = useState<Category>("all")
@@ -119,13 +119,38 @@ export default function PublicStorefrontPage() {
   }
 
   if (isError || !storefront) {
+    // Distinguish 404 (store really doesn't exist) from network/server errors
+    // (worth retrying). RTK Query surfaces HTTP status on FetchBaseQueryError.
+    const status = (error as { status?: number } | undefined)?.status
+    const isNotFound = status === 404
+
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Package className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Store Not Found</h1>
-          <p className="text-muted-foreground mb-4">The store you&apos;re looking for doesn&apos;t exist.</p>
-          <Button asChild><Link href="/">Go Home</Link></Button>
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          {isNotFound ? (
+            <Package className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+          ) : (
+            <AlertCircle className="w-16 h-16 mx-auto text-destructive mb-4" />
+          )}
+          <h1 className="text-2xl font-bold mb-2">
+            {isNotFound ? "Store Not Found" : "Couldn't load store"}
+          </h1>
+          <p className="text-muted-foreground mb-6">
+            {isNotFound
+              ? "The store you're looking for doesn't exist."
+              : "Something went wrong while loading this store. Check your connection and try again."}
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            {!isNotFound && (
+              <Button onClick={() => refetch()} disabled={isFetching} className="gap-2">
+                <RefreshCcw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
+                Try Again
+              </Button>
+            )}
+            <Button asChild variant={isNotFound ? "default" : "outline"}>
+              <Link href="/">Go Home</Link>
+            </Button>
+          </div>
         </div>
       </div>
     )

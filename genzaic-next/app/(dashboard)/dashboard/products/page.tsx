@@ -4,8 +4,9 @@ import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { toast } from "sonner"
-import { Plus, Search, Edit, Trash2, ToggleLeft, ToggleRight, Package } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Package } from "lucide-react"
 import { useGetProductsQuery, useDeleteProductMutation, useToggleProductStatusMutation } from "@/store/api/productsApi"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -28,7 +29,12 @@ import { formatCurrency, formatDate } from "@/lib/utils"
 export default function ProductsPage() {
   const [search, setSearch] = useState("")
   const [page] = useState(1)
-  const { data, isLoading } = useGetProductsQuery({ page, limit: 20, search: search || undefined })
+  const debouncedSearch = useDebouncedValue(search, 300)
+  const { data, isLoading } = useGetProductsQuery({
+    page,
+    limit: 20,
+    search: debouncedSearch || undefined,
+  })
   const [deleteProduct] = useDeleteProductMutation()
   const [toggleStatus] = useToggleProductStatusMutation()
 
@@ -41,9 +47,10 @@ export default function ProductsPage() {
     }
   }
 
-  const handleToggle = async (id: string) => {
+  const handleToggle = async (id: string, nextActive: boolean) => {
     try {
       await toggleStatus(id).unwrap()
+      toast.success(nextActive ? "Product published" : "Product unpublished")
     } catch {
       toast.error("Failed to update status")
     }
@@ -118,7 +125,7 @@ export default function ProductsPage() {
                   <div className="flex items-center gap-3 shrink-0">
                     <Switch
                       checked={product.isActive}
-                      onCheckedChange={() => handleToggle(product.id)}
+                      onCheckedChange={(next) => handleToggle(product.id, next)}
                     />
                     <Button asChild variant="ghost" size="icon">
                       <Link href={`/dashboard/products/${product.id}/edit`}>

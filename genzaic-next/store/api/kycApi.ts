@@ -30,6 +30,24 @@ export const kycApi = createApi({
     submitKyc: builder.mutation<KycData, FormData>({
       query: (body) => ({ url: "/", method: "POST", body }),
       invalidatesTags: ["KYC"],
+      // Optimistic: flip the cached KYC status to "pending" the moment the
+      // user clicks Submit, so the page reflects the in-review state without
+      // waiting for the server. Server response replaces this on fulfillment.
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        const patch = dispatch(
+          kycApi.util.updateQueryData("getKyc", undefined, (draft) => {
+            if (draft) {
+              draft.verificationStatus = "pending"
+              draft.rejectionReason = null
+            }
+          })
+        )
+        try {
+          await queryFulfilled
+        } catch {
+          patch.undo()
+        }
+      },
     }),
     deleteKyc: builder.mutation<void, void>({
       query: () => ({ url: "/", method: "DELETE" }),
