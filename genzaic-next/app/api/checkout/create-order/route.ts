@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db, products, storefronts, orders, orderItems } from "@/lib/db"
-import { eq, and, sql } from "drizzle-orm"
+import { eq, and } from "drizzle-orm"
 import { checkoutSchema } from "@/lib/validations/checkout"
 import { auth } from "@/lib/auth"
+import { enforceRateLimit } from "@/lib/rate-limit"
+import { cache, cacheKeys } from "@/lib/cache"
 
 const PLATFORM_FEE_PERCENT = 0.05 // 5%
 const GST_RATE = 0.18 // 18% GST on product price
 
 // POST /api/checkout/create-order
 export async function POST(req: NextRequest) {
+  // 10 orders per IP per minute — legitimate buyers won't hit this; bots will.
+  const limited = enforceRateLimit(req, "checkout", { max: 10, windowSec: 60 })
+  if (limited) return limited
+
   try {
     const body = await req.json()
     const parsed = checkoutSchema.safeParse(body)
@@ -123,6 +129,11 @@ export async function POST(req: NextRequest) {
         .set({ stock: product.stock - 1 })
         .where(eq(products.id, productId))
     }
+
+    // Bust cached aggregations so the seller's dashboard reflects the new
+    // order within 1 dashboard refresh instead of waiting for the 30s TTL.
+    cache.delete(cacheKeys.salesStats(storefront.userId))
+    cache.delete(cacheKeys.recentOrders(storefront.userId))
 
     // Return a response shape that matches the frontend expectations
     return NextResponse.json(

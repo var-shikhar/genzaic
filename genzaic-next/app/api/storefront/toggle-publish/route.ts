@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db, storefronts } from "@/lib/db"
 import { eq } from "drizzle-orm"
+import { invalidatePublicStorefrontBySlug } from "@/lib/data/public-storefront"
 
 // PATCH /api/storefront/toggle-publish
 export async function PATCH(_req: NextRequest) {
@@ -11,7 +12,11 @@ export async function PATCH(_req: NextRequest) {
     const userId = session.user.id as string
 
     const [existing] = await db
-      .select({ id: storefronts.id, isPublished: storefronts.isPublished })
+      .select({
+        id: storefronts.id,
+        isPublished: storefronts.isPublished,
+        storeUrl: storefronts.storeUrl,
+      })
       .from(storefronts)
       .where(eq(storefronts.userId, userId))
       .limit(1)
@@ -25,6 +30,10 @@ export async function PATCH(_req: NextRequest) {
       .set({ isPublished: !existing.isPublished, updatedAt: new Date() })
       .where(eq(storefronts.userId, userId))
       .returning({ isPublished: storefronts.isPublished })
+
+    // Critical: publishing/unpublishing changes whether the storefront
+    // returns 200 or 404, so the cache MUST be busted immediately.
+    if (existing.storeUrl) invalidatePublicStorefrontBySlug(existing.storeUrl)
 
     return NextResponse.json({ isPublished: updated.isPublished })
   } catch (error) {

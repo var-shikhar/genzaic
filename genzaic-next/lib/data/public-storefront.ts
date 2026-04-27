@@ -1,0 +1,119 @@
+import "server-only"
+import { db, storefronts, products, users } from "@/lib/db"
+import { eq, and, desc } from "drizzle-orm"
+import { cache, cacheKeys, cacheTTL } from "@/lib/cache"
+
+// Hard cap on how many products are returned in the public payload. Sellers
+// with hundreds of products would otherwise blow up the response.
+export const PUBLIC_PRODUCT_LIMIT = 60
+
+/**
+ * Loads a public storefront by URL slug. Used by both the API route at
+ * `/api/storefront/public/[slug]` AND the server-rendered page at
+ * `/store/[storeUrl]`. Sharing the loader ensures the in-memory cache hits
+ * across both call sites — a single warm Node instance handling both
+ * SSR HTML rendering and client-side RTK Query refetches will only execute
+ * the underlying queries once per cache window per slug.
+ *
+ * Cached for 2 minutes (`cacheTTL.medium`). Public storefronts change rarely
+ * enough that staleness is acceptable; the dashboard's edit flow can be
+ * extended later to call `cache.invalidateByPrefix("public-storefront:")` on
+ * publish.
+ */
+export async function getPublicStorefront(slug: string) {
+  return cache.getOrSet(
+    cacheKeys.publicStorefront(slug),
+    async () => {
+      const [storefront] = await db
+        .select()
+        .from(storefronts)
+        .where(eq(storefronts.storeUrl, slug))
+        .limit(1)
+
+      if (!storefront) {
+        return { kind: "not_found" as const }
+      }
+
+      if (!storefront.isPublished) {
+        return { kind: "unpublished" as const }
+      }
+
+      const [sellerRows, activeProducts] = await Promise.all([
+        db
+          .select({
+            id: users.id,
+            name: users.name,
+            avatarUrl: users.avatarUrl,
+            followersCount: users.followersCount,
+            totalSales: users.totalSales,
+          })
+          .from(users)
+          .where(eq(users.id, storefront.userId))
+          .limit(1),
+        db
+          .select()
+          .from(products)
+          .where(and(eq(products.storefrontId, storefront.id), eq(products.isActive, true)))
+          .orderBy(desc(products.createdAt))
+          .limit(PUBLIC_PRODUCT_LIMIT),
+      ])
+
+      return {
+        kind: "ok" as const,
+        payload: {
+          ...storefront,
+          seller: sellerRows[0] ?? null,
+          products: activeProducts,
+        },
+      }
+    },
+    { ttl: cacheTTL.medium, tags: ["public-storefront", `slug:${slug}`] },
+  )
+}
+
+/**
+ * Convenience helper for the SSR page which only cares about the success case.
+ * Returns null for not_found / unpublished so the page can call `notFound()`.
+ */
+export async function getPublicStorefrontPayload(slug: string) {
+  const result = await getPublicStorefront(slug)
+  return result.kind === "ok" ? result.payload : null
+}
+
+export type PublicStorefrontPayload = NonNullable<
+  Awaited<ReturnType<typeof getPublicStorefrontPayload>>
+>
+
+/**
+ * Invalidate every cached read that could possibly reference this seller's
+ * public storefront — the storefront envelope itself AND every single
+ * product detail entry underneath it. Called from every mutation endpoint
+ * that changes the published payload (storefront edits, publish toggle,
+ * product create/update/delete/toggle-status).
+ *
+ * We accept the userId (not the slug) because all the mutation routes start
+ * from the session and haven't loaded the storefront row yet. A single
+ * indexed lookup finds the slug; if the storefront doesn't exist or the slug
+ * is null, we no-op.
+ */
+export async function invalidatePublicStorefrontForUser(userId: string): Promise<void> {
+  const [row] = await db
+    .select({ storeUrl: storefronts.storeUrl })
+    .from(storefronts)
+    .where(eq(storefronts.userId, userId))
+    .limit(1)
+
+  const slug = row?.storeUrl
+  if (!slug) return
+
+  cache.delete(cacheKeys.publicStorefront(slug))
+  cache.invalidateByPrefix(`public-storefront-product:${slug}:`)
+}
+
+/**
+ * Variant for callers that already have the slug in hand.
+ */
+export function invalidatePublicStorefrontBySlug(slug: string): void {
+  cache.delete(cacheKeys.publicStorefront(slug))
+  cache.invalidateByPrefix(`public-storefront-product:${slug}:`)
+}

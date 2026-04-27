@@ -65,6 +65,10 @@ export const productsApi = createApi({
     getProductStats: builder.query<ProductStats, void>({
       query: () => "/products/stats",
       providesTags: ["ProductStats"],
+      // Stats are also server-side cached for 30s. Holding the client-side
+      // copy for 5 minutes after unmount means rapid dashboard navigation
+      // shows the cached numbers instantly without re-fetching.
+      keepUnusedDataFor: 300,
     }),
     createProduct: builder.mutation<Product, FormData>({
       query: (body) => ({ url: "/products", method: "POST", body }),

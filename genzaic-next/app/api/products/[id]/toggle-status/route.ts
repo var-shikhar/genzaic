@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db, storefronts, products } from "@/lib/db"
 import { eq, and } from "drizzle-orm"
+import { cache, cacheKeys } from "@/lib/cache"
+import { invalidatePublicStorefrontBySlug } from "@/lib/data/public-storefront"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -15,7 +17,7 @@ export async function PATCH(_req: NextRequest, { params }: RouteContext) {
     const { id } = await params
 
     const [storefront] = await db
-      .select({ id: storefronts.id })
+      .select({ id: storefronts.id, storeUrl: storefronts.storeUrl })
       .from(storefronts)
       .where(eq(storefronts.userId, userId))
       .limit(1)
@@ -35,6 +37,11 @@ export async function PATCH(_req: NextRequest, { params }: RouteContext) {
       .set({ isActive: !existing.isActive, updatedAt: new Date() })
       .where(eq(products.id, id))
       .returning()
+
+    // Toggling active status changes which products appear in the public
+    // storefront payload, so the cache must be busted immediately.
+    cache.delete(cacheKeys.productStats(storefront.id))
+    if (storefront.storeUrl) invalidatePublicStorefrontBySlug(storefront.storeUrl)
 
     return NextResponse.json(updated)
   } catch (error) {

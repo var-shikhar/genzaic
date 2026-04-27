@@ -41,6 +41,10 @@ export const storefrontApi = createApi({
     }),
     getPublicStorefront: builder.query<Storefront & { products: Product[]; seller?: { id: string; name: string; avatarUrl?: string | null; followersCount: number; totalSales: number } }, string>({
       query: (slug) => `/storefront/public/${slug}`,
+      // Slow-changing public data — keep it cached client-side for 1 hour
+      // after the last consumer unmounts. Cuts repeat fetches when users
+      // navigate between a store and its product pages.
+      keepUnusedDataFor: 3600,
     }),
     updateStorefront: builder.mutation<Storefront, FormData>({
       query: (body) => ({ url: "/storefront", method: "PUT", body }),

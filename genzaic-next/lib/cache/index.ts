@@ -192,6 +192,8 @@ export const cacheKeys = {
   // Storefronts
   storefront: (userId: string) => `storefront:${userId}`,
   publicStorefront: (storeUrl: string) => `public-storefront:${storeUrl}`,
+  publicStorefrontProduct: (storeUrl: string, productId: string) =>
+    `public-storefront-product:${storeUrl}:${productId}`,
 
   // Categories & Tags
   categories: () => "categories:all",

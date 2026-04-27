@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx dotenv-cli *)",
+      "Bash(npm view *)",
+      "Bash(npx -y dotenv-cli -e .env.local -- npx -y drizzle-kit@0.29.1 introspect)",
+      "Bash(npm i *)",
+      "Bash(yes \"\")",
+      "Bash(npx tsx *)"
+    ]
+  }
+}

@@ -4,8 +4,13 @@ import { eq } from "drizzle-orm"
 import { randomBytes } from "crypto"
 import { sendPasswordResetEmail } from "@/lib/email"
 import { forgotPasswordSchema } from "@/lib/validations/auth"
+import { enforceRateLimit } from "@/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
+  // 3 reset attempts per IP per 10 minutes — prevents email enumeration spam.
+  const limited = enforceRateLimit(req, "forgot-password", { max: 3, windowSec: 600 })
+  if (limited) return limited
+
   try {
     const body = await req.json()
     const parsed = forgotPasswordSchema.safeParse(body)

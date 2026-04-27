@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db, orders, orderItems } from "@/lib/db"
-import { eq, and, desc, ilike, or, count, sql } from "drizzle-orm"
+import { eq, and, desc, ilike, or, count, inArray } from "drizzle-orm"
 
 // GET /api/sales/orders - paginated order list for the seller
 export async function GET(req: NextRequest) {
@@ -56,11 +56,13 @@ export async function GET(req: NextRequest) {
         .offset(offset),
     ])
 
-    // Enrich each order with its first item's product info
-    const enrichedRows = await Promise.all(
-      rows.map(async (row) => {
-        const items = await db
+    // PERF: Batch-fetch all order items for the page in ONE query instead of
+    // firing one per order. At limit=100 this drops from 101 round-trips to 1.
+    const orderIdsInPage = rows.map((r) => r.id)
+    const itemsForPage = orderIdsInPage.length
+      ? await db
           .select({
+            orderId: orderItems.orderId,
             productTitle: orderItems.productTitle,
             productThumbnail: orderItems.productThumbnail,
             deliveryType: orderItems.deliveryType,
@@ -68,21 +70,29 @@ export async function GET(req: NextRequest) {
             downloadCount: orderItems.downloadCount,
           })
           .from(orderItems)
-          .where(eq(orderItems.orderId, row.id))
-          .limit(1)
+          .where(inArray(orderItems.orderId, orderIdsInPage))
+      : []
 
-        const firstItem = items[0] ?? null
+    // Group items by orderId, keeping only the first item per order to match
+    // the existing single-product-per-row UX.
+    const firstItemByOrderId = new Map<string, (typeof itemsForPage)[number]>()
+    for (const item of itemsForPage) {
+      if (!firstItemByOrderId.has(item.orderId)) {
+        firstItemByOrderId.set(item.orderId, item)
+      }
+    }
 
-        return {
-          ...row,
-          productTitle: firstItem?.productTitle ?? "Unknown",
-          productThumbnail: firstItem?.productThumbnail ?? null,
-          deliveryType: firstItem?.deliveryType ?? "download",
-          deliveryStatus: firstItem?.deliveryStatus ?? null,
-          downloadCount: firstItem?.downloadCount ?? 0,
-        }
-      })
-    )
+    const enrichedRows = rows.map((row) => {
+      const firstItem = firstItemByOrderId.get(row.id) ?? null
+      return {
+        ...row,
+        productTitle: firstItem?.productTitle ?? "Unknown",
+        productThumbnail: firstItem?.productThumbnail ?? null,
+        deliveryType: firstItem?.deliveryType ?? "download",
+        deliveryStatus: firstItem?.deliveryStatus ?? null,
+        downloadCount: firstItem?.downloadCount ?? 0,
+      }
+    })
 
     return NextResponse.json({
       orders: enrichedRows,

@@ -35,6 +35,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Start the ImageKit TCP+TLS handshake in parallel with HTML parsing.
+            Every product thumbnail, storefront cover, and avatar is served
+            from this origin, so the savings compound per page. */}
+        <link rel="preconnect" href="https://ik.imagekit.io" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://ik.imagekit.io" />
+      </head>
       <body className={`${inter.variable} ${bricolage.variable} font-sans antialiased`}>
         <Providers session={session}>
           {children}

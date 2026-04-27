@@ -145,7 +145,14 @@ export default async function ProductDetailPage({
           {/* Left - Product Image */}
           <div className="relative aspect-[4/3] bg-muted rounded-2xl overflow-hidden">
             {product.thumbnailUrl ? (
-              <Image src={product.thumbnailUrl} alt={product.title} fill className="object-cover" />
+              <Image
+                src={product.thumbnailUrl}
+                alt={product.title}
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                priority
+                className="object-cover"
+              />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <Package className="w-24 h-24 text-muted-foreground" />

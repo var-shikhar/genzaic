@@ -2,11 +2,11 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
-import { Eye, EyeOff, Loader2, ShoppingBag, Store } from "lucide-react"
+import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -16,15 +16,9 @@ import { useSignupMutation } from "@/store/api/authApi"
 
 export default function SignupPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const defaultRole =
-    (searchParams.get("role") as "buyer" | "seller") || "buyer"
 
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [selectedRole, setSelectedRole] = useState<"buyer" | "seller">(
-    defaultRole,
-  )
   const [agreeToTerms, setAgreeToTerms] = useState(false)
 
   const [signup, { isLoading }] = useSignupMutation()
@@ -36,13 +30,8 @@ export default function SignupPage() {
     formState: { errors },
   } = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { role: defaultRole, agreeToTerms: false },
+    defaultValues: { role: "seller", agreeToTerms: false },
   })
-
-  const handleRoleChange = (role: "buyer" | "seller") => {
-    setSelectedRole(role)
-    setValue("role", role)
-  }
 
   const onSubmit = async (data: SignupInput) => {
     if (!agreeToTerms) {
@@ -55,7 +44,7 @@ export default function SignupPage() {
         name: data.name,
         email: data.email,
         password: data.password,
-        role: data.role,
+        role: "seller",
       }).unwrap()
 
       toast.success("Account created! Please verify your email.")
@@ -72,52 +61,22 @@ export default function SignupPage() {
     <div className="space-y-4">
       <div className="space-y-1.5">
         <h1 className="text-2xl font-bold text-foreground tracking-tight">
-          Create your account
+          Create your seller account
         </h1>
         <p className="text-muted-foreground text-sm">
           Start your digital business with GenZaic
         </p>
       </div>
 
-      {/* Role Toggle */}
-      <div className="grid grid-cols-2 gap-1 p-0.5 bg-muted rounded-lg">
-        <button
-          type="button"
-          onClick={() => handleRoleChange("buyer")}
-          className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-md text-xs font-medium transition-all ${
-            selectedRole === "buyer"
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <ShoppingBag className="w-3.5 h-3.5" />
-          Buyer
-        </button>
-        <button
-          type="button"
-          onClick={() => handleRoleChange("seller")}
-          className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-md text-xs font-medium transition-all ${
-            selectedRole === "seller"
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Store className="w-3.5 h-3.5" />
-          Seller
-        </button>
+      <div className="bg-primary/5 border border-primary/15 rounded-lg px-3 py-2">
+        <p className="text-[10px] text-primary font-medium leading-relaxed">
+          Seller account: Create your storefront and start selling digital
+          products with zero setup fees.
+        </p>
       </div>
 
-      {selectedRole === "seller" && (
-        <div className="bg-primary/5 border border-primary/15 rounded-lg px-3 py-2">
-          <p className="text-[10px] text-primary font-medium leading-relaxed">
-            Seller account: Create your storefront and start selling digital
-            products with zero setup fees.
-          </p>
-        </div>
-      )}
-
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-        <input type="hidden" {...register("role")} value={selectedRole} />
+        <input type="hidden" {...register("role")} value="seller" />
 
         {/* Name & Email in a grid on wider screens */}
         <div className="grid grid-cols-1 gap-3">

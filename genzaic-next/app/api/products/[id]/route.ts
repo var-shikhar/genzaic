@@ -4,6 +4,8 @@ import { db, storefronts, products } from "@/lib/db"
 import { eq, and } from "drizzle-orm"
 import { updateProductSchema } from "@/lib/validations/product"
 import { uploadToImageKit, deleteFromImageKit, IMAGEKIT_FOLDERS } from "@/lib/imagekit"
+import { cache, cacheKeys } from "@/lib/cache"
+import { invalidatePublicStorefrontBySlug } from "@/lib/data/public-storefront"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -17,7 +19,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     const { id } = await params
 
     const [storefront] = await db
-      .select({ id: storefronts.id })
+      .select({ id: storefronts.id, storeUrl: storefronts.storeUrl })
       .from(storefronts)
       .where(eq(storefronts.userId, userId))
       .limit(1)
@@ -49,7 +51,7 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
     const { id } = await params
 
     const [storefront] = await db
-      .select({ id: storefronts.id })
+      .select({ id: storefronts.id, storeUrl: storefronts.storeUrl })
       .from(storefronts)
       .where(eq(storefronts.userId, userId))
       .limit(1)
@@ -145,6 +147,11 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
       .where(eq(products.id, id))
       .returning()
 
+    // Bust stale reads: product stats (counts/aggregates) and every public
+    // storefront cache entry that exposes this product.
+    cache.delete(cacheKeys.productStats(storefront.id))
+    if (storefront.storeUrl) invalidatePublicStorefrontBySlug(storefront.storeUrl)
+
     return NextResponse.json(updated)
   } catch (error) {
     console.error("PUT /api/products/[id] error:", error)
@@ -162,7 +169,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
     const { id } = await params
 
     const [storefront] = await db
-      .select({ id: storefronts.id })
+      .select({ id: storefronts.id, storeUrl: storefronts.storeUrl })
       .from(storefronts)
       .where(eq(storefronts.userId, userId))
       .limit(1)
@@ -186,6 +193,10 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
     }
 
     await db.delete(products).where(eq(products.id, id))
+
+    // Bust stale reads: product stats + public storefront listing.
+    cache.delete(cacheKeys.productStats(storefront.id))
+    if (storefront.storeUrl) invalidatePublicStorefrontBySlug(storefront.storeUrl)
 
     return NextResponse.json({ message: "Product deleted" })
   } catch (error) {

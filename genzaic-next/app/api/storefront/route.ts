@@ -4,6 +4,7 @@ import { db, storefronts } from "@/lib/db"
 import { eq } from "drizzle-orm"
 import { storefrontSchema } from "@/lib/validations/storefront"
 import { uploadToImageKit, deleteFromImageKit, IMAGEKIT_FOLDERS } from "@/lib/imagekit"
+import { invalidatePublicStorefrontBySlug } from "@/lib/data/public-storefront"
 
 // GET /api/storefront - get the authenticated user's own storefront
 export async function GET(_req: NextRequest) {
@@ -116,6 +117,13 @@ export async function PUT(req: NextRequest) {
           ...dataToWrite,
         })
         .returning()
+    }
+
+    // Bust the public caches so the next anonymous visitor sees fresh data.
+    // Also bust the previous slug if the seller renamed their store URL.
+    if (upserted?.storeUrl) invalidatePublicStorefrontBySlug(upserted.storeUrl)
+    if (existing?.storeUrl && existing.storeUrl !== upserted?.storeUrl) {
+      invalidatePublicStorefrontBySlug(existing.storeUrl)
     }
 
     return NextResponse.json(upserted)

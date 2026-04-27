@@ -2,14 +2,19 @@ import { NextRequest, NextResponse } from "next/server"
 import { db, users } from "@/lib/db"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
-import { signupSchema } from "@/lib/validations/auth"
+import { signupApiSchema } from "@/lib/validations/auth"
 import { generateOTP } from "@/lib/utils"
 import { sendVerificationEmail } from "@/lib/email"
+import { enforceRateLimit } from "@/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
+  // 5 signups per IP per 5 minutes — protects against bcrypt-CPU + email-send abuse.
+  const limited = enforceRateLimit(req, "signup", { max: 5, windowSec: 300 })
+  if (limited) return limited
+
   try {
     const body = await req.json()
-    const parsed = signupSchema.safeParse(body)
+    const parsed = signupApiSchema.safeParse(body)
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -18,7 +23,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { name, email, password, role } = parsed.data
+    const { name, email, password } = parsed.data
 
     const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1)
     if (existing) {
@@ -33,8 +38,8 @@ export async function POST(req: NextRequest) {
       name,
       email,
       passwordHash,
-      role: role as "buyer" | "seller",
-      isSeller: role === "seller",
+      role: "seller",
+      isSeller: true,
       emailVerified: false,
       emailVerificationToken: otp,
       emailVerificationExpiresAt: expiresAt,

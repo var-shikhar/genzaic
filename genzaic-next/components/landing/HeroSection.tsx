@@ -7,7 +7,6 @@ import {
   ArrowRight,
   Check,
   IndianRupee,
-  ShoppingBag,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Spotlight } from "@/components/ui/spotlight"
@@ -120,17 +119,6 @@ export default function HeroSection() {
               <Link href="/signup">
                 Start Selling Free
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              asChild
-              className="text-sm sm:text-base px-6 sm:px-8 h-11 sm:h-12 w-full sm:w-auto border-white/20 text-white hover:bg-white/10 bg-transparent"
-            >
-              <Link href="/signup?role=buyer">
-                <ShoppingBag className="mr-2 w-4 h-4" />
-                Browse Products
               </Link>
             </Button>
           </motion.div>

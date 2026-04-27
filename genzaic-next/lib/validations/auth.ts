@@ -5,17 +5,20 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 })
 
-export const signupSchema = z
-  .object({
-    name: z.string().min(2, "Name must be at least 2 characters").max(100),
-    email: z.string().email("Invalid email address"),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Must contain at least one uppercase letter")
-      .regex(/[0-9]/, "Must contain at least one number"),
+export const signupApiSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters").max(100),
+  email: z.string().email("Invalid email address"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Must contain at least one uppercase letter")
+    .regex(/[0-9]/, "Must contain at least one number"),
+  role: z.literal("seller").default("seller"),
+})
+
+export const signupSchema = signupApiSchema
+  .extend({
     confirmPassword: z.string(),
-    role: z.enum(["buyer", "seller"]).default("buyer"),
     agreeToTerms: z.boolean().refine((v) => v === true, "You must accept the terms"),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -64,6 +67,7 @@ export const changePasswordSchema = z
 
 export type LoginInput = z.infer<typeof loginSchema>
 export type SignupInput = z.infer<typeof signupSchema>
+export type SignupApiInput = z.infer<typeof signupApiSchema>
 export type VerifyOTPInput = z.infer<typeof verifyOTPSchema>
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>

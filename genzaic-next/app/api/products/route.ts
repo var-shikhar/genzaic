@@ -4,6 +4,8 @@ import { db, users, storefronts, products } from "@/lib/db"
 import { eq, and, desc, count, ilike } from "drizzle-orm"
 import { productSchema } from "@/lib/validations/product"
 import { uploadToImageKit, IMAGEKIT_FOLDERS } from "@/lib/imagekit"
+import { cache, cacheKeys } from "@/lib/cache"
+import { invalidatePublicStorefrontBySlug } from "@/lib/data/public-storefront"
 
 // GET /api/products - list with pagination/search/filter
 export async function GET(req: NextRequest) {
@@ -97,7 +99,7 @@ export async function POST(req: NextRequest) {
 
     // Get or create storefront for this user
     let [storefront] = await db
-      .select({ id: storefronts.id })
+      .select({ id: storefronts.id, storeUrl: storefronts.storeUrl })
       .from(storefronts)
       .where(eq(storefronts.userId, userId))
       .limit(1)
@@ -115,7 +117,7 @@ export async function POST(req: NextRequest) {
           userId,
           storeName: user?.name ?? undefined,
         })
-        .returning({ id: storefronts.id })
+        .returning({ id: storefronts.id, storeUrl: storefronts.storeUrl })
 
       storefront = newStorefront
     }
@@ -180,6 +182,11 @@ export async function POST(req: NextRequest) {
       .update(users)
       .set({ totalProducts: Number(countResult?.count ?? 0), updatedAt: new Date() })
       .where(eq(users.id, userId))
+
+    // Bust caches that now contain stale data: dashboard stats + the
+    // public storefront payload that lists this product.
+    cache.delete(cacheKeys.productStats(storefront.id))
+    if (storefront.storeUrl) invalidatePublicStorefrontBySlug(storefront.storeUrl)
 
     return NextResponse.json(product, { status: 201 })
   } catch (error) {

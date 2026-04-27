@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from "next/server"
-import { db, storefronts, products, users } from "@/lib/db"
-import { eq, and } from "drizzle-orm"
+import { getPublicStorefront } from "@/lib/data/public-storefront"
+import { enforceRateLimit } from "@/lib/rate-limit"
 
 type RouteContext = { params: Promise<{ slug: string }> }
 
-// GET /api/storefront/public/[slug] - public storefront with active products (no auth required)
-export async function GET(_req: NextRequest, { params }: RouteContext) {
+// GET /api/storefront/public/[slug]
+//
+// Public storefront with active products. No auth required, hit by anonymous
+// traffic and crawlers — by far the most exposed read endpoint.
+//
+// PERF: Delegates to `getPublicStorefront()` which wraps the underlying
+// queries in a 2-minute in-memory cache. The same loader is also called by
+// the SSR page at /store/[storeUrl] so cache hits stack across both
+// surfaces. Sets `Cache-Control: s-maxage=60, stale-while-revalidate=300`
+// so the Vercel edge / any CDN in front can also cache, eliminating the
+// instance hop entirely for repeat visitors within the window.
+export async function GET(req: NextRequest, { params }: RouteContext) {
+  // 60 reads per IP per minute. Anonymous endpoint, most exposed surface.
+  const limited = enforceRateLimit(req, "public-storefront", { max: 60, windowSec: 60 })
+  if (limited) return limited
+
   try {
     const { slug } = await params
 
@@ -13,45 +27,19 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: "Slug is required" }, { status: 400 })
     }
 
-    // Find storefront by storeUrl
-    const [storefront] = await db
-      .select()
-      .from(storefronts)
-      .where(eq(storefronts.storeUrl, slug))
-      .limit(1)
+    const result = await getPublicStorefront(slug)
 
-    if (!storefront) {
+    if (result.kind === "not_found") {
       return NextResponse.json({ error: "Storefront not found" }, { status: 404 })
     }
-
-    if (!storefront.isPublished) {
+    if (result.kind === "unpublished") {
       return NextResponse.json({ error: "This storefront is not published" }, { status: 404 })
     }
 
-    // Get the seller info
-    const [seller] = await db
-      .select({
-        id: users.id,
-        name: users.name,
-        avatarUrl: users.avatarUrl,
-        followersCount: users.followersCount,
-        totalSales: users.totalSales,
-      })
-      .from(users)
-      .where(eq(users.id, storefront.userId))
-      .limit(1)
-
-    // Get active products for this storefront
-    const activeProducts = await db
-      .select()
-      .from(products)
-      .where(and(eq(products.storefrontId, storefront.id), eq(products.isActive, true)))
-      .orderBy(products.createdAt)
-
-    return NextResponse.json({
-      ...storefront,
-      seller,
-      products: activeProducts,
+    return NextResponse.json(result.payload, {
+      headers: {
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+      },
     })
   } catch (error) {
     console.error("GET /api/storefront/public/[slug] error:", error)
