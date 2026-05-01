@@ -80,7 +80,7 @@ function SidebarNav({ onItemClick }: { onItemClick?: () => void }) {
 
 function Sidebar() {
   return (
-    <aside className="hidden lg:flex flex-col w-64 border-r bg-card min-h-screen">
+    <aside className="hidden lg:flex flex-col w-64 border-r bg-card sticky top-0 h-screen shrink-0">
       <div className="p-4 border-b">
         <Link href="/dashboard" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">

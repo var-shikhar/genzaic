@@ -8,13 +8,14 @@ export interface Product {
   storefrontId: string
   categoryId?: string | null
   title: string
+  slug?: string | null
   description?: string | null
   price: string
   originalPrice?: string | null
   fileUrl?: string | null
   fileId?: string | null
-  thumbnailUrl?: string | null
-  thumbnailFileId?: string | null
+  coverImageUrl?: string | null
+  coverImageFileId?: string | null
   deliveryType: "download" | "external_link" | "manual"
   externalUrl?: string | null
   sellerContactEmail?: string | null

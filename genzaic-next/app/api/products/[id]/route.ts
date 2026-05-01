@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db, storefronts, products, productImages, productTags, tags } from "@/lib/db"
-import { eq, and, asc } from "drizzle-orm"
+import { eq, and, or, asc } from "drizzle-orm"
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function whereProductKey(storefrontId: string, key: string) {
+  if (UUID_RE.test(key)) {
+    return and(eq(products.id, key), eq(products.storefrontId, storefrontId))
+  }
+  return and(eq(products.slug, key), eq(products.storefrontId, storefrontId))
+}
 import { updateProductSchema } from "@/lib/validations/product"
 import { uploadToImageKit, deleteFromImageKit, IMAGEKIT_FOLDERS } from "@/lib/imagekit"
 import { cache, cacheKeys } from "@/lib/cache"
@@ -37,7 +46,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     const [product] = await db
       .select()
       .from(products)
-      .where(and(eq(products.id, id), eq(products.storefrontId, storefront.id)))
+      .where(whereProductKey(storefront.id, id))
       .limit(1)
 
     if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 })
@@ -46,13 +55,13 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       db
         .select({ id: productImages.id, imageUrl: productImages.imageUrl })
         .from(productImages)
-        .where(eq(productImages.productId, id))
+        .where(eq(productImages.productId, product.id))
         .orderBy(asc(productImages.sortOrder)),
       db
         .select({ id: tags.id, name: tags.name })
         .from(productTags)
         .innerJoin(tags, eq(tags.id, productTags.tagId))
-        .where(eq(productTags.productId, id)),
+        .where(eq(productTags.productId, product.id)),
     ])
 
     return NextResponse.json({ ...product, gallery: galleryRows, tags: tagRows })
@@ -82,7 +91,7 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
     const [existing] = await db
       .select()
       .from(products)
-      .where(and(eq(products.id, id), eq(products.storefrontId, storefront.id)))
+      .where(whereProductKey(storefront.id, id))
       .limit(1)
 
     if (!existing) return NextResponse.json({ error: "Product not found" }, { status: 404 })
@@ -171,20 +180,20 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
     const [updated] = await db
       .update(products)
       .set(updateData)
-      .where(eq(products.id, id))
+      .where(eq(products.id, existing.id))
       .returning()
 
     // Tag join sync — only when client sent tags arrays at all.
     if (tagIds !== undefined || tagNames !== undefined) {
       const finalTagIds = await ensureTagIds(tagIds ?? [], tagNames ?? [])
-      await setProductTags(id, finalTagIds)
+      await setProductTags(existing.id, finalTagIds)
     }
 
     // Gallery: remove first, then add new.
     const removedIds = parseStringArray(formData, "removedGalleryImageIds")
-    if (removedIds.length > 0) await removeGalleryImages(id, removedIds)
+    if (removedIds.length > 0) await removeGalleryImages(existing.id, removedIds)
     const galleryFiles = parseFileArray(formData, "galleryImages")
-    if (galleryFiles.length > 0) await addGalleryImages(id, galleryFiles)
+    if (galleryFiles.length > 0) await addGalleryImages(existing.id, galleryFiles)
 
     // Bust stale reads: product stats (counts/aggregates) and every public
     // storefront cache entry that exposes this product.
@@ -218,7 +227,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
     const [existing] = await db
       .select()
       .from(products)
-      .where(and(eq(products.id, id), eq(products.storefrontId, storefront.id)))
+      .where(whereProductKey(storefront.id, id))
       .limit(1)
 
     if (!existing) return NextResponse.json({ error: "Product not found" }, { status: 404 })
@@ -231,7 +240,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
       await deleteFromImageKit(existing.fileId).catch(() => {})
     }
 
-    await db.delete(products).where(eq(products.id, id))
+    await db.delete(products).where(eq(products.id, existing.id))
 
     // Bust stale reads: product stats + public storefront listing.
     cache.delete(cacheKeys.productStats(storefront.id))

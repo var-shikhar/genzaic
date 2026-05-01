@@ -1,5 +1,13 @@
 import type { Metadata } from "next"
-import { Inter, Bricolage_Grotesque } from "next/font/google"
+import {
+  Inter,
+  Bricolage_Grotesque,
+  Roboto,
+  Poppins,
+  Montserrat,
+  Lato,
+  Open_Sans,
+} from "next/font/google"
 import "./globals.css"
 import { Providers } from "./providers"
 import { Toaster } from "@/components/ui/sonner"
@@ -18,6 +26,41 @@ const bricolage = Bricolage_Grotesque({
   weight: ["400", "500", "600", "700", "800"],
 })
 
+const roboto = Roboto({
+  subsets: ["latin"],
+  variable: "--font-roboto",
+  display: "swap",
+  weight: ["400", "500", "700"],
+})
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  variable: "--font-poppins",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+})
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  variable: "--font-montserrat",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+})
+
+const lato = Lato({
+  subsets: ["latin"],
+  variable: "--font-lato",
+  display: "swap",
+  weight: ["400", "700"],
+})
+
+const openSans = Open_Sans({
+  subsets: ["latin"],
+  variable: "--font-open-sans",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+})
+
 export const metadata: Metadata = {
   title: { default: "GenZaic - Sell Digital Products", template: "%s | GenZaic" },
   description: "The creator marketplace for Gen Z. Sell ebooks, templates, courses, and more.",
@@ -33,16 +76,23 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
 
+  const fontVariables = [
+    inter.variable,
+    bricolage.variable,
+    roboto.variable,
+    poppins.variable,
+    montserrat.variable,
+    lato.variable,
+    openSans.variable,
+  ].join(" ")
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Start the ImageKit TCP+TLS handshake in parallel with HTML parsing.
-            Every product thumbnail, storefront cover, and avatar is served
-            from this origin, so the savings compound per page. */}
         <link rel="preconnect" href="https://ik.imagekit.io" crossOrigin="" />
         <link rel="dns-prefetch" href="https://ik.imagekit.io" />
       </head>
-      <body className={`${inter.variable} ${bricolage.variable} font-sans antialiased`}>
+      <body className={`${fontVariables} font-sans antialiased`}>
         <Providers session={session}>
           {children}
           <Toaster richColors position="top-right" />

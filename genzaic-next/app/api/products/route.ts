@@ -12,6 +12,7 @@ import {
   ensureTagIds,
   setProductTags,
   addGalleryImages,
+  slugify,
 } from "@/lib/products-write"
 
 // GET /api/products - list with pagination/search/filter
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest) {
         .insert(storefronts)
         .values({
           userId,
-          storeName: user?.name ?? undefined,
+          storeName: user?.name ? `${user.name}'s Store` : undefined,
         })
         .returning({ id: storefronts.id, storeUrl: storefronts.storeUrl })
 
@@ -158,11 +159,25 @@ export async function POST(req: NextRequest) {
       sellerContactEmail, sellerContactPhone, sellerContactWhatsapp,
       subscriptionDuration, stock, isActive, tagIds, tagNames } = parsed.data
 
+    // Pick a unique slug per storefront. If conflict, append a short suffix.
+    const baseSlug = slugify(title) || "product"
+    let slug = baseSlug
+    for (let attempts = 0; attempts < 5; attempts += 1) {
+      const [clash] = await db
+        .select({ id: products.id })
+        .from(products)
+        .where(and(eq(products.storefrontId, storefront.id), eq(products.slug, slug)))
+        .limit(1)
+      if (!clash) break
+      slug = `${baseSlug}-${Math.random().toString(36).slice(2, 7)}`
+    }
+
     const [product] = await db
       .insert(products)
       .values({
         storefrontId: storefront.id,
         categoryId: categoryId ?? null,
+        slug,
         title,
         description: description ?? null,
         price: String(price),

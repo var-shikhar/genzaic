@@ -56,7 +56,7 @@ export function ProductForm({ product }: ProductFormProps) {
   const fromQuickAdd = searchParams.get("from") === "quick-add"
 
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(product.thumbnailUrl ?? null)
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(product.coverImageUrl ?? null)
   const [productFile, setProductFile] = useState<File | null>(null)
   const [aiModalOpen, setAiModalOpen] = useState(false)
   const [tags, setTags] = useState<SelectedTag[]>(
@@ -140,25 +140,29 @@ export function ProductForm({ product }: ProductFormProps) {
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Edit Product</h1>
-              {fromQuickAdd && (
-                <p className="text-muted-foreground text-sm mt-1">
-                  Add details to make your product easier to find.
+          {/* Hero header with subtle gradient accent */}
+          <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/10 via-background to-background p-6">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.15),transparent_50%)] pointer-events-none" />
+            <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">{product.title || "Edit Product"}</h1>
+                <p className="text-muted-foreground text-sm mt-1.5">
+                  {fromQuickAdd
+                    ? "Just a few more details and you're ready to publish."
+                    : "Update product details, gallery, and metadata."}
                 </p>
-              )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAiModalOpen(true)}
+                className="gap-2 shrink-0 bg-background/60 backdrop-blur"
+              >
+                <Sparkles className="h-4 w-4 text-primary" />
+                AI Extract
+              </Button>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setAiModalOpen(true)}
-              className="gap-2"
-            >
-              <Sparkles className="h-4 w-4 text-primary" />
-              AI Extract
-            </Button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

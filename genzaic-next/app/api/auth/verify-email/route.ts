@@ -40,9 +40,15 @@ export async function POST(req: NextRequest) {
       })
       .where(eq(users.id, user.id))
 
-    // Create storefront for sellers
+    // Create storefront for sellers with a friendly default name.
     if (user.role === "seller" || user.isSeller) {
-      await db.insert(storefronts).values({ userId: user.id }).onConflictDoNothing()
+      await db
+        .insert(storefronts)
+        .values({
+          userId: user.id,
+          storeName: user.name ? `${user.name}'s Store` : undefined,
+        })
+        .onConflictDoNothing()
     }
 
     return NextResponse.json({ success: true, message: "Email verified successfully" })

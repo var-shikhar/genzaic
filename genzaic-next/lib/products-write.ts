@@ -2,7 +2,7 @@ import { db, tags, productTags, productImages } from "@/lib/db"
 import { eq, inArray } from "drizzle-orm"
 import { uploadToImageKit, deleteFromImageKit, IMAGEKIT_FOLDERS } from "@/lib/imagekit"
 
-function slugify(input: string): string {
+export function slugify(input: string): string {
   return input
     .toLowerCase()
     .trim()

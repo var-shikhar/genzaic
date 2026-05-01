@@ -138,7 +138,7 @@ export function StorefrontEditor() {
     title: p.title,
     price: p.price,
     originalPrice: p.originalPrice,
-    thumbnailUrl: p.thumbnailUrl,
+    coverImageUrl: p.coverImageUrl,
   }))
 
   const setTab = (next: string) => {
@@ -231,18 +231,25 @@ export function StorefrontEditor() {
       </div>
 
       {storeUrl && (
-        <Card className="bg-muted/50">
-          <CardContent className="flex items-center justify-between p-3">
-            <div className="flex items-center gap-2 min-w-0">
-              <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="text-sm truncate">{storeUrl}</span>
-            </div>
-            <Button variant="ghost" size="sm" onClick={handleCopy} className="shrink-0 gap-1.5">
-              {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
-              {copied ? "Copied!" : "Copy"}
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="inline-flex items-center gap-2 rounded-full border bg-muted/40 pl-3 pr-1 py-1 max-w-full">
+          <Globe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <span className="truncate font-mono text-xs text-muted-foreground max-w-[220px] sm:max-w-md">
+            {storeUrl}
+          </span>
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full hover:bg-background transition-colors"
+            aria-label="Copy store URL"
+          >
+            {copied ? (
+              <Check className="h-3.5 w-3.5 text-emerald-500" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
+            <span className="text-xs font-medium">{copied ? "Copied" : "Copy"}</span>
+          </button>
+        </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-6">
