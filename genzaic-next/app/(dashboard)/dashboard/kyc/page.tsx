@@ -6,7 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { Upload, AlertCircle, CheckCircle, Clock, XCircle } from "lucide-react"
 import { kycSchema, type KycInput } from "@/lib/validations/kyc"
-import { useGetKycQuery, useSubmitKycMutation } from "@/store/api/kycApi"
+import { useKyc, useSubmitKyc } from "@/lib/queries/kyc"
+import { getApiErrorMessage } from "@/lib/api-error"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -25,8 +26,8 @@ const statusConfig = {
 }
 
 export default function KYCPage() {
-  const { data: kyc, isLoading } = useGetKycQuery()
-  const [submitKyc, { isLoading: isSubmitting }] = useSubmitKycMutation()
+  const { data: kyc, isLoading } = useKyc()
+  const { mutateAsync: submitKyc, isPending: isSubmitting } = useSubmitKyc()
   const [documentFile, setDocumentFile] = useState<File | null>(null)
 
   const form = useForm<KycInput>({
@@ -57,11 +58,10 @@ export default function KYCPage() {
     if (documentFile) formData.append("documentFile", documentFile)
 
     try {
-      await submitKyc(formData).unwrap()
+      await submitKyc(formData)
       toast.success("KYC submitted successfully! We'll review it within 2-3 business days.")
-    } catch (error: unknown) {
-      const err = error as { data?: { error?: string } }
-      toast.error(err?.data?.error || "Submission failed")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Submission failed"))
     }
   }
 

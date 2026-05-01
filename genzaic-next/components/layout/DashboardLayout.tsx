@@ -53,7 +53,10 @@ function SidebarNav({ onItemClick }: { onItemClick?: () => void }) {
   return (
     <nav className="space-y-1">
       {navItems.map((item) => {
-        const isActive = item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href)
+        const isActive =
+          item.href === "/dashboard"
+            ? pathname === item.href
+            : pathname.startsWith(item.href)
         return (
           <Link
             key={item.href}
@@ -63,7 +66,7 @@ function SidebarNav({ onItemClick }: { onItemClick?: () => void }) {
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
               isActive
                 ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
           >
             <item.icon className="h-4 w-4 shrink-0" />
@@ -78,7 +81,7 @@ function SidebarNav({ onItemClick }: { onItemClick?: () => void }) {
 function Sidebar() {
   return (
     <aside className="hidden lg:flex flex-col w-64 border-r bg-card min-h-screen">
-      <div className="p-6 border-b">
+      <div className="p-4 border-b">
         <Link href="/dashboard" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
             <Sparkles className="h-4 w-4 text-white" />
@@ -97,7 +100,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const user = session?.user as { name?: string | null; email?: string | null; image?: string | null; storeUrl?: string | null } | undefined
+  const user = session?.user as
+    | {
+        name?: string | null
+        email?: string | null
+        image?: string | null
+        storeUrl?: string | null
+      }
+    | undefined
 
   const handleLogout = async () => {
     await signOut({ redirect: false })
@@ -119,8 +129,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
-              <div className="p-6 border-b">
-                <Link href="/dashboard" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
+              <div className="p-4 border-b">
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-2"
+                  onClick={() => setMobileOpen(false)}
+                >
                   <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
                     <Sparkles className="h-4 w-4 text-white" />
                   </div>
@@ -143,14 +157,19 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 h-9 px-2">
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-2 h-9 px-2"
+                >
                   <Avatar className="h-7 w-7">
                     <AvatarImage src={user?.image ?? undefined} />
                     <AvatarFallback className="text-xs gradient-primary text-white">
                       {user?.name ? getInitials(user.name) : "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="hidden md:block text-sm font-medium max-w-[120px] truncate">{user?.name}</span>
+                  <span className="hidden md:block text-sm font-medium max-w-[120px] truncate">
+                    {user?.name}
+                  </span>
                   <ChevronDown className="h-3.5 w-3.5 opacity-60" />
                 </Button>
               </DropdownMenuTrigger>
@@ -158,7 +177,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium">{user?.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {user?.email}
+                    </p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -169,7 +190,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-destructive focus:text-destructive"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   Log out
                 </DropdownMenuItem>

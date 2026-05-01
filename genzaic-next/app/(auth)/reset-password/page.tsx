@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { resetPasswordSchema, type ResetPasswordInput } from "@/lib/validations/auth"
-import { useResetPasswordMutation } from "@/store/api/authApi"
+import { useResetPassword } from "@/lib/queries/auth"
+import { getApiErrorMessage } from "@/lib/api-error"
 
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -19,7 +20,7 @@ export default function ResetPasswordPage() {
   const token = searchParams.get("token") ?? ""
   const [success, setSuccess] = useState(false)
 
-  const [resetPassword, { isLoading }] = useResetPasswordMutation()
+  const { mutateAsync: resetPassword, isPending: isLoading } = useResetPassword()
 
   const {
     register,
@@ -32,13 +33,12 @@ export default function ResetPasswordPage() {
 
   const onSubmit = async (data: ResetPasswordInput) => {
     try {
-      await resetPassword({ token: data.token, password: data.password }).unwrap()
+      await resetPassword({ token: data.token, password: data.password })
       setSuccess(true)
       toast.success("Password reset successfully!")
       setTimeout(() => router.push("/login"), 2000)
     } catch (err) {
-      const error = err as { data?: { error?: string } }
-      toast.error(error?.data?.error || "Failed to reset password. The link may have expired.")
+      toast.error(getApiErrorMessage(err, "Failed to reset password. The link may have expired."))
     }
   }
 

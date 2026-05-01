@@ -20,6 +20,7 @@ const productBaseSchema = z.object({
     stock: z.coerce.number().int().min(0).optional().nullable(),
     isActive: z.boolean().default(true),
     tagIds: z.array(z.string().uuid("Invalid tag ID")).optional().default([]),
+    tagNames: z.array(z.string().min(1).max(50)).optional().default([]),
   })
 
 export const productSchema = productBaseSchema

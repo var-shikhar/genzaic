@@ -1,8 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { useGetSalesStatsQuery, useGetRecentOrdersQuery } from "@/store/api/salesApi"
-import { useGetProductStatsQuery } from "@/store/api/productsApi"
+import { useSalesStats, useRecentOrders } from "@/lib/queries/sales"
+import { useProductStats } from "@/lib/queries/products"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -50,9 +50,9 @@ function StatCard({
 }
 
 export default function DashboardPage() {
-  const { data: salesStats, isLoading: statsLoading } = useGetSalesStatsQuery()
-  const { data: productStats, isLoading: productStatsLoading } = useGetProductStatsQuery()
-  const { data: recentOrders, isLoading: ordersLoading } = useGetRecentOrdersQuery()
+  const { data: salesStats, isLoading: statsLoading } = useSalesStats()
+  const { data: productStats, isLoading: productStatsLoading } = useProductStats()
+  const { data: recentOrders, isLoading: ordersLoading } = useRecentOrders()
 
   return (
     <div className="space-y-6">

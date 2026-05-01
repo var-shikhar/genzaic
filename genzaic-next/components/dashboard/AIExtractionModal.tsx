@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { useParseProductTextMutation } from "@/store/api/aiApi"
+import { useParseProductText } from "@/lib/queries/ai"
+import { getApiErrorMessage } from "@/lib/api-error"
 import { toast } from "sonner"
 import { Sparkles, Loader2 } from "lucide-react"
 import {
@@ -23,7 +24,7 @@ interface AIExtractionModalProps {
 
 export function AIExtractionModal({ open, onClose, onExtract }: AIExtractionModalProps) {
   const [text, setText] = useState("")
-  const [parseProductText, { isLoading }] = useParseProductTextMutation()
+  const { mutateAsync: parseProductText, isPending: isLoading } = useParseProductText()
 
   const handleExtract = async () => {
     if (!text.trim()) {
@@ -31,7 +32,7 @@ export function AIExtractionModal({ open, onClose, onExtract }: AIExtractionModa
       return
     }
     try {
-      const result = await parseProductText({ text }).unwrap()
+      const result = await parseProductText({ text })
       if (result.products.length > 0) {
         const product = result.products[0]
         onExtract({
@@ -45,8 +46,8 @@ export function AIExtractionModal({ open, onClose, onExtract }: AIExtractionModa
       } else {
         toast.error("No product details found in the text")
       }
-    } catch {
-      toast.error("AI extraction failed. Please try again.")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "AI extraction failed. Please try again."))
     }
   }
 

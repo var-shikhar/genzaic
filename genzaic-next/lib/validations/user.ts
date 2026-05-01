@@ -9,6 +9,10 @@ export const updateProfileSchema = z.object({
     .regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers and hyphens")
     .optional()
     .nullable(),
+  defaultProductActive: z
+    .union([z.boolean(), z.literal("true"), z.literal("false")])
+    .transform((v) => (typeof v === "boolean" ? v : v === "true"))
+    .optional(),
 })
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>

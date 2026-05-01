@@ -5,54 +5,55 @@ import Link from "next/link"
 import Image from "next/image"
 import { toast } from "sonner"
 import { Plus, Search, Edit, Trash2, Package } from "lucide-react"
-import { useGetProductsQuery, useDeleteProductMutation, useToggleProductStatusMutation } from "@/store/api/productsApi"
+import { useProducts, useDeleteProduct, useToggleProductStatus } from "@/lib/queries/products"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
+import { getApiErrorMessage } from "@/lib/api-error"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { formatCurrency, formatDate } from "@/lib/utils"
+import { useConfirm } from "@/lib/react/confirm"
+import { QuickAddProductModal } from "@/components/dashboard/QuickAddProductModal"
 
 export default function ProductsPage() {
   const [search, setSearch] = useState("")
   const [page] = useState(1)
   const debouncedSearch = useDebouncedValue(search, 300)
-  const { data, isLoading } = useGetProductsQuery({
+  const { data, isLoading } = useProducts({
     page,
     limit: 20,
     search: debouncedSearch || undefined,
   })
-  const [deleteProduct] = useDeleteProductMutation()
-  const [toggleStatus] = useToggleProductStatusMutation()
+  const { mutateAsync: deleteProduct } = useDeleteProduct()
+  const { mutateAsync: toggleStatus } = useToggleProductStatus()
+  const confirm = useConfirm()
+  const [addOpen, setAddOpen] = useState(false)
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, title: string) => {
+    const ok = await confirm({
+      title: "Delete product?",
+      description: `This will permanently delete "${title}". This action cannot be undone.`,
+      confirmText: "Delete",
+      danger: true,
+    })
+    if (!ok) return
     try {
-      await deleteProduct(id).unwrap()
+      await deleteProduct(id)
       toast.success("Product deleted")
-    } catch {
-      toast.error("Failed to delete product")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to delete product"))
     }
   }
 
   const handleToggle = async (id: string, nextActive: boolean) => {
     try {
-      await toggleStatus(id).unwrap()
+      await toggleStatus(id)
       toast.success(nextActive ? "Product published" : "Product unpublished")
-    } catch {
-      toast.error("Failed to update status")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to update status"))
     }
   }
 
@@ -63,10 +64,8 @@ export default function ProductsPage() {
           <h1 className="text-3xl font-bold">Products</h1>
           <p className="text-muted-foreground mt-1">{data?.total ?? 0} products total</p>
         </div>
-        <Button asChild className="gradient-primary text-white gap-2">
-          <Link href="/dashboard/products/new">
-            <Plus className="h-4 w-4" /> Add Product
-          </Link>
+        <Button className="gradient-primary text-white gap-2" onClick={() => setAddOpen(true)}>
+          <Plus className="h-4 w-4" /> Add Product
         </Button>
       </div>
 
@@ -92,10 +91,8 @@ export default function ProductsPage() {
             <Package className="h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-1">No products yet</h3>
             <p className="text-muted-foreground text-sm mb-4">Create your first product to start selling</p>
-            <Button asChild className="gradient-primary text-white gap-2">
-              <Link href="/dashboard/products/new">
-                <Plus className="h-4 w-4" /> Add Product
-              </Link>
+            <Button className="gradient-primary text-white gap-2" onClick={() => setAddOpen(true)}>
+              <Plus className="h-4 w-4" /> Add Product
             </Button>
           </CardContent>
         </Card>
@@ -132,30 +129,14 @@ export default function ProductsPage() {
                         <Edit className="h-4 w-4" />
                       </Link>
                     </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete product?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete &ldquo;{product.title}&rdquo;. This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDelete(product.id)}
-                            className="bg-destructive hover:bg-destructive/90"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => handleDelete(product.id, product.title)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -163,6 +144,8 @@ export default function ProductsPage() {
           ))}
         </div>
       )}
+
+      <QuickAddProductModal open={addOpen} onOpenChange={setAddOpen} />
     </div>
   )
 }

@@ -32,9 +32,11 @@ export async function generateMetadata({
   const { storeUrl, productId } = await params
   const data = await getProduct(storeUrl, productId)
   if (!data) return { title: "Product Not Found" }
+  const tagNames: string[] = (data.product.tags ?? []).map((t: { name: string }) => t.name)
   return {
-    title: data.product.seoTitle || data.product.title,
-    description: data.product.description || undefined,
+    title: data.product.title,
+    description: (data.product.description ?? "").slice(0, 160) || undefined,
+    keywords: tagNames.length > 0 ? tagNames.join(", ") : undefined,
   }
 }
 

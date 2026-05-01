@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useGetMyOrdersQuery } from "@/store/api/buyerApi"
+import { useMyOrders } from "@/lib/queries/buyer"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,7 @@ import { ShoppingBag, Download, ExternalLink, MessageSquare, Package } from "luc
 import { formatCurrency, formatDate } from "@/lib/utils"
 
 export default function MyPurchasesPage() {
-  const { data: orders, isLoading } = useGetMyOrdersQuery()
+  const { data: orders, isLoading } = useMyOrders()
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

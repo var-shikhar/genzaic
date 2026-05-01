@@ -9,7 +9,8 @@ import { toast } from "sonner"
 import Image from "next/image"
 import { ShoppingCart, Package, Loader2, IndianRupee } from "lucide-react"
 import { checkoutSchema, type CheckoutInput } from "@/lib/validations/checkout"
-import { useGetCheckoutProductQuery, useCreateOrderMutation } from "@/store/api/checkoutApi"
+import { useCheckoutProduct, useCreateOrder } from "@/lib/queries/checkout"
+import { getApiErrorMessage } from "@/lib/api-error"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,8 +24,8 @@ export default function CheckoutPage() {
   const router = useRouter()
   const { data: session } = useSession()
   const user = session?.user as { name?: string | null; email?: string | null } | undefined
-  const { data: product, isLoading } = useGetCheckoutProductQuery(productId)
-  const [createOrder, { isLoading: isCreating }] = useCreateOrderMutation()
+  const { data: product, isLoading } = useCheckoutProduct(productId)
+  const { mutateAsync: createOrder, isPending: isCreating } = useCreateOrder()
 
   const price = product ? parseFloat(product.price) : 0
   const gst = product ? calculateGST(price) : { gst: 0, total: 0 }
@@ -51,16 +52,15 @@ export default function CheckoutPage() {
         buyerEmail: values.buyerEmail,
         buyerPhone: values.buyerPhone || undefined,
         buyerGstin: values.buyerGstin || undefined,
-      }).unwrap()
+      })
       toast.success("Order placed successfully!")
       if (order.deliveryType === "download") {
         router.push(`/download/${order.id}`)
       } else {
         router.push(`/my-purchases/${order.id}`)
       }
-    } catch (error: unknown) {
-      const err = error as { data?: { error?: string } }
-      toast.error(err?.data?.error || "Checkout failed")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Checkout failed"))
     }
   }
 

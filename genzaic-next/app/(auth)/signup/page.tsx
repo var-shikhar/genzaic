@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { signupSchema, type SignupInput } from "@/lib/validations/auth"
-import { useSignupMutation } from "@/store/api/authApi"
+import { useSignup } from "@/lib/queries/auth"
+import { getApiErrorMessage } from "@/lib/api-error"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -21,7 +22,7 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [agreeToTerms, setAgreeToTerms] = useState(false)
 
-  const [signup, { isLoading }] = useSignupMutation()
+  const { mutateAsync: signup, isPending: isLoading } = useSignup()
 
   const {
     register,
@@ -45,15 +46,12 @@ export default function SignupPage() {
         email: data.email,
         password: data.password,
         role: "seller",
-      }).unwrap()
+      })
 
       toast.success("Account created! Please verify your email.")
       router.push(`/verify-email?email=${encodeURIComponent(result.email)}`)
     } catch (err) {
-      const error = err as { data?: { message?: string } }
-      const message =
-        error?.data?.message || "Something went wrong. Please try again."
-      toast.error(message)
+      toast.error(getApiErrorMessage(err, "Something went wrong. Please try again."))
     }
   }
 

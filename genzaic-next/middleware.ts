@@ -50,8 +50,11 @@ export async function middleware(request: NextRequest) {
   if (isPublic) {
     // Only login/signup reach here. Redirect already-authenticated users.
     if (session && (pathname === "/login" || pathname === "/signup")) {
-      const user = session.user as { role?: string; isSeller?: boolean } | undefined
+      const user = session.user as { role?: string; isSeller?: boolean; onboardingComplete?: boolean } | undefined
       if (user?.role === "seller" || user?.isSeller) {
+        if (!user?.onboardingComplete) {
+          return NextResponse.redirect(new URL("/onboarding", request.url))
+        }
         return NextResponse.redirect(new URL("/dashboard", request.url))
       }
       return NextResponse.redirect(new URL("/my-purchases", request.url))
@@ -65,11 +68,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  const user = session.user as { role?: string; isSeller?: boolean } | undefined
+  const user = session.user as { role?: string; isSeller?: boolean; onboardingComplete?: boolean } | undefined
   const isSeller = user?.role === "seller" || user?.isSeller
 
   if (sellerRoutes.some((r) => pathname.startsWith(r)) && !isSeller) {
     return NextResponse.redirect(new URL("/my-purchases", request.url))
+  }
+
+  // Sellers with incomplete onboarding can only access /onboarding and /plan-selection.
+  // Anywhere else (e.g. /dashboard) bounces them back to /onboarding so they finish setup.
+  if (
+    isSeller &&
+    !user?.onboardingComplete &&
+    pathname.startsWith("/dashboard")
+  ) {
+    return NextResponse.redirect(new URL("/onboarding", request.url))
   }
 
   return NextResponse.next()

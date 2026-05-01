@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { Inter, Bricolage_Grotesque } from "next/font/google"
 import "./globals.css"
-import { Providers } from "@/store/providers"
+import { Providers } from "./providers"
 import { Toaster } from "@/components/ui/sonner"
 import { auth } from "@/lib/auth"
 

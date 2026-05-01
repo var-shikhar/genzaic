@@ -7,7 +7,10 @@
       "Bash(npx -y dotenv-cli -e .env.local -- npx -y drizzle-kit@0.29.1 introspect)",
       "Bash(npm i *)",
       "Bash(yes \"\")",
-      "Bash(npx tsx *)"
+      "Bash(npx tsx *)",
+      "Bash(npx tsc *)",
+      "Bash(npm install *)",
+      "Bash(npx --yes shadcn@latest add breadcrumb --yes)"
     ]
   }
 }

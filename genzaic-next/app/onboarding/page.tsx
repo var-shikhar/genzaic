@@ -2,9 +2,11 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import { Check, ArrowRight, Sparkles, Store, CreditCard } from "lucide-react"
-import { useCompleteOnboardingMutation, useSkipOnboardingMutation, useSelectPlanMutation } from "@/store/api/onboardingApi"
+import { useCompleteOnboarding, useSkipOnboarding, useSelectPlan } from "@/lib/queries/onboarding"
+import { getApiErrorMessage } from "@/lib/api-error"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -36,32 +38,46 @@ const PLANS = [
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { update } = useSession()
   const [step, setStep] = useState(1)
   const [selectedPlan, setSelectedPlan] = useState("creator")
-  const [selectPlan, { isLoading: isPlanLoading }] = useSelectPlanMutation()
-  const [completeOnboarding, { isLoading: isCompleting }] = useCompleteOnboardingMutation()
-  const [skipOnboarding] = useSkipOnboardingMutation()
+  const { mutateAsync: selectPlan, isPending: isPlanLoading } = useSelectPlan()
+  const { mutateAsync: completeOnboarding, isPending: isCompleting } = useCompleteOnboarding()
+  const { mutateAsync: skipOnboarding } = useSkipOnboarding()
 
   const handleNext = async () => {
     if (step === 2) {
       try {
-        await selectPlan({ plan: selectedPlan }).unwrap()
-      } catch {
-        toast.error("Failed to select plan")
+        await selectPlan({ plan: selectedPlan })
+      } catch (err) {
+        toast.error(getApiErrorMessage(err, "Failed to select plan"))
         return
       }
     }
     if (step < 3) {
       setStep(step + 1)
     } else {
-      await completeOnboarding().unwrap()
-      router.push("/dashboard")
+      try {
+        await completeOnboarding()
+        // Refresh JWT so middleware sees onboardingComplete=true on the next nav.
+        await update({ user: { onboardingComplete: true } })
+        router.push("/dashboard")
+        router.refresh()
+      } catch (err) {
+        toast.error(getApiErrorMessage(err, "Failed to complete onboarding"))
+      }
     }
   }
 
   const handleSkip = async () => {
-    await skipOnboarding().unwrap().catch(() => {})
-    router.push("/dashboard")
+    try {
+      await skipOnboarding()
+      await update({ user: { onboardingComplete: true } })
+      router.push("/dashboard")
+      router.refresh()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to skip onboarding"))
+    }
   }
 
   return (

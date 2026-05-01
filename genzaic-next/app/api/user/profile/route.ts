@@ -28,6 +28,7 @@ export async function GET(_req: NextRequest) {
         totalProducts: users.totalProducts,
         totalSales: users.totalSales,
         totalRevenue: users.totalRevenue,
+        defaultProductActive: users.defaultProductActive,
         createdAt: users.createdAt,
       })
       .from(users)
@@ -109,6 +110,9 @@ export async function PUT(req: NextRequest) {
       updatedAt: new Date(),
     }
     if (parsed.data.name !== undefined) updateData.name = parsed.data.name
+    if (parsed.data.defaultProductActive !== undefined) {
+      updateData.defaultProductActive = parsed.data.defaultProductActive
+    }
 
     await db.update(users).set(updateData).where(eq(users.id, userId))
 
@@ -133,6 +137,7 @@ export async function PUT(req: NextRequest) {
         totalProducts: users.totalProducts,
         totalSales: users.totalSales,
         totalRevenue: users.totalRevenue,
+        defaultProductActive: users.defaultProductActive,
         createdAt: users.createdAt,
       })
       .from(users)

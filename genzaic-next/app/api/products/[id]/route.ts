@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { db, storefronts, products } from "@/lib/db"
-import { eq, and } from "drizzle-orm"
+import { db, storefronts, products, productImages, productTags, tags } from "@/lib/db"
+import { eq, and, asc } from "drizzle-orm"
 import { updateProductSchema } from "@/lib/validations/product"
 import { uploadToImageKit, deleteFromImageKit, IMAGEKIT_FOLDERS } from "@/lib/imagekit"
 import { cache, cacheKeys } from "@/lib/cache"
 import { invalidatePublicStorefrontBySlug } from "@/lib/data/public-storefront"
+import {
+  parseStringArray,
+  parseFileArray,
+  ensureTagIds,
+  setProductTags,
+  addGalleryImages,
+  removeGalleryImages,
+} from "@/lib/products-write"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -34,7 +42,20 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 
     if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 })
 
-    return NextResponse.json(product)
+    const [galleryRows, tagRows] = await Promise.all([
+      db
+        .select({ id: productImages.id, imageUrl: productImages.imageUrl })
+        .from(productImages)
+        .where(eq(productImages.productId, id))
+        .orderBy(asc(productImages.sortOrder)),
+      db
+        .select({ id: tags.id, name: tags.name })
+        .from(productTags)
+        .innerJoin(tags, eq(tags.id, productTags.tagId))
+        .where(eq(productTags.productId, id)),
+    ])
+
+    return NextResponse.json({ ...product, gallery: galleryRows, tags: tagRows })
   } catch (error) {
     console.error("GET /api/products/[id] error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
@@ -68,15 +89,22 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
 
     const formData = await req.formData()
 
+    const ARRAY_KEYS = new Set(["tagIds", "tagNames", "galleryImages", "removedGalleryImageIds"])
+    const FILE_KEYS = new Set(["thumbnail", "productFile"])
     const raw: Record<string, unknown> = {}
     formData.forEach((value, key) => {
-      if (key !== "thumbnail" && key !== "productFile") {
-        if (value === "true") raw[key] = true
-        else if (value === "false") raw[key] = false
-        else if (value === "") raw[key] = undefined
-        else raw[key] = value
-      }
+      if (FILE_KEYS.has(key) || ARRAY_KEYS.has(key)) return
+      if (value === "true") raw[key] = true
+      else if (value === "false") raw[key] = false
+      else if (value === "") raw[key] = undefined
+      else raw[key] = value
     })
+    const tagIdsArr = parseStringArray(formData, "tagIds")
+    const tagNamesArr = parseStringArray(formData, "tagNames")
+    if (tagIdsArr.length > 0 || tagNamesArr.length > 0) {
+      raw.tagIds = tagIdsArr
+      raw.tagNames = tagNamesArr
+    }
 
     const parsed = updateProductSchema.safeParse(raw)
     if (!parsed.success) {
@@ -122,22 +150,21 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
       fileId,
     }
 
-    const { title, description, price, originalPrice, deliveryType, externalUrl,
+    const { title, description, price, originalPrice, categoryId, deliveryType, externalUrl,
       sellerContactEmail, sellerContactPhone, sellerContactWhatsapp,
-      subscriptionDuration, seoTitle, seoKeywords, stock, isActive } = parsed.data
+      subscriptionDuration, stock, isActive, tagIds, tagNames } = parsed.data
 
     if (title !== undefined) updateData.title = title
     if (description !== undefined) updateData.description = description ?? null
     if (price !== undefined) updateData.price = String(price)
     if (originalPrice !== undefined) updateData.originalPrice = originalPrice != null ? String(originalPrice) : null
+    if (categoryId !== undefined) updateData.categoryId = categoryId ?? null
     if (deliveryType !== undefined) updateData.deliveryType = deliveryType
     if (externalUrl !== undefined) updateData.externalUrl = externalUrl ?? null
     if (sellerContactEmail !== undefined) updateData.sellerContactEmail = sellerContactEmail ?? null
     if (sellerContactPhone !== undefined) updateData.sellerContactPhone = sellerContactPhone ?? null
     if (sellerContactWhatsapp !== undefined) updateData.sellerContactWhatsapp = sellerContactWhatsapp ?? null
     if (subscriptionDuration !== undefined) updateData.subscriptionDuration = subscriptionDuration ?? null
-    if (seoTitle !== undefined) updateData.seoTitle = seoTitle ?? null
-    if (seoKeywords !== undefined) updateData.seoKeywords = seoKeywords ?? null
     if (stock !== undefined) updateData.stock = stock ?? null
     if (isActive !== undefined) updateData.isActive = isActive
 
@@ -146,6 +173,18 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
       .set(updateData)
       .where(eq(products.id, id))
       .returning()
+
+    // Tag join sync — only when client sent tags arrays at all.
+    if (tagIds !== undefined || tagNames !== undefined) {
+      const finalTagIds = await ensureTagIds(tagIds ?? [], tagNames ?? [])
+      await setProductTags(id, finalTagIds)
+    }
+
+    // Gallery: remove first, then add new.
+    const removedIds = parseStringArray(formData, "removedGalleryImageIds")
+    if (removedIds.length > 0) await removeGalleryImages(id, removedIds)
+    const galleryFiles = parseFileArray(formData, "galleryImages")
+    if (galleryFiles.length > 0) await addGalleryImages(id, galleryFiles)
 
     // Bust stale reads: product stats (counts/aggregates) and every public
     // storefront cache entry that exposes this product.

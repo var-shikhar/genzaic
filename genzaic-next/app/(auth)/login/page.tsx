@@ -42,6 +42,12 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
+        const code = (result as { code?: string }).code || result.error
+        if (code === "EMAIL_NOT_VERIFIED") {
+          toast.error("Please verify your email before signing in.")
+          router.push(`/verify-email?email=${encodeURIComponent(data.email)}`)
+          return
+        }
         toast.error("Invalid email or password. Please try again.")
         return
       }

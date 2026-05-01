@@ -11,9 +11,9 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import {
-  useGetSalesStatsQuery, useGetOrdersQuery, useGetRecentOrdersQuery,
-  useGetDownloadLogsQuery, type SalesOrder,
-} from "@/store/api/salesApi"
+  useSalesStats, useOrders, useRecentOrders, useDownloadLogs,
+  type SalesOrder,
+} from "@/lib/queries/sales"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -46,10 +46,10 @@ export default function SalesPage() {
   const [sortBy, setSortBy] = useState("newest")
   const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null)
 
-  const { data: stats, isLoading: statsLoading } = useGetSalesStatsQuery()
-  const { data: ordersData, isLoading: ordersLoading } = useGetOrdersQuery({})
-  const { data: recentOrders, isLoading: recentLoading } = useGetRecentOrdersQuery()
-  const { data: downloadLogs, isLoading: logsLoading } = useGetDownloadLogsQuery({})
+  const { data: stats, isLoading: statsLoading } = useSalesStats()
+  const { data: ordersData, isLoading: ordersLoading } = useOrders({})
+  const { data: recentOrders, isLoading: recentLoading } = useRecentOrders()
+  const { data: downloadLogs, isLoading: logsLoading } = useDownloadLogs({})
 
   const handleExportCSV = () => {
     const rows = ordersData?.orders ?? []

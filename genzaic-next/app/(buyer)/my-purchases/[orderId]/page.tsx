@@ -21,7 +21,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { useSession } from "next-auth/react"
-import { useGetMyOrderQuery } from "@/store/api/buyerApi"
+import { useMyOrder } from "@/lib/queries/buyer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -33,7 +33,7 @@ import { formatCurrency, formatDate } from "@/lib/utils"
 export default function PurchaseDetailsPage() {
   const params = useParams<{ orderId: string }>()
   const { data: session } = useSession()
-  const { data: order, isLoading } = useGetMyOrderQuery(params.orderId)
+  const { data: order, isLoading } = useMyOrder(params.orderId)
 
   if (isLoading) {
     return (

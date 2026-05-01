@@ -5,12 +5,14 @@ import { useSession } from "next-auth/react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
-import { Upload, X, Percent, Wallet, Users } from "lucide-react"
+import { Upload, X, Percent, Wallet, Users, PackagePlus } from "lucide-react"
 import Image from "next/image"
 import { updateProfileSchema, type UpdateProfileInput } from "@/lib/validations/user"
 import { changePasswordSchema, type ChangePasswordInput } from "@/lib/validations/auth"
-import { useUpdateProfileMutation, useChangePasswordMutation } from "@/store/api/userApi"
-import { useGetStorefrontQuery, useUpdateStorefrontMutation } from "@/store/api/storefrontApi"
+import { useProfile, useUpdateProfile, useChangePassword } from "@/lib/queries/user"
+import { useStorefront, useUpdateStorefront } from "@/lib/queries/storefront"
+import { Switch } from "@/components/ui/switch"
+import { getApiErrorMessage } from "@/lib/api-error"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,10 +33,26 @@ export default function SettingsPage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [platformFeeMode, setPlatformFeeMode] = useState<"seller" | "buyer">("seller")
 
-  const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation()
-  const [changePassword, { isLoading: isChangingPw }] = useChangePasswordMutation()
-  const { data: storefront, isLoading: storefrontLoading } = useGetStorefrontQuery()
-  const [updateStorefront, { isLoading: isSavingFee }] = useUpdateStorefrontMutation()
+  const { mutateAsync: updateProfile, isPending: isUpdating } = useUpdateProfile()
+  const { mutateAsync: changePassword, isPending: isChangingPw } = useChangePassword()
+  const { data: storefront, isLoading: storefrontLoading } = useStorefront()
+  const { mutateAsync: updateStorefront, isPending: isSavingFee } = useUpdateStorefront()
+  const { data: profile } = useProfile()
+  const [defaultActiveSaving, setDefaultActiveSaving] = useState(false)
+
+  const handleToggleDefaultActive = async (next: boolean) => {
+    setDefaultActiveSaving(true)
+    const formData = new FormData()
+    formData.append("defaultProductActive", String(next))
+    try {
+      await updateProfile(formData)
+      toast.success(next ? "New products will be added to your store automatically" : "New products will be hidden by default")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to save"))
+    } finally {
+      setDefaultActiveSaving(false)
+    }
+  }
 
   useEffect(() => {
     if (storefront) setPlatformFeeMode(storefront.platformFeeMode)
@@ -56,23 +74,21 @@ export default function SettingsPage() {
     if (values.storeUrl) formData.append("storeUrl", values.storeUrl)
     if (avatarFile) formData.append("avatar", avatarFile)
     try {
-      const updated = await updateProfile(formData).unwrap()
+      const updated = await updateProfile(formData)
       await update({ name: updated.name, image: updated.avatarUrl })
       toast.success("Profile updated!")
-    } catch (error: unknown) {
-      const err = error as { data?: { error?: string } }
-      toast.error(err?.data?.error || "Update failed")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Update failed"))
     }
   }
 
   const onPasswordSubmit = async (values: ChangePasswordInput) => {
     try {
-      await changePassword({ currentPassword: values.currentPassword, newPassword: values.newPassword }).unwrap()
+      await changePassword({ currentPassword: values.currentPassword, newPassword: values.newPassword })
       toast.success("Password changed successfully!")
       passwordForm.reset()
-    } catch (error: unknown) {
-      const err = error as { data?: { error?: string } }
-      toast.error(err?.data?.error || "Password change failed")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Password change failed"))
     }
   }
 
@@ -80,10 +96,10 @@ export default function SettingsPage() {
     const formData = new FormData()
     formData.append("platformFeeMode", platformFeeMode)
     try {
-      await updateStorefront(formData).unwrap()
+      await updateStorefront(formData)
       toast.success("Platform fee settings saved!")
-    } catch {
-      toast.error("Failed to save fee settings")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to save fee settings"))
     }
   }
 
@@ -192,6 +208,36 @@ export default function SettingsPage() {
               </Button>
             </form>
           </Form>
+        </CardContent>
+      </Card>
+
+      {/* Product defaults */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              <PackagePlus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <CardTitle>Product defaults</CardTitle>
+              <CardDescription>Defaults applied when you add a new product</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div>
+              <p className="font-medium">Add new products to my store automatically</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                When off, new products are saved as drafts (hidden) and you turn them on per product.
+              </p>
+            </div>
+            <Switch
+              checked={profile?.defaultProductActive ?? true}
+              disabled={defaultActiveSaving}
+              onCheckedChange={handleToggleDefaultActive}
+            />
+          </div>
         </CardContent>
       </Card>
 

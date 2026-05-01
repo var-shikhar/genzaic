@@ -13,14 +13,14 @@ import {
   AlertCircle,
   ArrowRight,
 } from "lucide-react"
-import { useGetPayoutStatsQuery, useGetPayoutsQuery } from "@/store/api/payoutsApi"
+import { usePayoutStats, usePayouts } from "@/lib/queries/payouts"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatCurrency, formatDate } from "@/lib/utils"
 
 export default function PayoutsPage() {
-  const { data: stats, isLoading: statsLoading } = useGetPayoutStatsQuery()
-  const { data: payoutsData, isLoading: payoutsLoading } = useGetPayoutsQuery({})
+  const { data: stats, isLoading: statsLoading } = usePayoutStats()
+  const { data: payoutsData, isLoading: payoutsLoading } = usePayouts({})
 
   if (statsLoading) {
     return (

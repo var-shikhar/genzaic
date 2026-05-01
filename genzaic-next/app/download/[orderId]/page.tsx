@@ -5,7 +5,7 @@ import { useParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Download, CheckCircle, Package, AlertCircle } from "lucide-react"
-import { useGetOrderForDownloadQuery, useRecordDownloadMutation } from "@/store/api/checkoutApi"
+import { useOrderForDownload, useRecordDownload } from "@/lib/queries/checkout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -15,13 +15,13 @@ import { formatCurrency } from "@/lib/utils"
 export default function DownloadPage() {
   const { orderId } = useParams<{ orderId: string }>()
   const [downloaded, setDownloaded] = useState(false)
-  const { data: order, isLoading } = useGetOrderForDownloadQuery(orderId)
-  const [recordDownload] = useRecordDownloadMutation()
+  const { data: order, isLoading } = useOrderForDownload(orderId)
+  const { mutateAsync: recordDownload } = useRecordDownload()
 
   const handleDownload = async () => {
     if (!order?.downloadLink) return
     try {
-      await recordDownload(orderId).unwrap()
+      await recordDownload(orderId)
       window.open(order.downloadLink, "_blank")
       setDownloaded(true)
     } catch {

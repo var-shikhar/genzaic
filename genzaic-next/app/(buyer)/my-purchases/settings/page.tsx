@@ -6,7 +6,8 @@ import { motion } from "framer-motion"
 import { User, Lock, Bell, Store } from "lucide-react"
 import { toast } from "sonner"
 import { useSession } from "next-auth/react"
-import { useGetProfileQuery, useUpdateProfileMutation } from "@/store/api/userApi"
+import { useProfile, useUpdateProfile } from "@/lib/queries/user"
+import { getApiErrorMessage } from "@/lib/api-error"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,8 +20,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 export default function BuyerSettingsPage() {
   const router = useRouter()
   const { data: session, update } = useSession()
-  const { data: profile, isLoading } = useGetProfileQuery()
-  const [updateProfile, { isLoading: isSaving }] = useUpdateProfileMutation()
+  const { data: profile, isLoading } = useProfile()
+  const { mutateAsync: updateProfile, isPending: isSaving } = useUpdateProfile()
 
   const [name, setName] = useState("")
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -38,12 +39,12 @@ export default function BuyerSettingsPage() {
     formData.append("name", name)
     if (avatarFile) formData.append("avatar", avatarFile)
     try {
-      const updated = await updateProfile(formData).unwrap()
+      const updated = await updateProfile(formData)
       await update({ name: updated.name, image: updated.avatarUrl })
       setAvatarFile(null)
       toast.success("Profile updated successfully!")
-    } catch {
-      toast.error("Failed to update profile")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to update profile"))
     }
   }
 

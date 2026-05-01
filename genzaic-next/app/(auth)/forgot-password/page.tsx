@@ -10,13 +10,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { forgotPasswordSchema, type ForgotPasswordInput } from "@/lib/validations/auth"
-import { useForgotPasswordMutation } from "@/store/api/authApi"
+import { useForgotPassword } from "@/lib/queries/auth"
+import { getApiErrorMessage } from "@/lib/api-error"
 
 export default function ForgotPasswordPage() {
   const [emailSent, setEmailSent] = useState(false)
   const [sentToEmail, setSentToEmail] = useState("")
 
-  const [forgotPassword, { isLoading }] = useForgotPasswordMutation()
+  const { mutateAsync: forgotPassword, isPending: isLoading } = useForgotPassword()
 
   const {
     register,
@@ -28,14 +29,12 @@ export default function ForgotPasswordPage() {
 
   const onSubmit = async (data: ForgotPasswordInput) => {
     try {
-      await forgotPassword({ email: data.email }).unwrap()
+      await forgotPassword({ email: data.email })
       setSentToEmail(data.email)
       setEmailSent(true)
       toast.success("Password reset link sent!")
     } catch (err) {
-      const error = err as { data?: { message?: string } }
-      const message = error?.data?.message || "Failed to send reset link. Please try again."
-      toast.error(message)
+      toast.error(getApiErrorMessage(err, "Failed to send reset link. Please try again."))
     }
   }
 

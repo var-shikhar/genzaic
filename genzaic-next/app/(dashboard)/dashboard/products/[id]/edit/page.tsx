@@ -1,13 +1,14 @@
 "use client"
 
 import { useParams } from "next/navigation"
-import { useGetProductQuery } from "@/store/api/productsApi"
+import { useProduct } from "@/lib/queries/products"
 import { ProductForm } from "@/components/dashboard/ProductForm"
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>()
-  const { data: product, isLoading } = useGetProductQuery(id)
+  const { data: product, isLoading } = useProduct(id)
 
   if (isLoading) {
     return (
@@ -35,5 +36,16 @@ export default function EditProductPage() {
     )
   }
 
-  return <ProductForm mode="edit" product={product} />
+  return (
+    <div className="space-y-4">
+      <Breadcrumbs
+        items={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Products", href: "/dashboard/products" },
+          { label: product.title },
+        ]}
+      />
+      <ProductForm product={product} />
+    </div>
+  )
 }

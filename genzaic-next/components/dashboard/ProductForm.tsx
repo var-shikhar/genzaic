@@ -1,15 +1,15 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import Image from "next/image"
-import { Upload, X, Sparkles, Link as LinkIcon, Phone } from "lucide-react"
+import { Upload, X, Sparkles, Link as LinkIcon, ChevronDown } from "lucide-react"
 import { productSchema, type ProductInput } from "@/lib/validations/product"
-import { useCreateProductMutation, useUpdateProductMutation } from "@/store/api/productsApi"
-import type { Product } from "@/store/api/productsApi"
+import { useUpdateProduct } from "@/lib/queries/products"
+import type { Product } from "@/lib/queries/products"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -34,82 +34,105 @@ import {
 } from "@/components/ui/select"
 import { DeliveryTypeSelector } from "./DeliveryTypeSelector"
 import { AIExtractionModal } from "./AIExtractionModal"
+import { CategoryPicker } from "./CategoryPicker"
+import { TagsCombobox, type SelectedTag } from "./TagsCombobox"
+import { GalleryUploader, type ExistingGalleryImage } from "./GalleryUploader"
 import { cn } from "@/lib/utils"
+import { getApiErrorMessage } from "@/lib/api-error"
 
-interface ProductFormProps {
-  product?: Product
-  mode: "create" | "edit"
+export interface ProductWithRelations extends Product {
+  categoryId?: string | null
+  tags?: { id: string; name: string }[]
+  gallery?: ExistingGalleryImage[]
 }
 
-export function ProductForm({ product, mode }: ProductFormProps) {
+interface ProductFormProps {
+  product: ProductWithRelations
+}
+
+export function ProductForm({ product }: ProductFormProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const fromQuickAdd = searchParams.get("from") === "quick-add"
+
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(product?.thumbnailUrl ?? null)
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(product.thumbnailUrl ?? null)
   const [productFile, setProductFile] = useState<File | null>(null)
   const [aiModalOpen, setAiModalOpen] = useState(false)
+  const [tags, setTags] = useState<SelectedTag[]>(
+    (product.tags ?? []).map((t) => ({ id: t.id, name: t.name })),
+  )
+  const [gallery, setGallery] = useState<{ newFiles: File[]; removedIds: string[] }>({
+    newFiles: [],
+    removedIds: [],
+  })
+  const [moreOpen, setMoreOpen] = useState(!fromQuickAdd)
 
-  const [createProduct, { isLoading: isCreating }] = useCreateProductMutation()
-  const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation()
-  const isLoading = isCreating || isUpdating
+  const { mutateAsync: updateProduct, isPending } = useUpdateProduct()
 
   const form = useForm<ProductInput>({
     resolver: zodResolver(productSchema),
     defaultValues: {
-      title: product?.title ?? "",
-      description: product?.description ?? "",
-      price: product?.price ? parseFloat(product.price) : 0,
-      originalPrice: product?.originalPrice ? parseFloat(product.originalPrice) : undefined,
-      deliveryType: product?.deliveryType ?? "download",
-      externalUrl: product?.externalUrl ?? "",
-      sellerContactEmail: product?.sellerContactEmail ?? "",
-      sellerContactPhone: product?.sellerContactPhone ?? "",
-      sellerContactWhatsapp: product?.sellerContactWhatsapp ?? "",
-      subscriptionDuration: (product?.subscriptionDuration as ProductInput["subscriptionDuration"]) ?? undefined,
-      seoTitle: product?.seoTitle ?? "",
-      seoKeywords: product?.seoKeywords ?? "",
-      isActive: product?.isActive ?? true,
+      title: product.title ?? "",
+      description: product.description ?? "",
+      price: product.price ? parseFloat(product.price) : 0,
+      originalPrice: product.originalPrice ? parseFloat(product.originalPrice) : undefined,
+      categoryId: product.categoryId ?? undefined,
+      deliveryType: product.deliveryType ?? "download",
+      externalUrl: product.externalUrl ?? "",
+      sellerContactEmail: product.sellerContactEmail ?? "",
+      sellerContactPhone: product.sellerContactPhone ?? "",
+      sellerContactWhatsapp: product.sellerContactWhatsapp ?? "",
+      subscriptionDuration: (product.subscriptionDuration as ProductInput["subscriptionDuration"]) ?? undefined,
+      isActive: product.isActive ?? true,
+      tagIds: [],
+      tagNames: [],
     },
   })
 
   const deliveryType = form.watch("deliveryType")
-
-  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setThumbnailFile(file)
-    setThumbnailPreview(URL.createObjectURL(file))
-  }
 
   const handleAIExtract = (data: { title: string; description: string; price?: number }) => {
     form.setValue("title", data.title)
     form.setValue("description", data.description)
     if (data.price) form.setValue("price", data.price)
     setAiModalOpen(false)
-    toast.success("Product details filled from AI extraction")
+    toast.success("Filled from AI extraction")
   }
 
   const onSubmit = async (values: ProductInput) => {
     const formData = new FormData()
-    Object.entries(values).forEach(([key, value]) => {
-      if (value !== null && value !== undefined && value !== "") {
-        formData.append(key, String(value))
-      }
-    })
+    formData.append("title", values.title)
+    formData.append("price", String(values.price))
+    formData.append("deliveryType", values.deliveryType)
+    formData.append("isActive", String(values.isActive))
+    if (values.description) formData.append("description", values.description)
+    if (values.originalPrice != null) formData.append("originalPrice", String(values.originalPrice))
+    if (values.categoryId) formData.append("categoryId", values.categoryId)
+    if (values.externalUrl) formData.append("externalUrl", values.externalUrl)
+    if (values.sellerContactEmail) formData.append("sellerContactEmail", values.sellerContactEmail)
+    if (values.sellerContactPhone) formData.append("sellerContactPhone", values.sellerContactPhone)
+    if (values.sellerContactWhatsapp) formData.append("sellerContactWhatsapp", values.sellerContactWhatsapp)
+    if (values.subscriptionDuration) formData.append("subscriptionDuration", values.subscriptionDuration)
     if (thumbnailFile) formData.append("thumbnail", thumbnailFile)
     if (productFile) formData.append("productFile", productFile)
 
+    // Tags: existing ids and new names sent as separate repeated fields.
+    tags.forEach((t) => {
+      if (t.id) formData.append("tagIds", t.id)
+      else formData.append("tagNames", t.name)
+    })
+
+    // Gallery
+    gallery.newFiles.forEach((f) => formData.append("galleryImages", f))
+    gallery.removedIds.forEach((id) => formData.append("removedGalleryImageIds", id))
+
     try {
-      if (mode === "create") {
-        await createProduct(formData).unwrap()
-        toast.success("Product created successfully!")
-      } else {
-        await updateProduct({ id: product!.id, body: formData }).unwrap()
-        toast.success("Product updated successfully!")
-      }
+      await updateProduct({ id: product.id, body: formData })
+      toast.success("Product updated")
       router.push("/dashboard/products")
-    } catch (error: unknown) {
-      const err = error as { data?: { error?: string } }
-      toast.error(err?.data?.error || "Something went wrong")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to update product"))
     }
   }
 
@@ -117,13 +140,14 @@ export function ProductForm({ product, mode }: ProductFormProps) {
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Header actions */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold">{mode === "create" ? "Add Product" : "Edit Product"}</h1>
-              <p className="text-muted-foreground text-sm mt-1">
-                {mode === "create" ? "Create a new digital product" : "Update your product details"}
-              </p>
+              <h1 className="text-2xl font-bold">Edit Product</h1>
+              {fromQuickAdd && (
+                <p className="text-muted-foreground text-sm mt-1">
+                  Add details to make your product easier to find.
+                </p>
+              )}
             </div>
             <Button
               type="button"
@@ -138,11 +162,11 @@ export function ProductForm({ product, mode }: ProductFormProps) {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left column - main details */}
             <div className="lg:col-span-2 space-y-6">
+              {/* Basics — always visible */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Product Details</CardTitle>
+                  <CardTitle>Basics</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -152,31 +176,12 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                       <FormItem>
                         <FormLabel>Title *</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. Ultimate Notion Template Pack" {...field} />
+                          <Input placeholder="e.g. Notion Productivity Pack" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Describe what's included in your product..."
-                            className="min-h-[120px]"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -185,7 +190,7 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                         <FormItem>
                           <FormLabel>Price (₹) *</FormLabel>
                           <FormControl>
-                            <Input type="number" min="0" step="0.01" placeholder="0" {...field} />
+                            <Input type="number" min="0" step="0.01" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -213,38 +218,13 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                       )}
                     />
                   </div>
-
-                  <FormField
-                    control={form.control}
-                    name="subscriptionDuration"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Access Duration</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value ?? ""}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select duration" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="1 month">1 Month</SelectItem>
-                            <SelectItem value="3 months">3 Months</SelectItem>
-                            <SelectItem value="6 months">6 Months</SelectItem>
-                            <SelectItem value="1 year">1 Year</SelectItem>
-                            <SelectItem value="lifetime">Lifetime</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </CardContent>
               </Card>
 
-              {/* Delivery */}
+              {/* Delivery — always visible */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Delivery Method</CardTitle>
+                  <CardTitle>Delivery</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -263,14 +243,16 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                   {deliveryType === "download" && (
                     <div className="space-y-3">
                       <Label>Product File</Label>
-                      <label className={cn(
-                        "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer",
-                        "hover:border-primary/50 hover:bg-accent/50 transition-colors"
-                      )}>
+                      <label
+                        className={cn(
+                          "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer",
+                          "hover:border-primary/50 hover:bg-accent/50 transition-colors",
+                        )}
+                      >
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                           <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
                           <p className="text-sm text-muted-foreground">
-                            {productFile ? productFile.name : "Click to upload product file"}
+                            {productFile ? productFile.name : product.fileUrl ? "File uploaded — click to replace" : "Click to upload product file"}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">PDF, ZIP, MP4, etc.</p>
                         </div>
@@ -301,6 +283,92 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                       )}
                     />
                   )}
+                </CardContent>
+              </Card>
+
+              {/* More options disclosure */}
+              <details
+                open={moreOpen}
+                onToggle={(e) => setMoreOpen(e.currentTarget.open)}
+                className="space-y-6 rounded-lg border bg-card"
+              >
+                <summary className="flex cursor-pointer items-center justify-between p-4 list-none">
+                  <span className="font-semibold">More options</span>
+                  <ChevronDown className={cn("h-4 w-4 transition-transform", moreOpen && "rotate-180")} />
+                </summary>
+                <div className="space-y-6 px-4 pb-4">
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Describe what's included in your product..."
+                            className="min-h-[120px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="categoryId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <FormControl>
+                          <CategoryPicker
+                            value={field.value ?? null}
+                            onChange={(id) => field.onChange(id ?? undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="space-y-2">
+                    <Label>Tags</Label>
+                    <TagsCombobox value={tags} onChange={setTags} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Gallery</Label>
+                    <GalleryUploader
+                      initial={product.gallery ?? []}
+                      onChange={setGallery}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="subscriptionDuration"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Access Duration</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select duration" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="1 month">1 Month</SelectItem>
+                            <SelectItem value="3 months">3 Months</SelectItem>
+                            <SelectItem value="6 months">6 Months</SelectItem>
+                            <SelectItem value="1 year">1 Year</SelectItem>
+                            <SelectItem value="lifetime">Lifetime</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   {deliveryType === "manual" && (
                     <div className="space-y-3">
@@ -345,47 +413,11 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                       />
                     </div>
                   )}
-                </CardContent>
-              </Card>
-
-              {/* SEO */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>SEO</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="seoTitle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>SEO Title</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Custom title for search engines" {...field} value={field.value ?? ""} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="seoKeywords"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Keywords</FormLabel>
-                        <FormControl>
-                          <Input placeholder="notion, template, productivity" {...field} value={field.value ?? ""} />
-                        </FormControl>
-                        <FormDescription>Comma-separated keywords</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
+                </div>
+              </details>
             </div>
 
-            {/* Right column - media + status */}
+            {/* Right column */}
             <div className="space-y-6">
               <Card>
                 <CardHeader>
@@ -397,21 +429,36 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                       <Image src={thumbnailPreview} alt="Thumbnail" fill className="object-cover" />
                       <button
                         type="button"
-                        onClick={() => { setThumbnailPreview(null); setThumbnailFile(null) }}
+                        onClick={() => {
+                          setThumbnailPreview(null)
+                          setThumbnailFile(null)
+                        }}
                         className="absolute top-2 right-2 p-1 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
                       >
                         <X className="h-3 w-3 text-white" />
                       </button>
                     </div>
                   ) : (
-                    <label className={cn(
-                      "flex flex-col items-center justify-center aspect-video border-2 border-dashed rounded-lg cursor-pointer mb-3",
-                      "hover:border-primary/50 hover:bg-accent/50 transition-colors"
-                    )}>
+                    <label
+                      className={cn(
+                        "flex flex-col items-center justify-center aspect-video border-2 border-dashed rounded-lg cursor-pointer mb-3",
+                        "hover:border-primary/50 hover:bg-accent/50 transition-colors",
+                      )}
+                    >
                       <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
                       <p className="text-sm text-muted-foreground text-center">Upload thumbnail</p>
                       <p className="text-xs text-muted-foreground">PNG, JPG up to 5MB</p>
-                      <input type="file" accept="image/*" className="hidden" onChange={handleThumbnailChange} />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          setThumbnailFile(file)
+                          setThumbnailPreview(URL.createObjectURL(file))
+                        }}
+                      />
                     </label>
                   )}
                 </CardContent>
@@ -429,7 +476,7 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                       <FormItem className="flex items-center justify-between rounded-lg border p-3">
                         <div>
                           <FormLabel className="text-sm font-medium">Active</FormLabel>
-                          <p className="text-xs text-muted-foreground">Product is visible in your store</p>
+                          <p className="text-xs text-muted-foreground">Visible in your store</p>
                         </div>
                         <FormControl>
                           <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -449,8 +496,8 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="flex-1 gradient-primary text-white" disabled={isLoading}>
-                  {isLoading ? "Saving..." : mode === "create" ? "Create" : "Update"}
+                <Button type="submit" className="flex-1 gradient-primary text-white" disabled={isPending}>
+                  {isPending ? "Saving..." : "Save"}
                 </Button>
               </div>
             </div>

@@ -6,6 +6,13 @@ import { productSchema } from "@/lib/validations/product"
 import { uploadToImageKit, IMAGEKIT_FOLDERS } from "@/lib/imagekit"
 import { cache, cacheKeys } from "@/lib/cache"
 import { invalidatePublicStorefrontBySlug } from "@/lib/data/public-storefront"
+import {
+  parseStringArray,
+  parseFileArray,
+  ensureTagIds,
+  setProductTags,
+  addGalleryImages,
+} from "@/lib/products-write"
 
 // GET /api/products - list with pagination/search/filter
 export async function GET(req: NextRequest) {
@@ -79,15 +86,18 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData()
 
-    // Extract and coerce fields from FormData
+    // Extract and coerce fields from FormData (skipping file fields and array fields)
+    const ARRAY_KEYS = new Set(["tagIds", "tagNames", "galleryImages", "removedGalleryImageIds"])
+    const FILE_KEYS = new Set(["thumbnail", "productFile"])
     const raw: Record<string, unknown> = {}
     formData.forEach((value, key) => {
-      if (key !== "thumbnail" && key !== "productFile") {
-        if (value === "true") raw[key] = true
-        else if (value === "false") raw[key] = false
-        else raw[key] = value === "" ? undefined : value
-      }
+      if (FILE_KEYS.has(key) || ARRAY_KEYS.has(key)) return
+      if (value === "true") raw[key] = true
+      else if (value === "false") raw[key] = false
+      else raw[key] = value === "" ? undefined : value
     })
+    raw.tagIds = parseStringArray(formData, "tagIds")
+    raw.tagNames = parseStringArray(formData, "tagNames")
 
     const parsed = productSchema.safeParse(raw)
     if (!parsed.success) {
@@ -144,14 +154,15 @@ export async function POST(req: NextRequest) {
       fileId = result.fileId
     }
 
-    const { title, description, price, originalPrice, deliveryType, externalUrl,
+    const { title, description, price, originalPrice, categoryId, deliveryType, externalUrl,
       sellerContactEmail, sellerContactPhone, sellerContactWhatsapp,
-      subscriptionDuration, seoTitle, seoKeywords, stock, isActive } = parsed.data
+      subscriptionDuration, stock, isActive, tagIds, tagNames } = parsed.data
 
     const [product] = await db
       .insert(products)
       .values({
         storefrontId: storefront.id,
+        categoryId: categoryId ?? null,
         title,
         description: description ?? null,
         price: String(price),
@@ -162,8 +173,6 @@ export async function POST(req: NextRequest) {
         sellerContactPhone: sellerContactPhone ?? null,
         sellerContactWhatsapp: sellerContactWhatsapp ?? null,
         subscriptionDuration: subscriptionDuration ?? null,
-        seoTitle: seoTitle ?? null,
-        seoKeywords: seoKeywords ?? null,
         stock: stock ?? null,
         isActive: isActive ?? true,
         coverImageUrl: coverImageUrl ?? null,
@@ -172,6 +181,14 @@ export async function POST(req: NextRequest) {
         fileId: fileId ?? null,
       })
       .returning()
+
+    // Tags: ensure rows exist, write join table.
+    const finalTagIds = await ensureTagIds(tagIds ?? [], tagNames ?? [])
+    if (finalTagIds.length > 0) await setProductTags(product.id, finalTagIds)
+
+    // Gallery: upload any provided images.
+    const galleryFiles = parseFileArray(formData, "galleryImages")
+    if (galleryFiles.length > 0) await addGalleryImages(product.id, galleryFiles)
 
     // Update totalProducts counter on user
     const [countResult] = await db

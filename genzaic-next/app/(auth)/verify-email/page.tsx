@@ -6,7 +6,8 @@ import { toast } from "sonner"
 import { Loader2, Mail, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
-import { useVerifyOTPMutation, useResendOTPMutation } from "@/store/api/authApi"
+import { useVerifyOTP, useResendOTP } from "@/lib/queries/auth"
+import { getApiErrorMessage } from "@/lib/api-error"
 
 export default function VerifyEmailPage() {
   const router = useRouter()
@@ -17,8 +18,8 @@ export default function VerifyEmailPage() {
   const [countdown, setCountdown] = useState(60)
   const [canResend, setCanResend] = useState(false)
 
-  const [verifyOTP, { isLoading: isVerifying }] = useVerifyOTPMutation()
-  const [resendOTP, { isLoading: isResending }] = useResendOTPMutation()
+  const { mutateAsync: verifyOTP, isPending: isVerifying } = useVerifyOTP()
+  const { mutateAsync: resendOTP, isPending: isResending } = useResendOTP()
 
   useEffect(() => {
     if (!email) {
@@ -47,20 +48,18 @@ export default function VerifyEmailPage() {
     }
 
     try {
-      await verifyOTP({ email, otp }).unwrap()
+      await verifyOTP({ email, otp })
       toast.success("Email verified successfully!")
       router.push("/login?verified=true")
     } catch (err) {
-      const error = err as { data?: { message?: string } }
-      const message = error?.data?.message || "Invalid or expired OTP. Please try again."
-      toast.error(message)
+      toast.error(getApiErrorMessage(err, "Invalid or expired OTP. Please try again."))
       setOtp("")
     }
   }
 
   const handleResend = async () => {
     try {
-      await resendOTP({ email }).unwrap()
+      await resendOTP({ email })
       toast.success("New OTP sent to your email!")
       setCountdown(60)
       setCanResend(false)
@@ -77,9 +76,7 @@ export default function VerifyEmailPage() {
         })
       }, 1000)
     } catch (err) {
-      const error = err as { data?: { message?: string } }
-      const message = error?.data?.message || "Failed to resend OTP. Please try again."
-      toast.error(message)
+      toast.error(getApiErrorMessage(err, "Failed to resend OTP. Please try again."))
     }
   }
 

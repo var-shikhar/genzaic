@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Check, Bell, Sparkles, BarChart3, Users, Palette, TrendingUp,
@@ -17,7 +18,8 @@ import {
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useSelectPlanMutation, useCompleteOnboardingMutation } from "@/store/api/onboardingApi"
+import { useSelectPlan, useCompleteOnboarding } from "@/lib/queries/onboarding"
+import { getApiErrorMessage } from "@/lib/api-error"
 
 const creatorBenefits = [
   { icon: Check, text: "Unlimited Products", tooltip: "List as many digital products as you want with no restrictions" },
@@ -47,21 +49,24 @@ const startupBenefits = [
 
 export default function PlanSelectionPage() {
   const router = useRouter()
+  const { update } = useSession()
   const [selectedPlan, setSelectedPlan] = useState<"creator" | null>("creator")
   const [notifyDialogOpen, setNotifyDialogOpen] = useState(false)
   const [notifyEmail, setNotifyEmail] = useState("")
-  const [selectPlan] = useSelectPlanMutation()
-  const [completeOnboarding, { isLoading: isProcessing }] = useCompleteOnboardingMutation()
+  const { mutateAsync: selectPlan } = useSelectPlan()
+  const { mutateAsync: completeOnboarding, isPending: isProcessing } = useCompleteOnboarding()
 
   const handleContinue = async () => {
     if (selectedPlan !== "creator") return
     try {
-      await selectPlan({ plan: selectedPlan }).unwrap()
-      await completeOnboarding().unwrap()
+      await selectPlan({ plan: selectedPlan })
+      await completeOnboarding()
+      await update({ user: { onboardingComplete: true } })
       toast.success("Welcome to GenZaic Creator Hub!")
       router.push("/dashboard")
-    } catch {
-      toast.error("Failed to complete onboarding")
+      router.refresh()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to complete onboarding"))
     }
   }
 
