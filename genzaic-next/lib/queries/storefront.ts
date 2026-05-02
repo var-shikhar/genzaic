@@ -29,6 +29,14 @@ export interface Storefront {
   seoTitle?: string | null
   seoDescription?: string | null
   seoKeywords?: string | null
+  // Imprint (Editorial OS)
+  imprintSlug?: string | null
+  imprintName?: string | null
+  imprintTagline?: string | null
+  imprintEditorsNote?: string | null
+  imprintCoverPreset?: "ink" | "sunlit" | "stamp" | "studio" | "archive" | "riso"
+  imprintTypePairing?: "house" | "press" | "studio" | "plain"
+  imprintAccent?: "iris" | "sage" | "ink_blue" | "plum" | "ochre" | "slate"
   createdAt: string
   updatedAt: string
 }

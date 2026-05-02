@@ -1,64 +1,30 @@
 import type { Metadata } from "next"
-import {
-  Inter,
-  Bricolage_Grotesque,
-  Roboto,
-  Poppins,
-  Montserrat,
-  Lato,
-  Open_Sans,
-} from "next/font/google"
+import { Fraunces, Inter_Tight, JetBrains_Mono } from "next/font/google"
 import "./globals.css"
 import { Providers } from "./providers"
 import { Toaster } from "@/components/ui/sonner"
 import { auth } from "@/lib/auth"
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-})
-
-const bricolage = Bricolage_Grotesque({
+const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
 })
 
-const roboto = Roboto({
+const interTight = Inter_Tight({
   subsets: ["latin"],
-  variable: "--font-roboto",
-  display: "swap",
-  weight: ["400", "500", "700"],
-})
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  variable: "--font-poppins",
+  variable: "--font-body",
   display: "swap",
   weight: ["400", "500", "600", "700"],
 })
 
-const montserrat = Montserrat({
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
-  variable: "--font-montserrat",
+  variable: "--font-mono",
   display: "swap",
-  weight: ["400", "500", "600", "700"],
-})
-
-const lato = Lato({
-  subsets: ["latin"],
-  variable: "--font-lato",
-  display: "swap",
-  weight: ["400", "700"],
-})
-
-const openSans = Open_Sans({
-  subsets: ["latin"],
-  variable: "--font-open-sans",
-  display: "swap",
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500"],
 })
 
 export const metadata: Metadata = {
@@ -77,13 +43,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const session = await auth()
 
   const fontVariables = [
-    inter.variable,
-    bricolage.variable,
-    roboto.variable,
-    poppins.variable,
-    montserrat.variable,
-    lato.variable,
-    openSans.variable,
+    fraunces.variable,
+    interTight.variable,
+    jetbrainsMono.variable,
   ].join(" ")
 
   return (
@@ -92,7 +54,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preconnect" href="https://ik.imagekit.io" crossOrigin="" />
         <link rel="dns-prefetch" href="https://ik.imagekit.io" />
       </head>
-      <body className={`${fontVariables} font-sans antialiased`}>
+      <body className={`${fontVariables} font-body antialiased`}>
         <Providers session={session}>
           {children}
           <Toaster richColors position="top-right" />

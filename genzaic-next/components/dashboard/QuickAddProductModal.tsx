@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
@@ -22,6 +22,7 @@ import { useProfile } from "@/lib/queries/user"
 import { getApiErrorMessage } from "@/lib/api-error"
 import { DeliveryTypeSelector } from "./DeliveryTypeSelector"
 import { CategoryPicker } from "./CategoryPicker"
+import { TOAST } from "@/lib/brand/voice"
 
 const quickSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters").max(500),
@@ -51,9 +52,16 @@ export function QuickAddProductModal({ open, onOpenChange }: QuickAddProductModa
   })
 
   const handleClose = () => {
+    if (isPending) return
     onOpenChange(false)
     form.reset()
   }
+
+  // Always reset form + clear any stale pending state when the modal re-opens.
+  useEffect(() => {
+    if (open) form.reset({ title: "", categoryId: undefined, deliveryType: "download" })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   const onSubmit = async (values: QuickInput) => {
     const formData = new FormData()
@@ -66,7 +74,7 @@ export function QuickAddProductModal({ open, onOpenChange }: QuickAddProductModa
 
     try {
       const created = await createProduct(formData)
-      toast.success("Created — fill in the rest")
+      toast.success(TOAST.productCreated)
       handleClose()
       router.push(`/dashboard/products/${created.slug ?? created.id}/edit?from=quick-add`)
     } catch (err) {
@@ -76,11 +84,18 @@ export function QuickAddProductModal({ open, onOpenChange }: QuickAddProductModa
 
   return (
     <Dialog open={open} onOpenChange={(o) => (!o ? handleClose() : onOpenChange(o))}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => { if (isPending) e.preventDefault() }}
+      >
         <DialogHeader>
-          <DialogTitle>New Product</DialogTitle>
-          <DialogDescription>
-            Just the basics — you&rsquo;ll add price, thumbnail and details on the next screen.
+          <DialogTitle className="font-display text-2xl font-semibold tracking-[-0.025em]">
+            File a new piece.
+          </DialogTitle>
+          <DialogDescription className="font-display italic text-muted-foreground">
+            Just the basics — you&rsquo;ll add the rest on the next screen.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -90,7 +105,7 @@ export function QuickAddProductModal({ open, onOpenChange }: QuickAddProductModa
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name *</FormLabel>
+                  <FormLabel className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Title</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g. Notion Productivity Pack" autoFocus {...field} />
                   </FormControl>
@@ -104,7 +119,6 @@ export function QuickAddProductModal({ open, onOpenChange }: QuickAddProductModa
               name="categoryId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
                   <FormControl>
                     <CategoryPicker
                       value={field.value ?? null}
@@ -121,7 +135,7 @@ export function QuickAddProductModal({ open, onOpenChange }: QuickAddProductModa
               name="deliveryType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Type</FormLabel>
+                  <FormLabel className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Type</FormLabel>
                   <FormControl>
                     <DeliveryTypeSelector value={field.value} onChange={field.onChange} />
                   </FormControl>
@@ -131,11 +145,11 @@ export function QuickAddProductModal({ open, onOpenChange }: QuickAddProductModa
             />
 
             <div className="flex gap-2 pt-2">
-              <Button type="button" variant="outline" className="flex-1" onClick={handleClose}>
+              <Button type="button" variant="paper" shape="pill" className="flex-1" onClick={handleClose}>
                 Cancel
               </Button>
-              <Button type="submit" className="flex-1 gradient-primary text-white" disabled={isPending}>
-                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create & Continue"}
+              <Button type="submit" shape="pill" className="flex-1" disabled={isPending}>
+                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "File & continue"}
               </Button>
             </div>
             {profile?.defaultProductActive === false && (

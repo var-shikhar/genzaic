@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Upload, X, GripVertical } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 export interface ExistingGalleryImage {
@@ -23,6 +22,12 @@ interface GalleryUploaderProps {
   max?: number
 }
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`
+}
+
 export function GalleryUploader({
   initial = [],
   onChange,
@@ -36,19 +41,15 @@ export function GalleryUploader({
   const [dragSrcIdx, setDragSrcIdx] = useState<number | null>(null)
 
   useEffect(() => {
-    onChange({
-      newFiles: newImages.map((n) => n.file),
-      removedIds,
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    onChange({ newFiles: newImages.map((n) => n.file), removedIds })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [newImages, removedIds])
 
-  // Cleanup blob URLs on unmount.
   useEffect(() => {
     return () => {
       newImages.forEach((n) => URL.revokeObjectURL(n.previewUrl))
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const totalCount = existing.length + newImages.length
@@ -77,17 +78,30 @@ export function GalleryUploader({
     })
   }
 
-  // Drag-reorder applies to the merged list (existing first, then new).
-  const merged = [
-    ...existing.map((e) => ({ kind: "existing" as const, id: e.id, src: e.imageUrl })),
-    ...newImages.map((n, i) => ({ kind: "new" as const, idx: i, src: n.previewUrl })),
+  // Merged ordered list — existing first, then newly-staged.
+  type MergedItem =
+    | { kind: "existing"; id: string; src: string; label: string; sub: string }
+    | { kind: "new"; idx: number; src: string; label: string; sub: string }
+
+  const merged: MergedItem[] = [
+    ...existing.map((e) => ({
+      kind: "existing" as const,
+      id: e.id,
+      src: e.imageUrl,
+      label: (e.imageUrl.split("/").pop() ?? "image").split("?")[0],
+      sub: "uploaded",
+    })),
+    ...newImages.map((n, i) => ({
+      kind: "new" as const,
+      idx: i,
+      src: n.previewUrl,
+      label: n.file.name,
+      sub: `${formatBytes(n.file.size)} · staged for upload`,
+    })),
   ]
 
   const reorder = (from: number, to: number) => {
     if (from === to) return
-    const reorderedExisting = [...existing]
-    const reorderedNew = [...newImages]
-    // Convert merged list to two separate ordered arrays after reordering.
     const arr = [...merged]
     const [moved] = arr.splice(from, 1)
     arr.splice(to, 0, moved)
@@ -95,10 +109,10 @@ export function GalleryUploader({
     const newNew: NewImage[] = []
     arr.forEach((item) => {
       if (item.kind === "existing") {
-        const e = reorderedExisting.find((x) => x.id === item.id)
+        const e = existing.find((x) => x.id === item.id)
         if (e) newExisting.push(e)
       } else {
-        const n = reorderedNew[item.idx]
+        const n = newImages[item.idx]
         if (n) newNew.push(n)
       }
     })
@@ -108,64 +122,84 @@ export function GalleryUploader({
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-        {merged.map((item, idx) => (
-          <div
-            key={item.kind === "existing" ? item.id : `new-${item.idx}`}
-            draggable={!disabled}
-            onDragStart={() => setDragSrcIdx(idx)}
-            onDragOver={(e) => {
-              e.preventDefault()
-              setDragOverIdx(idx)
-            }}
-            onDragLeave={() => setDragOverIdx(null)}
-            onDrop={(e) => {
-              e.preventDefault()
-              if (dragSrcIdx !== null) reorder(dragSrcIdx, idx)
-              setDragSrcIdx(null)
-              setDragOverIdx(null)
-            }}
-            onDragEnd={() => {
-              setDragSrcIdx(null)
-              setDragOverIdx(null)
-            }}
-            className={cn(
-              "relative aspect-square rounded-md overflow-hidden border bg-muted group",
-              dragOverIdx === idx && "ring-2 ring-primary",
-            )}
-          >
-            <Image src={item.src} alt="" fill sizes="200px" className="object-cover" />
-            <div className="absolute top-1 left-1 bg-black/60 text-white p-1 rounded opacity-0 group-hover:opacity-100 cursor-grab transition-opacity">
-              <GripVertical className="h-3 w-3" />
-            </div>
-            <button
-              type="button"
-              onClick={() =>
-                item.kind === "existing" ? removeExisting(item.id) : removeNew(item.idx)
-              }
-              className="absolute top-1 right-1 bg-black/60 text-white p-1 rounded hover:bg-black/80"
-              aria-label="Remove image"
+      {merged.length > 0 && (
+        <ul className="border border-border rounded-md divide-y divide-border">
+          {merged.map((item, idx) => (
+            <li
+              key={item.kind === "existing" ? item.id : `new-${item.idx}`}
+              draggable={!disabled}
+              onDragStart={() => setDragSrcIdx(idx)}
+              onDragOver={(e) => {
+                e.preventDefault()
+                setDragOverIdx(idx)
+              }}
+              onDragLeave={() => setDragOverIdx(null)}
+              onDrop={(e) => {
+                e.preventDefault()
+                if (dragSrcIdx !== null) reorder(dragSrcIdx, idx)
+                setDragSrcIdx(null)
+                setDragOverIdx(null)
+              }}
+              onDragEnd={() => {
+                setDragSrcIdx(null)
+                setDragOverIdx(null)
+              }}
+              className={cn(
+                "grid grid-cols-[24px_56px_1fr_auto] items-center gap-3 p-2.5 group transition-colors",
+                dragOverIdx === idx && "bg-primary/5",
+              )}
             >
-              <X className="h-3 w-3" />
-            </button>
-          </div>
-        ))}
-        {totalCount < max && (
-          <label className="flex flex-col items-center justify-center aspect-square border-2 border-dashed rounded-md cursor-pointer hover:border-primary/50 hover:bg-accent/50 transition-colors">
-            <Upload className="w-5 h-5 mb-1 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Add</span>
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              className="hidden"
-              disabled={disabled}
-              onChange={(e) => handleFiles(e.target.files)}
-            />
-          </label>
-        )}
-      </div>
-      <p className="text-xs text-muted-foreground">
+              <div className="text-muted-foreground/60 group-hover:text-foreground cursor-grab transition-colors">
+                <GripVertical className="h-4 w-4" />
+              </div>
+              <div className="relative w-14 h-14 rounded overflow-hidden bg-muted">
+                <Image src={item.src} alt={item.label} fill sizes="56px" className="object-cover" />
+              </div>
+              <div className="min-w-0">
+                <div className="font-display text-sm font-medium truncate">{item.label}</div>
+                <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground mt-0.5">
+                  {idx + 1} of {merged.length} · {item.sub}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => (item.kind === "existing" ? removeExisting(item.id) : removeNew(item.idx))}
+                className="p-2 hover:bg-flicker/10 text-flicker rounded-md"
+                aria-label="Remove image"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {totalCount < max && (
+        <label
+          className={cn(
+            "flex items-center justify-center gap-2 w-full h-20 border-2 border-dashed border-border rounded-md cursor-pointer",
+            "hover:border-primary hover:bg-primary/5 transition-colors",
+          )}
+        >
+          <Upload className="w-4 h-4 text-muted-foreground" />
+          <span className="font-display italic text-sm text-muted-foreground">
+            {totalCount === 0 ? "Add gallery images" : "Add more images"}
+          </span>
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            className="hidden"
+            disabled={disabled}
+            onChange={(e) => {
+              handleFiles(e.target.files)
+              e.target.value = ""
+            }}
+          />
+        </label>
+      )}
+
+      <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
         {totalCount} / {max} images. Drag to reorder.
       </p>
     </div>

@@ -17,6 +17,8 @@ import { usePayoutStats, usePayouts } from "@/lib/queries/payouts"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatCurrency, formatDate } from "@/lib/utils"
+import { EditorsHeadline, EyebrowLabel, MonoLabel } from "@/components/brand/primitives"
+import { Pinstripe } from "@/components/brand/motifs"
 
 export default function PayoutsPage() {
   const { data: stats, isLoading: statsLoading } = usePayoutStats()
@@ -36,11 +38,17 @@ export default function PayoutsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Payouts</h1>
-        <p className="text-muted-foreground mt-1">Track your earnings and payout status</p>
-      </div>
+      {/* Editorial header */}
+      <header className="relative pb-6 border-b border-primary/30 overflow-hidden">
+        <Pinstripe className="opacity-40" />
+        <div className="relative">
+          <EyebrowLabel>Balance sheet · {new Date().getFullYear()}</EyebrowLabel>
+          <EditorsHeadline accentWord="Ledger." size="xl" className="mt-3">The Ledger.</EditorsHeadline>
+          <p className="font-display italic text-base text-muted-foreground mt-2">
+            Your earnings, framed as a balance sheet.
+          </p>
+        </div>
+      </header>
 
       {/* KYC Verification Notice */}
       {stats && !stats.kycVerified && (
@@ -67,7 +75,7 @@ export default function PayoutsPage() {
                 {stats.kycStatus === "rejected" &&
                   "Your KYC verification was rejected. Please review the rejection reason and resubmit your documents to start receiving payouts."}
               </p>
-              <Button asChild size="sm" className="gap-2 gradient-primary text-white">
+              <Button asChild size="sm" shape="pill" className="gap-2">
                 <Link href="/dashboard/kyc">
                   {stats.kycStatus === "not_submitted" && "Complete KYC Verification"}
                   {stats.kycStatus === "pending" && "View KYC Status"}

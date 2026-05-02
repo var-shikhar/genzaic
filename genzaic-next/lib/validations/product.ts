@@ -1,16 +1,21 @@
 import { z } from "zod"
+import { VALIDATION } from "@/lib/brand/voice"
+
+// Empty strings from form inputs should be treated as "not provided" so
+// `.email()` / `.url()` don't fire false-positive errors on optional fields.
+const emptyToUndef = (v: unknown) => (v === "" || v === null ? undefined : v)
 
 const productBaseSchema = z.object({
-    title: z.string().min(3, "Title must be at least 3 characters").max(500),
-    description: z.string().max(5000).optional(),
-    price: z.coerce.number().min(0, "Price must be positive"),
-    originalPrice: z.coerce.number().min(0).optional().nullable(),
-    categoryId: z.string().uuid("Invalid category ID").optional().nullable(),
+    title: z.string().min(3, VALIDATION.titleTooShort).max(500),
+    description: z.preprocess(emptyToUndef, z.string().max(5000).optional()),
+    price: z.coerce.number({ message: VALIDATION.priceRequired }).min(0, VALIDATION.pricePositive),
+    originalPrice: z.preprocess(emptyToUndef, z.coerce.number().min(0).optional()),
+    categoryId: z.preprocess(emptyToUndef, z.string().uuid("Invalid category ID").optional()),
     deliveryType: z.enum(["download", "external_link", "manual"]),
-    externalUrl: z.string().url("Must be a valid URL").optional().nullable(),
-    sellerContactEmail: z.string().email("Invalid email").optional().nullable(),
-    sellerContactPhone: z.string().max(20).optional().nullable(),
-    sellerContactWhatsapp: z.string().max(20).optional().nullable(),
+    externalUrl: z.preprocess(emptyToUndef, z.string().url(VALIDATION.externalUrlInvalid).optional()),
+    sellerContactEmail: z.preprocess(emptyToUndef, z.string().email("— That email doesn't look right.").optional()),
+    sellerContactPhone: z.preprocess(emptyToUndef, z.string().max(20).optional()),
+    sellerContactWhatsapp: z.preprocess(emptyToUndef, z.string().max(20).optional()),
     subscriptionDuration: z
       .enum(["1 month", "3 months", "6 months", "1 year", "lifetime"])
       .optional()
@@ -25,15 +30,19 @@ const productBaseSchema = z.object({
 
 export const productSchema = productBaseSchema
   .superRefine((data, ctx) => {
+    // Skip delivery-specific field checks for drafts. They run only when the
+    // creator publishes (isActive === true) — quick-add creates inactive
+    // products that the seller fills in on the edit page before going live.
+    if (!data.isActive) return
     if (data.deliveryType === "external_link" && !data.externalUrl) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "External URL is required", path: ["externalUrl"] })
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: VALIDATION.externalUrlRequired, path: ["externalUrl"] })
     }
     if (data.deliveryType === "manual") {
       const hasContact = data.sellerContactEmail || data.sellerContactPhone || data.sellerContactWhatsapp
       if (!hasContact) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "At least one contact method is required for manual delivery",
+          message: VALIDATION.contactRequiredManual,
           path: ["sellerContactEmail"],
         })
       }

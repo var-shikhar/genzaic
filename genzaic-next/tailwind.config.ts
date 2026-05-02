@@ -17,9 +17,10 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "var(--font-inter)", "sans-serif"],
-        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "monospace"],
+        display: ["var(--font-display)", "Georgia", "serif"],
+        body:    ["var(--font-body)", "system-ui", "sans-serif"],
+        sans:    ["var(--font-body)", "system-ui", "sans-serif"],
+        mono:    ["var(--font-mono)", "ui-monospace", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -65,6 +66,16 @@ const config: Config = {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        ink:       "hsl(var(--foreground))",
+        paper:     "hsl(var(--background))",
+        "paper-2": "hsl(var(--paper-2))",
+        iris:      "hsl(var(--accent))",
+        flicker:   "hsl(var(--signal))",
+        signal:    "hsl(var(--signal))",
+      },
+      backgroundImage: {
+        "gradient-primary": "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)))",
+        "gradient-hero": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -108,10 +119,6 @@ const config: Config = {
         spotlight: "spotlight 2s ease .75s 1 forwards",
         scroll: "scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite",
         "move-up": "move-up 0.5s ease-out forwards",
-      },
-      backgroundImage: {
-        "gradient-primary": "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)))",
-        "gradient-hero": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
       },
     },
   },

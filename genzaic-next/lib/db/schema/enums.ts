@@ -78,3 +78,29 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "welcome",
   "system",
 ])
+
+// ─── Imprint customization (Editorial OS) ────────────────────────────────────
+export const coverPresetEnum = pgEnum("cover_preset", [
+  "ink",
+  "sunlit",
+  "stamp",
+  "studio",
+  "archive",
+  "riso",
+])
+
+export const typePairingEnum = pgEnum("type_pairing", [
+  "house",
+  "press",
+  "studio",
+  "plain",
+])
+
+export const imprintAccentEnum = pgEnum("imprint_accent", [
+  "iris",
+  "sage",
+  "ink_blue",
+  "plum",
+  "ochre",
+  "slate",
+])

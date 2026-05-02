@@ -5,10 +5,12 @@ import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { format } from "date-fns"
 import {
-  TrendingUp, ShoppingCart, Calendar, Clock, Search, Download,
+  Search, Download,
   Eye, FileText, X, Package, Mail, Phone,
-  CheckCircle2, XCircle, AlertCircle, ArrowUpDown, Filter,
+  CheckCircle2, XCircle, AlertCircle, ArrowUpDown, Filter, Calendar,
 } from "lucide-react"
+import { EditorsHeadline, EyebrowLabel, MonoLabel } from "@/components/brand/primitives"
+import { Pinstripe } from "@/components/brand/motifs"
 import { toast } from "sonner"
 import {
   useSalesStats, useOrders, useRecentOrders, useDownloadLogs,
@@ -102,43 +104,44 @@ export default function SalesPage() {
   }, [ordersData?.orders, search, statusFilter, sortBy])
 
   const statCards = [
-    { label: "Total Revenue", value: formatINR(stats?.totalRevenue ?? 0), icon: TrendingUp, color: "bg-primary/10 text-primary" },
-    { label: "Total Orders", value: stats?.totalOrders ?? 0, icon: ShoppingCart, color: "bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400" },
-    { label: "This Month", value: formatINR(stats?.monthlyRevenue ?? 0), icon: Calendar, color: "bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400" },
-    { label: "Pending", value: formatINR(stats?.pendingAmount ?? 0), icon: Clock, color: "bg-muted text-muted-foreground" },
+    { label: "Total revenue",  value: formatINR(stats?.totalRevenue ?? 0),   accent: true },
+    { label: "Total orders",   value: String(stats?.totalOrders ?? 0) },
+    { label: "This month",     value: formatINR(stats?.monthlyRevenue ?? 0) },
+    { label: "Pending payout", value: formatINR(stats?.pendingAmount ?? 0) },
   ]
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Sales</h1>
-          <p className="text-muted-foreground">Track your orders, downloads, and revenue</p>
+    <div className="space-y-8">
+      {/* Editorial header */}
+      <header className="relative grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-6 items-end pb-6 border-b border-primary/30 overflow-hidden">
+        <Pinstripe className="opacity-40" />
+        <div className="relative">
+          <EyebrowLabel>Ledger entries · this month</EyebrowLabel>
+          <EditorsHeadline size="xl" className="mt-3">Receipts.</EditorsHeadline>
+          <p className="font-display italic text-base text-muted-foreground mt-2">
+            Every sale a line entry, every reader noted.
+          </p>
         </div>
-        <Button variant="outline" onClick={handleExportCSV} disabled={ordersLoading || !ordersData?.orders.length}>
-          <Download className="w-4 h-4 mr-2" />
+        <Button variant="paper" shape="pill" onClick={handleExportCSV} disabled={ordersLoading || !ordersData?.orders.length} className="relative">
+          <Download className="w-4 h-4" />
           Export CSV
         </Button>
-      </div>
+      </header>
 
-      {/* Stats */}
+      {/* Stats — editorial cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat, i) => (
-          <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
-                    {statsLoading ? <Skeleton className="h-7 w-20 mt-1" /> : <p className="text-2xl font-bold">{stat.value}</p>}
-                  </div>
-                  <div className={`p-3 rounded-xl ${stat.color}`}>
-                    <stat.icon className="w-6 h-6" />
-                  </div>
+          <motion.div key={stat.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+            <div className="border border-border rounded-md p-5">
+              <MonoLabel size="sm" className="block">{stat.label}</MonoLabel>
+              {statsLoading ? (
+                <Skeleton className="h-8 w-24 mt-2" />
+              ) : (
+                <div className={`font-display text-3xl font-semibold tracking-[-0.025em] mt-2 num-tabular ${stat.accent ? "text-primary" : ""}`}>
+                  {stat.value}
                 </div>
-              </CardContent>
-            </Card>
+              )}
+            </div>
           </motion.div>
         ))}
       </div>
@@ -263,8 +266,7 @@ export default function SalesPage() {
               )}
               {!ordersLoading && filteredOrders.length === 0 && (
                 <div className="py-12 text-center">
-                  <ShoppingCart className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">No orders found</p>
+                  <p className="font-display italic text-muted-foreground">No orders found.</p>
                 </div>
               )}
             </CardContent>
@@ -493,8 +495,9 @@ export default function SalesPage() {
 
                 <div className="mt-6 flex gap-3">
                   <Button
-                    className="flex-1 gradient-primary text-white"
-                    onClick={() => { toast.success("Invoice downloaded!"); setSelectedOrder(null) }}
+                    className="flex-1"
+                    shape="pill"
+                    onClick={() => { toast.success("— Invoice filed."); setSelectedOrder(null) }}
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     Download Invoice

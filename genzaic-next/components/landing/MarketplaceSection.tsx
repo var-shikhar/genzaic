@@ -1,17 +1,16 @@
 "use client"
 
-import { motion } from "framer-motion"
-import { CreditCard, Globe, Mail, Sparkles, Store, type LucideIcon } from "lucide-react"
+import {
+  CreditCard,
+  Globe,
+  Mail,
+  Sparkles,
+  Store,
+  type LucideIcon,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, delay: i * 0.1, ease: "easeOut" as const },
-  }),
-}
+import { Reveal } from "@/components/motion/Reveal"
+import { RevealGroup } from "@/components/motion/RevealGroup"
 
 interface MarketplacePerk {
   icon: LucideIcon
@@ -45,14 +44,7 @@ export default function MarketplaceSection() {
     >
       <div className="absolute inset-0 bg-dot-pattern-dark" />
       <div className="max-w-4xl mx-auto relative z-10">
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          custom={0}
-          className="text-center"
-        >
+        <Reveal from="fade-scale" className="text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 mb-5">
             <Store className="w-3.5 h-3.5 text-yellow-400" />
             <span className="text-xs sm:text-sm font-semibold text-yellow-300">
@@ -69,48 +61,47 @@ export default function MarketplaceSection() {
             Discover and sell in India&apos;s first creator-focused
             marketplace. Get found by millions of buyers.
           </p>
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-5 sm:p-8">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
-              {perks.map((item, i) => (
-                <motion.div
-                  key={i}
-                  variants={fadeUp}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true }}
-                  custom={i}
-                  className="text-center group"
-                >
-                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                    <item.icon className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />
-                  </div>
-                  <h3 className="font-semibold text-white text-sm mb-1">
-                    {item.title}
-                  </h3>
-                  <p className="text-xs text-gray-400 leading-relaxed">
-                    {item.desc}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-            <div className="mt-8 pt-6 border-t border-white/10">
-              <p className="text-xs sm:text-sm text-gray-400 mb-3">
-                Be the first to know when we launch
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 max-w-sm mx-auto">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  className="w-full sm:flex-1 px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/30 transition-all"
-                />
-                <Button className="w-full sm:w-auto gradient-primary hover:opacity-90 text-sm px-5">
-                  <Mail className="w-3.5 h-3.5 mr-1.5" />
-                  Notify Me
-                </Button>
+        </Reveal>
+        <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-5 sm:p-8">
+          <RevealGroup
+            pattern="fan"
+            className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8"
+          >
+            {perks.map((item, i) => (
+              <div key={i} className="text-center group h-full">
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                  <item.icon className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />
+                </div>
+                <h3 className="font-semibold text-white text-sm mb-1">
+                  {item.title}
+                </h3>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  {item.desc}
+                </p>
               </div>
+            ))}
+          </RevealGroup>
+          <Reveal
+            from="up-spring"
+            delay={0.2}
+            className="mt-8 pt-6 border-t border-white/10"
+          >
+            <p className="text-xs sm:text-sm text-gray-400 mb-3 text-center">
+              Be the first to know when we launch
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 max-w-sm mx-auto">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="w-full sm:flex-1 px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/30 transition-all"
+              />
+              <Button className="w-full sm:w-auto gradient-primary hover:opacity-90 text-sm px-5">
+                <Mail className="w-3.5 h-3.5 mr-1.5" />
+                Notify Me
+              </Button>
             </div>
-          </div>
-        </motion.div>
+          </Reveal>
+        </div>
       </div>
     </section>
   )

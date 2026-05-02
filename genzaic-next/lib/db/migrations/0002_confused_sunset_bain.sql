@@ -1,0 +1,2 @@
+ALTER TABLE "products" ALTER COLUMN "hex_code" SET NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "products_hex_code_per_storefront_idx" ON "products" USING btree ("storefront_id","hex_code");

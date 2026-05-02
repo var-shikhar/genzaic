@@ -23,6 +23,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getInitials } from "@/lib/utils"
+import { EditorsHeadline, EyebrowLabel } from "@/components/brand/primitives"
 
 const fmt = (n: number) => `₹${n.toLocaleString("en-IN")}`
 
@@ -124,10 +125,15 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage your account settings</p>
-      </div>
+      <header className="pb-6 border-b border-primary/30">
+        <EyebrowLabel>Account & defaults</EyebrowLabel>
+        <EditorsHeadline accentWord="Preferences." size="xl" className="mt-3">
+          Your Preferences.
+        </EditorsHeadline>
+        <p className="font-display italic text-base text-muted-foreground mt-2">
+          Profile, defaults, password, danger zone.
+        </p>
+      </header>
 
       {/* Profile */}
       <Card>
@@ -152,7 +158,7 @@ export default function SettingsPage() {
                 </div>
               ) : (
                 <Avatar className="w-20 h-20">
-                  <AvatarFallback className="text-xl gradient-primary text-white">
+                  <AvatarFallback className="text-xl bg-foreground text-background font-display font-semibold">
                     {user?.name ? getInitials(user.name) : "U"}
                   </AvatarFallback>
                 </Avatar>
@@ -203,7 +209,7 @@ export default function SettingsPage() {
                   </FormItem>
                 )} />
               )}
-              <Button type="submit" className="gradient-primary text-white" disabled={isUpdating}>
+              <Button type="submit" shape="pill" disabled={isUpdating}>
                 {isUpdating ? "Saving..." : "Save Changes"}
               </Button>
             </form>
@@ -347,7 +353,7 @@ export default function SettingsPage() {
             </Label>
           </RadioGroup>
 
-          <Button onClick={handleSavePlatformFee} disabled={isSavingFee} className="gradient-primary text-white">
+          <Button onClick={handleSavePlatformFee} disabled={isSavingFee} shape="pill">
             {isSavingFee ? "Saving..." : "Save Fee Settings"}
           </Button>
         </CardContent>

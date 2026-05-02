@@ -17,6 +17,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
+import { EditorsHeadline, EyebrowLabel } from "@/components/brand/primitives"
+import { PostalRing } from "@/components/brand/motifs"
 
 const statusConfig = {
   not_submitted: { label: "Not Submitted", icon: AlertCircle, variant: "secondary" as const },
@@ -108,10 +110,22 @@ export default function KYCPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div>
-        <h1 className="text-3xl font-bold">KYC Verification</h1>
-        <p className="text-muted-foreground mt-1">Complete verification to enable payouts</p>
-      </div>
+      <header className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-6 items-end pb-6 border-b border-primary/30">
+        <div>
+          <EyebrowLabel>Verification · payouts above ₹10k</EyebrowLabel>
+          <EditorsHeadline accentWord="Credentials." size="xl" className="mt-3">
+            Your Credentials.
+          </EditorsHeadline>
+          <p className="font-display italic text-base text-muted-foreground mt-2">
+            Five-minute job. Lift the payout cap.
+          </p>
+        </div>
+        {kyc?.verificationStatus === "verified" && (
+          <PostalRing variant="iris" rotate={-8}>
+            Verified<br/>{new Date().getFullYear()}
+          </PostalRing>
+        )}
+      </header>
 
       <div className="flex items-center gap-3">
         <Badge variant={statusInfo.variant}>
@@ -253,7 +267,7 @@ export default function KYCPage() {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full gradient-primary text-white" disabled={isSubmitting || status === "pending"}>
+                <Button type="submit" className="w-full" shape="pill" disabled={isSubmitting || status === "pending"}>
                   {isSubmitting ? "Submitting..." : status === "pending" ? "Verification in Progress" : "Submit KYC"}
                 </Button>
               </form>

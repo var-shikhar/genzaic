@@ -1,5 +1,9 @@
 import { z } from "zod"
 
+export const imprintCoverPresetSchema = z.enum(["ink", "sunlit", "stamp", "studio", "archive", "riso"])
+export const imprintTypePairingSchema = z.enum(["house", "press", "studio", "plain"])
+export const imprintAccentSchema      = z.enum(["iris", "sage", "ink_blue", "plum", "ochre", "slate"])
+
 export const storefrontSchema = z.object({
   storeName: z.string().min(2, "Store name must be at least 2 characters").max(255).optional(),
   description: z.string().max(2000).optional().nullable(),
@@ -22,6 +26,20 @@ export const storefrontSchema = z.object({
   seoTitle: z.string().max(255).optional().nullable(),
   seoDescription: z.string().max(500).optional().nullable(),
   seoKeywords: z.string().max(1000).optional().nullable(),
+
+  // Imprint (Editorial OS)
+  imprintSlug: z
+    .string()
+    .min(2, "Must be at least 2 characters")
+    .max(64)
+    .regex(/^[a-z0-9][a-z0-9-]*$/, "Lowercase letters, numbers, hyphens only")
+    .optional(),
+  imprintName: z.string().max(255).optional().nullable(),
+  imprintTagline: z.string().max(80).optional().nullable(),
+  imprintEditorsNote: z.string().max(140).optional().nullable(),
+  imprintCoverPreset: imprintCoverPresetSchema.optional(),
+  imprintTypePairing: imprintTypePairingSchema.optional(),
+  imprintAccent: imprintAccentSchema.optional(),
 })
 
 export const checkSlugSchema = z.object({

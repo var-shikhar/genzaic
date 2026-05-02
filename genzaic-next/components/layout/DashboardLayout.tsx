@@ -18,7 +18,6 @@ import {
   X,
   ChevronDown,
   Bell,
-  Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -35,6 +34,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { getInitials } from "@/lib/utils"
+import { Wordmark } from "@/components/brand/primitives"
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -43,7 +43,6 @@ const navItems = [
   { href: "/dashboard/sales", label: "Sales", icon: BarChart3 },
   { href: "/dashboard/payouts", label: "Payouts", icon: Wallet },
   { href: "/dashboard/kyc", label: "KYC", icon: FileCheck },
-  { href: "/dashboard/delivery", label: "Delivery", icon: Truck },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]
 
@@ -82,11 +81,8 @@ function Sidebar() {
   return (
     <aside className="hidden lg:flex flex-col w-64 border-r bg-card sticky top-0 h-screen shrink-0">
       <div className="p-4 border-b">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-            <Sparkles className="h-4 w-4 text-white" />
-          </div>
-          <span className="font-bold text-xl">GenZaic</span>
+        <Link href="/dashboard" className="flex items-center">
+          <Wordmark size="md" />
         </Link>
       </div>
       <ScrollArea className="flex-1 p-4">
@@ -129,16 +125,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
-              <div className="p-4 border-b">
+              <div className="p-5 border-b">
                 <Link
                   href="/dashboard"
-                  className="flex items-center gap-2"
+                  className="flex items-center"
                   onClick={() => setMobileOpen(false)}
                 >
-                  <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-                    <Sparkles className="h-4 w-4 text-white" />
-                  </div>
-                  <span className="font-bold text-xl">GenZaic</span>
+                  <Wordmark size="md" />
                 </Link>
               </div>
               <div className="p-4">

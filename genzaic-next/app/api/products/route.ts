@@ -14,6 +14,7 @@ import {
   addGalleryImages,
   slugify,
 } from "@/lib/products-write"
+import { generateHexCode } from "@/lib/brand/hex-code"
 
 // GET /api/products - list with pagination/search/filter
 export async function GET(req: NextRequest) {
@@ -172,12 +173,25 @@ export async function POST(req: NextRequest) {
       slug = `${baseSlug}-${Math.random().toString(36).slice(2, 7)}`
     }
 
+    // Pick a unique 4-char hex code per storefront. Retry on collision.
+    let hexCode = generateHexCode()
+    for (let attempts = 0; attempts < 32; attempts += 1) {
+      const [clash] = await db
+        .select({ id: products.id })
+        .from(products)
+        .where(and(eq(products.storefrontId, storefront.id), eq(products.hexCode, hexCode)))
+        .limit(1)
+      if (!clash) break
+      hexCode = generateHexCode()
+    }
+
     const [product] = await db
       .insert(products)
       .values({
         storefrontId: storefront.id,
         categoryId: categoryId ?? null,
         slug,
+        hexCode,
         title,
         description: description ?? null,
         price: String(price),

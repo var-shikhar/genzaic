@@ -9,6 +9,7 @@ export interface Product {
   categoryId?: string | null
   title: string
   slug?: string | null
+  hexCode?: string | null
   description?: string | null
   price: string
   originalPrice?: string | null

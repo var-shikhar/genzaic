@@ -1,21 +1,25 @@
 "use client"
 
+import { useTheme } from "next-themes"
 import { Toaster as Sonner } from "sonner"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
 const Toaster = ({ ...props }: ToasterProps) => {
+  const { theme = "system" } = useTheme()
   return (
     <Sonner
-      theme="system"
+      theme={theme as "light" | "dark" | "system"}
       className="toaster group"
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
-          description: "group-[.toast]:text-muted-foreground",
-          actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-          cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+            "group toast bg-background text-foreground border border-foreground rounded-lg shadow-hairline-lift font-display text-[15px] font-medium",
+          description: "italic text-muted-foreground",
+          actionButton: "bg-foreground text-background rounded-full px-3 py-1 text-xs",
+          cancelButton: "bg-transparent text-muted-foreground text-xs",
+          error: "border-flicker/60 text-foreground",
+          success: "border-foreground",
         },
       }}
       {...props}

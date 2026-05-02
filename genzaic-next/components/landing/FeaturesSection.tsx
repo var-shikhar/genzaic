@@ -1,6 +1,5 @@
 "use client"
 
-import { motion } from "framer-motion"
 import {
   BarChart3,
   CreditCard,
@@ -11,15 +10,9 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { BackgroundBeams } from "@/components/ui/background-beams"
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, delay: i * 0.1, ease: "easeOut" as const },
-  }),
-}
+import { Reveal } from "@/components/motion/Reveal"
+import { RevealGroup } from "@/components/motion/RevealGroup"
+import { ParallaxLayer } from "@/components/motion/ParallaxLayer"
 
 interface Feature {
   icon: LucideIcon
@@ -74,16 +67,11 @@ export default function FeaturesSection() {
       className="py-16 sm:py-24 px-4 scroll-mt-20 section-dark relative overflow-hidden"
     >
       <div className="absolute inset-0 bg-dot-pattern-dark" />
-      <BackgroundBeams className="opacity-30" />
+      <ParallaxLayer speed={-0.2} className="absolute inset-0">
+        <BackgroundBeams className="opacity-30" />
+      </ParallaxLayer>
       <div className="max-w-6xl mx-auto relative z-10">
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          custom={0}
-          className="text-center mb-10 sm:mb-16"
-        >
+        <Reveal from="fade-scale" className="text-center mb-10 sm:mb-16">
           <p className="text-xs sm:text-sm font-semibold text-purple-400 mb-2 tracking-widest uppercase">
             Features
           </p>
@@ -97,17 +85,15 @@ export default function FeaturesSection() {
             Built from the ground up for Indian creators. UPI payments, GST
             invoices, and more — all out of the box.
           </p>
-        </motion.div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        </Reveal>
+        <RevealGroup
+          pattern="fan"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5"
+        >
           {features.map((f, i) => (
-            <motion.div
+            <div
               key={i}
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-30px" }}
-              custom={i}
-              className="group relative bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-5 sm:p-6 hover:bg-white/10 hover:border-purple-500/30 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+              className="group relative bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-5 sm:p-6 hover:bg-white/10 hover:border-purple-500/30 hover:-translate-y-1 transition-all duration-300 overflow-hidden h-full"
             >
               <div
                 className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${f.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
@@ -121,9 +107,9 @@ export default function FeaturesSection() {
               <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
                 {f.desc}
               </p>
-            </motion.div>
+            </div>
           ))}
-        </div>
+        </RevealGroup>
       </div>
     </section>
   )

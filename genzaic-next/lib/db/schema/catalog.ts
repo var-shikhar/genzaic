@@ -58,6 +58,7 @@ export const products = pgTable(
     }),
     title: varchar("title", { length: 500 }).notNull(),
     slug: varchar("slug", { length: 600 }),
+    hexCode: varchar("hex_code", { length: 4 }).notNull(),  // 4-char hex catalog code, unique per storefront
     description: text("description"),
     price: decimal("price", { precision: 10, scale: 2 }).notNull(),
     originalPrice: decimal("original_price", { precision: 10, scale: 2 }),
@@ -92,6 +93,7 @@ export const products = pgTable(
     index("products_category_id_idx").on(t.categoryId),
     index("products_is_active_idx").on(t.isActive),
     uniqueIndex("products_slug_storefront_idx").on(t.storefrontId, t.slug),
+    uniqueIndex("products_hex_code_per_storefront_idx").on(t.storefrontId, t.hexCode),
     index("products_created_at_idx").on(t.createdAt),
     index("products_deleted_at_idx").on(t.deletedAt),
     index("products_price_idx").on(t.price),
