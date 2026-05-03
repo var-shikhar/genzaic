@@ -3,6 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useMyOrders } from "@/lib/queries/buyer"
+import { useCategories } from "@/lib/queries/categories"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -12,6 +13,8 @@ import { formatCurrency, formatDate } from "@/lib/utils"
 
 export default function MyPurchasesPage() {
   const { data: orders, isLoading } = useMyOrders()
+  // Warm the categories cache so any product/edit form opened from here is instant.
+  useCategories()
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

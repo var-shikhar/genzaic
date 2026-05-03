@@ -1,5 +1,12 @@
 import type { Metadata } from "next"
-import { Fraunces, Inter_Tight, JetBrains_Mono } from "next/font/google"
+import {
+  Fraunces,
+  Inter_Tight,
+  JetBrains_Mono,
+  Playfair_Display,
+  Space_Grotesk,
+  DM_Serif_Display,
+} from "next/font/google"
 import "./globals.css"
 import { Providers } from "./providers"
 import { Toaster } from "@/components/ui/sonner"
@@ -27,6 +34,31 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ["400", "500"],
 })
 
+// Storefront type-pairing display fonts. Body across all pairings stays Inter
+// Tight (the existing --font-body) — pairings differ in their display face.
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-press-display",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+})
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-studio-display",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+})
+
+const dmSerif = DM_Serif_Display({
+  subsets: ["latin"],
+  variable: "--font-plain-display",
+  display: "swap",
+  weight: ["400"],
+  style: ["normal", "italic"],
+})
+
 export const metadata: Metadata = {
   title: { default: "GenZaic - Sell Digital Products", template: "%s | GenZaic" },
   description: "The creator marketplace for Gen Z. Sell ebooks, templates, courses, and more.",
@@ -46,6 +78,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     fraunces.variable,
     interTight.variable,
     jetbrainsMono.variable,
+    playfair.variable,
+    spaceGrotesk.variable,
+    dmSerif.variable,
   ].join(" ")
 
   return (

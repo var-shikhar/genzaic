@@ -1,13 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
-import { useProducts, useDeleteProduct, useToggleProductStatus } from "@/lib/queries/products"
+import { LayoutGrid, List as ListIcon } from "lucide-react"
+import {
+  useProducts,
+  useDeleteProduct,
+  useToggleProductStatus,
+} from "@/lib/queries/products"
+import { useCategories } from "@/lib/queries/categories"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { getApiErrorMessage } from "@/lib/api-error"
 import { useConfirm } from "@/lib/react/confirm"
 import { QuickAddProductModal } from "@/components/dashboard/QuickAddProductModal"
 import { CatalogRow } from "@/components/dashboard/CatalogRow"
+import { CatalogCard } from "@/components/dashboard/CatalogCard"
 import { EditorsHeadline, EyebrowLabel } from "@/components/brand/primitives"
 import { InkWash } from "@/components/brand/motifs"
 import { PublishRitual } from "@/components/brand/PublishRitual"
@@ -16,13 +24,46 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 type Filter = "all" | "live" | "drafts"
+type View = "list" | "grid"
+const VIEW_KEY = "catalog:view"
 
 export default function CatalogPage() {
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<Filter>("all")
+  const [view, setView] = useState<View>("list")
   const [addOpen, setAddOpen] = useState(false)
-  const [ritual, setRitual] = useState<{ productTitle: string; hexCode: string; storeSlug?: string | null } | null>(null)
+  const [ritual, setRitual] = useState<{
+    productTitle: string
+    hexCode: string
+    storeSlug?: string | null
+  } | null>(null)
   const debouncedSearch = useDebouncedValue(search, 300)
+
+  // Hydrate view preference once on mount (avoids SSR/CSR mismatch).
+  useEffect(() => {
+    const stored = typeof window !== "undefined" ? window.localStorage.getItem(VIEW_KEY) : null
+    if (stored === "grid" || stored === "list") setView(stored)
+  }, [])
+  useEffect(() => {
+    if (typeof window !== "undefined") window.localStorage.setItem(VIEW_KEY, view)
+  }, [view])
+
+  // Trigger publish ritual when arriving from edit-page first-publish.
+  // ProductForm pushes here with ?ritual=<hex>&title=<title>; we fire the
+  // overlay once, then strip the params so a refresh doesn't replay it.
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    const hex = searchParams.get("ritual")
+    const title = searchParams.get("title")
+    if (!hex || !title) return
+    setRitual({ productTitle: title, hexCode: hex, storeSlug: null })
+    router.replace("/dashboard/products")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Warm the categories cache so the QuickAdd / edit form opens with no spinner.
+  useCategories()
 
   const { data, isLoading } = useProducts({
     page: 1,
@@ -49,15 +90,24 @@ export default function CatalogPage() {
     }
   }
 
-  const handleToggle = async (id: string, nextActive: boolean, hex?: string | null, title?: string) => {
+  const handleToggle = async (
+    id: string,
+    nextActive: boolean,
+    hex?: string | null,
+    title?: string,
+  ) => {
     try {
       await toggleStatus(id)
       if (nextActive && hex && title) {
         setRitual({ productTitle: title, hexCode: hex, storeSlug: null })
       } else {
-        toast.success(nextActive
-          ? (hex ? TOAST.publishedFallback(hex) : TOAST.published)
-          : TOAST.unpublished)
+        toast.success(
+          nextActive
+            ? hex
+              ? TOAST.publishedFallback(hex)
+              : TOAST.published
+            : TOAST.unpublished,
+        )
       }
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Failed to update status"))
@@ -74,8 +124,12 @@ export default function CatalogPage() {
     <div className="space-y-8">
       <header className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-8 items-end pb-6 border-b border-primary/30">
         <div>
-          <EyebrowLabel>Your catalog · {data?.total ?? 0} products</EyebrowLabel>
-          <EditorsHeadline size="hero" className="mt-2">Products.</EditorsHeadline>
+          <EyebrowLabel>
+            Your catalog · {data?.total ?? 0} products
+          </EyebrowLabel>
+          <EditorsHeadline size="hero" className="mt-2">
+            Products.
+          </EditorsHeadline>
           <p className="font-display italic text-base text-muted-foreground mt-2">
             {data?.total ?? 0} {data?.total === 1 ? "piece" : "pieces"}.
             {liveCount > 0 ? ` ${liveCount} in motion.` : ""}
@@ -90,23 +144,88 @@ export default function CatalogPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1 min-w-[200px] font-body text-sm bg-transparent border-0 focus:outline-none py-1"
         />
-        <FilterPill label="All"    active={filter === "all"}    onClick={() => setFilter("all")} />
-        <FilterPill label="Live"   active={filter === "live"}   onClick={() => setFilter("live")} />
-        <FilterPill label="Drafts" active={filter === "drafts"} onClick={() => setFilter("drafts")} />
+        <FilterPill
+          label="All"
+          active={filter === "all"}
+          onClick={() => setFilter("all")}
+        />
+        <FilterPill
+          label="Live"
+          active={filter === "live"}
+          onClick={() => setFilter("live")}
+        />
+        <FilterPill
+          label="Drafts"
+          active={filter === "drafts"}
+          onClick={() => setFilter("drafts")}
+        />
+        <div
+          role="group"
+          aria-label="View"
+          className="inline-flex items-center rounded-full border border-foreground/15 p-0.5 ml-1"
+        >
+          <button
+            type="button"
+            onClick={() => setView("list")}
+            aria-pressed={view === "list"}
+            aria-label="List view"
+            className={cn(
+              "p-1.5 rounded-full transition-colors",
+              view === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <ListIcon className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("grid")}
+            aria-pressed={view === "grid"}
+            aria-label="Grid view"
+            className={cn(
+              "p-1.5 rounded-full transition-colors",
+              view === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+          </button>
+        </div>
         <button
           onClick={() => setAddOpen(true)}
           className="font-body text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-full hover:bg-foreground/90 transition-colors"
         >
-          + File a new piece
+          + Add new product
         </button>
       </div>
 
       {isLoading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
-        </div>
+        view === "grid" ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="aspect-[4/5] w-full" />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-24 w-full" />
+            ))}
+          </div>
+        )
       ) : filtered.length === 0 ? (
         <CatalogEmpty onAdd={() => setAddOpen(true)} />
+      ) : view === "grid" ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filtered.map((product) => (
+            <CatalogCard
+              key={product.id}
+              product={product as Product & { hexCode: string | null }}
+              onToggle={(next) =>
+                handleToggle(product.id, next, product.hexCode, product.title)
+              }
+              onDelete={() => handleDelete(product.id, product.title)}
+            />
+          ))}
+        </div>
       ) : (
         <ul>
           {filtered.map((product, i) => (
@@ -114,7 +233,9 @@ export default function CatalogPage() {
               <CatalogRow
                 product={product as Product & { hexCode: string | null }}
                 index={i + 1}
-                onToggle={(next) => handleToggle(product.id, next, product.hexCode, product.title)}
+                onToggle={(next) =>
+                  handleToggle(product.id, next, product.hexCode, product.title)
+                }
                 onDelete={() => handleDelete(product.id, product.title)}
               />
             </li>
@@ -128,7 +249,15 @@ export default function CatalogPage() {
   )
 }
 
-function FilterPill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function FilterPill({
+  label,
+  active,
+  onClick,
+}: {
+  label: string
+  active: boolean
+  onClick: () => void
+}) {
   return (
     <button
       onClick={onClick}

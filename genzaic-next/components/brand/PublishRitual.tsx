@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import { Bloom, Watermark } from "@/components/brand/motifs"
 import { EditorsHeadline, EyebrowLabel } from "@/components/brand/primitives"
 
@@ -10,26 +11,39 @@ interface PublishRitualProps {
 }
 
 export function PublishRitual({ payload, onDismiss }: PublishRitualProps) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+
   useEffect(() => {
     if (!payload) return
     const t = setTimeout(onDismiss, 4000)
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onDismiss() }
     window.addEventListener("keydown", onKey)
-    return () => { clearTimeout(t); window.removeEventListener("keydown", onKey) }
+    // Lock background scroll while the overlay is up.
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      clearTimeout(t)
+      window.removeEventListener("keydown", onKey)
+      document.body.style.overflow = prevOverflow
+    }
   }, [payload, onDismiss])
 
-  if (!payload) return null
+  if (!payload || !mounted) return null
 
   const today = new Date().toLocaleDateString("en-GB", {
     day: "2-digit", month: "long", year: "numeric",
   })
 
-  return (
+  // Portal to <body> so the overlay escapes any ancestor that creates a
+  // containing block (transform / filter / will-change), which would
+  // otherwise trap `fixed inset-0` and leave the dashboard header visible.
+  return createPortal(
     <div
       role="dialog"
       aria-label="Publishing"
       onClick={onDismiss}
-      className="fixed inset-0 z-[200] bg-foreground text-background flex items-center justify-center cursor-pointer overflow-hidden"
+      className="fixed inset-0 z-[9999] bg-foreground text-background flex items-center justify-center cursor-pointer overflow-hidden"
       style={{ animation: "ritualFade 240ms ease-out" }}
     >
       <Bloom variant="iris" position="tr" animated />
@@ -50,6 +64,7 @@ export function PublishRitual({ payload, onDismiss }: PublishRitualProps) {
         </span>
       </div>
       <style>{`@keyframes ritualFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
-    </div>
+    </div>,
+    document.body,
   )
 }

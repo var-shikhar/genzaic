@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { db, storefronts, products, users } from "@/lib/db"
-import { eq, and } from "drizzle-orm"
+import { db, storefronts, products, users, productImages, productTags, tags } from "@/lib/db"
+import { eq, and, asc } from "drizzle-orm"
 import { cache, cacheKeys, cacheTTL } from "@/lib/cache"
 import { enforceRateLimit } from "@/lib/rate-limit"
 
@@ -68,10 +68,28 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
         const product = productRows[0]
         if (!product) return { kind: "product_not_found" as const }
 
+        // Pull gallery + tag rows so the public detail page can render them.
+        const [galleryRows, tagRows] = await Promise.all([
+          db
+            .select({
+              id: productImages.id,
+              imageUrl: productImages.imageUrl,
+              altText: productImages.altText,
+            })
+            .from(productImages)
+            .where(eq(productImages.productId, product.id))
+            .orderBy(asc(productImages.sortOrder)),
+          db
+            .select({ id: tags.id, name: tags.name })
+            .from(productTags)
+            .innerJoin(tags, eq(tags.id, productTags.tagId))
+            .where(eq(productTags.productId, product.id)),
+        ])
+
         return {
           kind: "ok" as const,
           payload: {
-            product,
+            product: { ...product, gallery: galleryRows, tags: tagRows },
             storefront: {
               storeName: storefront.storeName,
               storeUrl: storefront.storeUrl,

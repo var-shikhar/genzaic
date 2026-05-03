@@ -200,7 +200,23 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
     cache.delete(cacheKeys.productStats(storefront.id))
     if (storefront.storeUrl) invalidatePublicStorefrontBySlug(storefront.storeUrl)
 
-    return NextResponse.json(updated)
+    // Re-load gallery + tags so the response shape matches GET.
+    // Otherwise client caches with the bare row and the next render
+    // shows empty gallery/tags until a manual refetch.
+    const [galleryRowsAfter, tagRowsAfter] = await Promise.all([
+      db
+        .select({ id: productImages.id, imageUrl: productImages.imageUrl })
+        .from(productImages)
+        .where(eq(productImages.productId, existing.id))
+        .orderBy(asc(productImages.sortOrder)),
+      db
+        .select({ id: tags.id, name: tags.name })
+        .from(productTags)
+        .innerJoin(tags, eq(tags.id, productTags.tagId))
+        .where(eq(productTags.productId, existing.id)),
+    ])
+
+    return NextResponse.json({ ...updated, gallery: galleryRowsAfter, tags: tagRowsAfter })
   } catch (error) {
     console.error("PUT /api/products/[id] error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

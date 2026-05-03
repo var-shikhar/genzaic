@@ -8,7 +8,7 @@ const inputVariants = cva(
     variants: {
       variant: {
         default:   "h-10 px-3 py-2 rounded-md border border-input shadow-hairline",
-        editorial: "h-9 px-0 border-0 border-b border-foreground/20 rounded-none focus-visible:ring-0 focus-visible:border-foreground",
+        editorial: "h-9 px-0 border-0 border-b border-foreground/20 rounded-none outline-none ring-offset-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-foreground",
       },
     },
     defaultVariants: { variant: "default" },

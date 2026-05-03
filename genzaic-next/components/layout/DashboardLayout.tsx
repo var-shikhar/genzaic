@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { signOut, useSession } from "next-auth/react"
@@ -12,12 +12,12 @@ import {
   Wallet,
   FileCheck,
   Settings,
-  Truck,
   LogOut,
   Menu,
-  X,
   ChevronDown,
   Bell,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -32,6 +32,12 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { getInitials } from "@/lib/utils"
 import { Wordmark } from "@/components/brand/primitives"
@@ -46,47 +52,103 @@ const navItems = [
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]
 
-function SidebarNav({ onItemClick }: { onItemClick?: () => void }) {
+const SIDEBAR_PREF_KEY = "dashboard:sidebar-collapsed"
+
+function SidebarNav({
+  onItemClick,
+  collapsed,
+}: {
+  onItemClick?: () => void
+  collapsed?: boolean
+}) {
   const pathname = usePathname()
 
+  const renderItem = (item: (typeof navItems)[number]) => {
+    const isActive =
+      item.href === "/dashboard"
+        ? pathname === item.href
+        : pathname.startsWith(item.href)
+    const Icon = item.icon
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={onItemClick}
+        className={cn(
+          "flex items-center rounded-lg text-sm font-medium transition-all",
+          collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-3 py-2.5",
+          isActive
+            ? "bg-primary/10 text-primary"
+            : "text-muted-foreground hover:bg-accent hover:text-foreground",
+        )}
+        aria-label={collapsed ? item.label : undefined}
+      >
+        <Icon className="h-4 w-4 shrink-0" />
+        {!collapsed && <span>{item.label}</span>}
+      </Link>
+    )
+  }
+
+  if (!collapsed) {
+    return (
+      <nav className="space-y-1">
+        {navItems.map(renderItem)}
+      </nav>
+    )
+  }
+
   return (
-    <nav className="space-y-1">
-      {navItems.map((item) => {
-        const isActive =
-          item.href === "/dashboard"
-            ? pathname === item.href
-            : pathname.startsWith(item.href)
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onItemClick}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-              isActive
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground",
-            )}
-          >
-            <item.icon className="h-4 w-4 shrink-0" />
-            {item.label}
-          </Link>
-        )
-      })}
-    </nav>
+    <TooltipProvider delayDuration={150}>
+      <nav className="space-y-1">
+        {navItems.map((item) => (
+          <Tooltip key={item.href}>
+            <TooltipTrigger asChild>{renderItem(item)}</TooltipTrigger>
+            <TooltipContent side="right" sideOffset={8}>
+              {item.label}
+            </TooltipContent>
+          </Tooltip>
+        ))}
+      </nav>
+    </TooltipProvider>
   )
 }
 
-function Sidebar() {
+function Sidebar({
+  collapsed,
+  onToggle,
+}: {
+  collapsed: boolean
+  onToggle: () => void
+}) {
   return (
-    <aside className="hidden lg:flex flex-col w-64 border-r bg-card sticky top-0 h-screen shrink-0">
-      <div className="p-4 border-b">
-        <Link href="/dashboard" className="flex items-center">
-          <Wordmark size="md" />
-        </Link>
+    <aside
+      className={cn(
+        "hidden lg:flex flex-col border-r bg-card sticky top-0 h-screen shrink-0 transition-[width] duration-200 ease-out",
+        collapsed ? "w-16" : "w-64",
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-center border-b h-16",
+          collapsed ? "justify-center px-2" : "px-4 justify-between",
+        )}
+      >
+        {!collapsed && (
+          <Link href="/dashboard" className="flex items-center">
+            <Wordmark size="md" />
+          </Link>
+        )}
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        >
+          {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+        </button>
       </div>
-      <ScrollArea className="flex-1 p-4">
-        <SidebarNav />
+      <ScrollArea className={cn("flex-1", collapsed ? "p-2" : "p-4")}>
+        <SidebarNav collapsed={collapsed} />
       </ScrollArea>
     </aside>
   )
@@ -95,7 +157,47 @@ function Sidebar() {
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
   const router = useRouter()
+  const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  // Sidebar collapse state. Persist user's preference, but auto-collapse when
+  // the user lands on /dashboard/storefront so the live-preview pane has
+  // breathing room. The user can still toggle it open mid-session.
+  const [collapsed, setCollapsed] = useState(false)
+  // Track whether the user has explicitly toggled within this navigation, so
+  // route-change auto-collapse doesn't keep overriding their choice when they
+  // open the sidebar manually on /storefront.
+  const [userToggledFor, setUserToggledFor] = useState<string | null>(null)
+
+  // Hydrate persisted preference once.
+  useEffect(() => {
+    const stored = typeof window !== "undefined"
+      ? window.localStorage.getItem(SIDEBAR_PREF_KEY)
+      : null
+    if (stored === "1") setCollapsed(true)
+    else if (stored === "0") setCollapsed(false)
+  }, [])
+
+  // Route-driven auto-collapse for the storefront editor.
+  useEffect(() => {
+    if (!pathname) return
+    if (userToggledFor === pathname) return
+    if (pathname.startsWith("/dashboard/storefront")) {
+      setCollapsed(true)
+    }
+  }, [pathname, userToggledFor])
+
+  const handleToggle = () => {
+    setCollapsed((c) => {
+      const next = !c
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(SIDEBAR_PREF_KEY, next ? "1" : "0")
+      }
+      return next
+    })
+    setUserToggledFor(pathname)
+  }
+
   const user = session?.user as
     | {
         name?: string | null
@@ -112,7 +214,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      <Sidebar collapsed={collapsed} onToggle={handleToggle} />
 
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
@@ -195,8 +297,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {/* Main content */}
-        <main className="flex-1 p-4 lg:p-6 overflow-auto">{children}</main>
+        {/* Main content. No overflow-auto here: the parent flex uses
+            min-h-screen (not a fixed height), so overflow-auto would create
+            a non-scrolling scroll-containing-block that breaks every
+            `position: sticky` descendant (incl. the storefront editor's
+            live preview). The page scrolls on <html>; the header above
+            already has its own `sticky top-0`. */}
+        <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>
     </div>
   )

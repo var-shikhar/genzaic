@@ -12,6 +12,8 @@ import {
 } from "lucide-react"
 import { getPublicStorefront } from "@/lib/data/public-storefront"
 import PublicProductBrowser from "@/components/store/PublicProductBrowser"
+import { themeFor } from "@/lib/store/theme"
+import { cn } from "@/lib/utils"
 
 // PERF: Server-render this page and let Next.js cache the rendered HTML for
 // 60 seconds. Anonymous traffic (the bulk of storefront visits) will be served
@@ -43,22 +45,23 @@ export default async function PublicStorefrontPage({ params }: PageProps) {
   const themeId = storefront.themeId ?? "modern"
   const themeColor = storefront.primaryColor ?? "#073f7c"
   const fontFamily = storefront.fontFamily ?? "Inter"
-  const themeBg = themeId === "minimal" ? "#f8fafc" : themeColor
-  const isLight = themeId === "minimal"
+  // Single source of truth — same mapping the editor preview uses, so what
+  // a seller sees in the editor matches what visitors see on the public page.
+  const t = themeFor(themeId, themeColor)
 
   return (
-    <div className="min-h-screen bg-background" style={{ fontFamily }}>
+    <div className={cn("min-h-screen", t.pageBg)} style={{ fontFamily }}>
       {/* Header / Cover */}
-      <div style={{ backgroundColor: themeBg }}>
+      <div className={t.pageBg}>
         <div
           className="h-48 md:h-64 relative"
           style={{
             background: storefront.coverImageUrl
               ? `url(${storefront.coverImageUrl}) center/cover`
-              : `linear-gradient(135deg, ${themeColor}, ${themeColor}dd)`,
+              : t.coverGradient(themeColor),
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
         </div>
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
@@ -88,25 +91,16 @@ export default async function PublicStorefrontPage({ params }: PageProps) {
             </div>
 
             <div className="flex-1 text-center sm:text-left pb-4">
-              <h1
-                className="text-2xl sm:text-3xl font-bold"
-                style={{ color: isLight ? "#1f2937" : "#f9fafb" }}
-              >
+              <h1 className={cn("text-2xl sm:text-3xl", t.fontWeightHeading, t.heroText)}>
                 {storefront.storeName}
               </h1>
-              <p
-                style={{ color: isLight ? "#6b7280" : "#d1d5db" }}
-                className="mt-1"
-              >
+              <p className={cn("mt-1", t.subText)}>
                 {storefront.tagline ||
                   storefront.description ||
                   `Digital products by ${storefront.storeName}`}
               </p>
 
-              <div
-                className="flex items-center justify-center sm:justify-start gap-6 mt-3 text-sm"
-                style={{ color: isLight ? "#6b7280" : "#d1d5db" }}
-              >
+              <div className={cn("flex items-center justify-center sm:justify-start gap-6 mt-3 text-sm", t.subText)}>
                 {(storefront.seller?.totalSales ?? 0) > 0 && (
                   <div className="flex items-center gap-1">
                     <ShoppingCart className="w-4 h-4" />
@@ -178,7 +172,7 @@ export default async function PublicStorefrontPage({ params }: PageProps) {
       </div>
 
       {/* Filters & Products — interactive client island */}
-      <div style={{ backgroundColor: themeBg }}>
+      <div className={t.pageBg}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
           <PublicProductBrowser
             storeUrl={storeUrl}

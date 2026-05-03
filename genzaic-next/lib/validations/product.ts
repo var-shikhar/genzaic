@@ -8,8 +8,10 @@ const emptyToUndef = (v: unknown) => (v === "" || v === null ? undefined : v)
 const productBaseSchema = z.object({
     title: z.string().min(3, VALIDATION.titleTooShort).max(500),
     description: z.preprocess(emptyToUndef, z.string().max(5000).optional()),
-    price: z.coerce.number({ message: VALIDATION.priceRequired }).min(0, VALIDATION.pricePositive),
-    originalPrice: z.preprocess(emptyToUndef, z.coerce.number().min(0).optional()),
+    // DB column is decimal(10, 2) → cap at 99,999,999.99 so Postgres doesn't
+    // 500 on overflow. Anyone needing higher should bump the column first.
+    price: z.coerce.number({ message: VALIDATION.priceRequired }).min(0, VALIDATION.pricePositive).max(99_999_999.99, "— Price can't exceed ₹9,99,99,999.99."),
+    originalPrice: z.preprocess(emptyToUndef, z.coerce.number().min(0).max(99_999_999.99, "— Was price can't exceed ₹9,99,99,999.99.").optional()),
     categoryId: z.preprocess(emptyToUndef, z.string().uuid("Invalid category ID").optional()),
     deliveryType: z.enum(["download", "external_link", "manual"]),
     externalUrl: z.preprocess(emptyToUndef, z.string().url(VALIDATION.externalUrlInvalid).optional()),

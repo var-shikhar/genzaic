@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo } from "react"
 import { useCategories, type Category } from "@/lib/queries/categories"
 import {
   Select,
@@ -49,50 +49,37 @@ export function CategoryPicker({ value, onChange, disabled }: CategoryPickerProp
 
   const topLevel = childrenOf.get(null) ?? []
 
-  // Resolve incoming `value` into (parentId, subId) — value is whichever was
-  // most recently picked. If it's a leaf, parentId is its parent; if it's a
-  // top-level, subId is null.
-  const [parentId, setParentId] = useState<string | null>(null)
-  const [subId, setSubId] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!value) {
-      setParentId(null)
-      setSubId(null)
-      return
-    }
+  // Derive (parentId, subId) directly from the form value + loaded categories.
+  // Using useMemo (vs useState+useEffect) avoids a race where `value` arrives
+  // before categories load — once categories resolve, this re-derives cleanly.
+  const { parentId, subId } = useMemo(() => {
+    if (!value) return { parentId: null as string | null, subId: null as string | null }
     const cat = byId.get(value)
-    if (!cat) return
-    if (cat.parentId) {
-      setParentId(cat.parentId)
-      setSubId(cat.id)
-    } else {
-      setParentId(cat.id)
-      setSubId(null)
+    if (!cat) {
+      // Value present but category map not loaded yet — assume it's a parent
+      // tentatively so the trigger doesn't show "Select category" while the
+      // map populates. Once categories arrive, this re-runs and corrects.
+      return { parentId: value, subId: null as string | null }
     }
+    if (cat.parentId) return { parentId: cat.parentId, subId: cat.id }
+    return { parentId: cat.id, subId: null as string | null }
   }, [value, byId])
 
   const subOptions = parentId ? (childrenOf.get(parentId) ?? []) : []
 
   const handleParentChange = (next: string) => {
     if (next === CLEAR) {
-      setParentId(null)
-      setSubId(null)
       onChange(null)
       return
     }
-    setParentId(next)
-    setSubId(null)
     onChange(next)
   }
 
   const handleSubChange = (next: string) => {
     if (next === CLEAR) {
-      setSubId(null)
       onChange(parentId)
       return
     }
-    setSubId(next)
     onChange(next)
   }
 

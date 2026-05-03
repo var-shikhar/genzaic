@@ -116,6 +116,15 @@ export default async function ProductDetailPage({
     ? Math.round(((originalPrice - price) / originalPrice) * 100)
     : 0
 
+  // Build the image strip: hero is the cover image; gallery rows follow.
+  // Falls back to gallery's first image if cover isn't set.
+  const galleryImages: Array<{ id: string; imageUrl: string; altText?: string | null }> =
+    Array.isArray(product.gallery) ? product.gallery : []
+  const heroImage: string | null =
+    product.coverImageUrl ?? galleryImages[0]?.imageUrl ?? null
+  // Avoid duplicating the cover when it's also the first gallery entry.
+  const stripImages = galleryImages.filter((g) => g.imageUrl !== heroImage)
+
   return (
     <div className="min-h-screen bg-background">
       {/* Sticky Header */}
@@ -144,41 +153,59 @@ export default async function ProductDetailPage({
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Left - Product Image */}
-          <div className="relative aspect-[4/3] bg-muted rounded-2xl overflow-hidden">
-            {product.thumbnailUrl ? (
-              <Image
-                src={product.thumbnailUrl}
-                alt={product.title}
-                fill
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                priority
-                className="object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Package className="w-24 h-24 text-muted-foreground" />
+          {/* Left - Product Image + Gallery strip */}
+          <div className="space-y-3">
+            <div className="relative aspect-[4/3] bg-muted rounded-2xl overflow-hidden">
+              {heroImage ? (
+                <Image
+                  src={heroImage}
+                  alt={product.title}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
+                  className="object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Package className="w-24 h-24 text-muted-foreground" />
+                </div>
+              )}
+              {/* Badges */}
+              <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                {product.subscriptionDuration && (
+                  <span className="bg-primary text-primary-foreground text-xs font-medium px-3 py-1 rounded-full">
+                    {product.subscriptionDuration} Subscription
+                  </span>
+                )}
+                {product.deliveryType === "download" && (
+                  <span className="bg-blue-500 text-white text-xs font-medium px-3 py-1 rounded-full flex items-center gap-1">
+                    <Download className="w-3 h-3" />
+                    Instant Download
+                  </span>
+                )}
+                {hasDiscount && (
+                  <span className="bg-destructive text-destructive-foreground text-xs font-medium px-3 py-1 rounded-full">
+                    Sale
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {stripImages.length > 0 && (
+              <div className="grid grid-cols-4 gap-2">
+                {stripImages.slice(0, 8).map((g) => (
+                  <div key={g.id} className="relative aspect-square bg-muted rounded-md overflow-hidden">
+                    <Image
+                      src={g.imageUrl}
+                      alt={g.altText ?? product.title}
+                      fill
+                      sizes="(max-width: 1024px) 25vw, 12vw"
+                      className="object-cover"
+                    />
+                  </div>
+                ))}
               </div>
             )}
-            {/* Badges */}
-            <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-              {product.subscriptionDuration && (
-                <span className="bg-primary text-primary-foreground text-xs font-medium px-3 py-1 rounded-full">
-                  {product.subscriptionDuration} Subscription
-                </span>
-              )}
-              {product.deliveryType === "download" && (
-                <span className="bg-blue-500 text-white text-xs font-medium px-3 py-1 rounded-full flex items-center gap-1">
-                  <Download className="w-3 h-3" />
-                  Instant Download
-                </span>
-              )}
-              {hasDiscount && (
-                <span className="bg-destructive text-destructive-foreground text-xs font-medium px-3 py-1 rounded-full">
-                  Sale
-                </span>
-              )}
-            </div>
           </div>
 
           {/* Right - Product Info */}

@@ -9,110 +9,34 @@ import {
   Youtube,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { themeFor } from "@/lib/store/theme"
 
-interface ThemeStyle {
-  pageBg: string
-  coverGradient: (color: string) => string
-  hero: string
-  heroText: string
-  subText: string
-  productCard: string
-  productCardText: string
-  productPrice: string
-  fontWeightHeading: string
-  cornerRadius: string
-}
-
-// Maps the human font name (as picked in Design tab) to the loaded CSS font
-// stack. The CSS variables are declared in app/layout.tsx.
+// Maps the chosen typeface pairing (or legacy font name) to the body font
+// stack the preview uses. The display font for headings is supplied separately
+// via the `--font-store-display` CSS variable, set by the editor or page.
 function resolveFontStack(name: string): string {
   switch (name) {
-    case "Roboto":
-      return "var(--font-roboto), system-ui, sans-serif"
-    case "Poppins":
-      return "var(--font-poppins), system-ui, sans-serif"
-    case "Montserrat":
-      return "var(--font-montserrat), system-ui, sans-serif"
-    case "Lato":
-      return "var(--font-lato), system-ui, sans-serif"
-    case "Open Sans":
-      return "var(--font-open-sans), system-ui, sans-serif"
+    // New pairing IDs — body always Inter Tight, display swaps via --font-store-display
+    case "house":
+    case "press":
+    case "studio":
+    case "plain":
+      return "var(--font-body), system-ui, sans-serif"
+    // Legacy names — kept for back-compat with old storefronts.
     case "Inter":
+      return "var(--font-body), system-ui, sans-serif"
     default:
-      return "var(--font-inter), system-ui, sans-serif"
+      return "var(--font-body), system-ui, sans-serif"
   }
 }
 
-function themeFor(themeId: string, primary: string): ThemeStyle {
-  switch (themeId) {
-    case "bold":
-      return {
-        pageBg: "bg-zinc-900",
-        coverGradient: (c) => `linear-gradient(135deg, ${c}, #000)`,
-        hero: "py-8",
-        heroText: "text-white tracking-tight",
-        subText: "text-zinc-300",
-        productCard: "bg-zinc-800 border-zinc-700",
-        productCardText: "text-white",
-        productPrice: "text-white font-extrabold",
-        fontWeightHeading: "font-extrabold uppercase",
-        cornerRadius: "rounded-sm",
-      }
-    case "elegant":
-      return {
-        pageBg: "bg-rose-50/40",
-        coverGradient: () => `linear-gradient(135deg, #fbcfe8, #f9a8d4 60%, #fce7f3)`,
-        hero: "py-6",
-        heroText: "text-rose-950 italic",
-        subText: "text-rose-700/80",
-        productCard: "bg-white border-rose-200/60 shadow-sm",
-        productCardText: "text-rose-950",
-        productPrice: "text-rose-700",
-        fontWeightHeading: "font-light tracking-wide",
-        cornerRadius: "rounded-2xl",
-      }
-    case "playful":
-      return {
-        pageBg: "bg-yellow-50",
-        coverGradient: () => `linear-gradient(135deg, #fbbf24, #f97316 80%)`,
-        hero: "py-6",
-        heroText: "text-orange-950",
-        subText: "text-orange-900/80",
-        productCard: "bg-white border-orange-300/60",
-        productCardText: "text-orange-950",
-        productPrice: "text-orange-700 font-bold",
-        fontWeightHeading: "font-bold",
-        cornerRadius: "rounded-3xl",
-      }
-    case "dark":
-      return {
-        pageBg: "bg-black",
-        coverGradient: (c) => `linear-gradient(135deg, ${c}, #18181b 60%, #000)`,
-        hero: "py-6",
-        heroText: "text-zinc-50",
-        subText: "text-zinc-400",
-        productCard: "bg-zinc-900 border-zinc-800",
-        productCardText: "text-zinc-100",
-        productPrice: "text-emerald-400 font-bold",
-        fontWeightHeading: "font-semibold",
-        cornerRadius: "rounded-md",
-      }
-    case "modern":
-    default:
-      return {
-        pageBg: "bg-background",
-        coverGradient: (c) => `linear-gradient(135deg, ${c}, ${c}cc)`,
-        hero: "py-6",
-        heroText: "text-foreground",
-        subText: "text-muted-foreground",
-        productCard: "bg-card border-border",
-        productCardText: "text-foreground",
-        productPrice: "text-foreground font-semibold",
-        fontWeightHeading: "font-semibold",
-        cornerRadius: "rounded-xl",
-      }
-  }
+const PAIRING_DISPLAY_VAR: Record<string, string> = {
+  house:  "var(--font-display)",          // Fraunces
+  press:  "var(--font-press-display)",    // Playfair Display
+  studio: "var(--font-studio-display)",   // Space Grotesk
+  plain:  "var(--font-plain-display)",    // DM Serif Display
 }
+
 
 export interface PreviewStorefront {
   storeName?: string | null
@@ -156,11 +80,22 @@ export function StorefrontPreview({
 }: StorefrontPreviewProps) {
   const themeId = storefront.themeId ?? "modern"
   const themeColor = storefront.primaryColor ?? "#6366f1"
-  const fontFamily = resolveFontStack(storefront.fontFamily ?? "Inter")
+  const pairing = storefront.fontFamily ?? "house"
+  const fontFamily = resolveFontStack(pairing)
+  const displayFont = PAIRING_DISPLAY_VAR[pairing] ?? PAIRING_DISPLAY_VAR.house
   const t = themeFor(themeId, themeColor)
 
   return (
-    <div className={cn("min-h-full", t.pageBg)} style={{ fontFamily }}>
+    <div
+      className={cn("min-h-full", t.pageBg)}
+      style={{
+        fontFamily,
+        // Headings inside this preview can opt into the chosen display
+        // pairing via Tailwind's font-[var(--store-heading)] arbitrary value
+        // or by setting fontFamily directly.
+        ["--store-heading" as string]: `${displayFont}, Georgia, serif`,
+      }}
+    >
       <div
         className="h-32 md:h-40 relative"
         style={{
@@ -201,7 +136,10 @@ export function StorefrontPreview({
           </div>
 
           <div className="flex-1 text-center sm:text-left pb-3">
-            <h1 className={cn("text-xl sm:text-2xl", t.fontWeightHeading, t.heroText)}>
+            <h1
+              className={cn("text-xl sm:text-2xl", t.fontWeightHeading, t.heroText)}
+              style={{ fontFamily: "var(--store-heading)" }}
+            >
               {storefront.storeName || "Your Store"}
             </h1>
             <p className={cn("mt-1 text-sm", t.subText)}>
@@ -293,7 +231,10 @@ export function StorefrontPreview({
                     )}
                   </div>
                   <div className="p-2.5">
-                    <p className={cn("text-xs font-medium truncate", t.productCardText)}>
+                    <p
+                      className={cn("text-xs font-medium truncate", t.productCardText)}
+                      style={{ fontFamily: "var(--store-heading)" }}
+                    >
                       {p.title}
                     </p>
                     <div className="flex items-center gap-1.5 mt-1">

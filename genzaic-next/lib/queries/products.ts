@@ -121,9 +121,19 @@ export function useUpdateProduct() {
   return useMutation({
     mutationFn: (input: { id: string; body: FormData }) => putForm<Product>(`/api/products/${input.id}`, input.body),
     onSuccess: (updated, { id }) => {
+      // Seed both possible cache keys (id-keyed and slug-keyed) with the
+      // full updated product so the next visit shows fresh gallery/tags
+      // immediately, no flicker. Then invalidate to confirm.
       qc.setQueryData(productKeys.detail(id), updated)
+      if (updated?.slug) {
+        qc.setQueryData(productKeys.detail(updated.slug), updated)
+      }
       qc.invalidateQueries({ queryKey: productKeys.lists() })
       qc.invalidateQueries({ queryKey: productKeys.detail(id) })
+      if (updated?.slug && updated.slug !== id) {
+        qc.invalidateQueries({ queryKey: productKeys.detail(updated.slug) })
+      }
+      qc.invalidateQueries({ queryKey: productKeys.stats() })
     },
   })
 }
