@@ -23,6 +23,15 @@ export const pennyDropStatusEnum = pgEnum("penny_drop_status", [
   "success",
   "failed",
 ])
+// VPA (UPI handle) validation result from Razorpay's fund_accounts/validations.
+// `error` distinguishes infra failures (Razorpay 5xx, missing env, network) from
+// genuine validation failures, so admin can re-trigger errors without rejecting.
+export const vpaStatusEnum = pgEnum("vpa_status", [
+  "pending",
+  "success",
+  "failed",
+  "error",
+])
 
 // ─── Product & Delivery ──────────────────────────────────────────────────────
 export const deliveryTypeEnum = pgEnum("delivery_type", [
@@ -87,6 +96,10 @@ export const coverPresetEnum = pgEnum("cover_preset", [
   "studio",
   "archive",
   "riso",
+  "mono",
+  "sage",
+  "linen",
+  "noir",
 ])
 
 export const typePairingEnum = pgEnum("type_pairing", [

@@ -24,12 +24,14 @@ import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getInitials } from "@/lib/utils"
 import { EditorsHeadline, EyebrowLabel } from "@/components/brand/primitives"
+import { PLATFORM_FEE_PERCENT, GST_RATE, EXAMPLE_PRODUCT_PRICE } from "@/lib/config"
 
 const fmt = (n: number) => `₹${n.toLocaleString("en-IN")}`
+const pct = (n: number) => `${Math.round(n * 100)}%`
 
 export default function SettingsPage() {
   const { data: session, update } = useSession()
-  const user = session?.user as { name?: string | null; email?: string | null; image?: string | null; storeUrl?: string | null; isSeller?: boolean } | undefined
+  const user = session?.user as { name?: string | null; email?: string | null; image?: string | null; isSeller?: boolean } | undefined
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [platformFeeMode, setPlatformFeeMode] = useState<"seller" | "buyer">("seller")
@@ -61,7 +63,7 @@ export default function SettingsPage() {
 
   const profileForm = useForm<UpdateProfileInput>({
     resolver: zodResolver(updateProfileSchema),
-    defaultValues: { name: user?.name ?? "", storeUrl: user?.storeUrl ?? "" },
+    defaultValues: { name: user?.name ?? "" },
   })
 
   const passwordForm = useForm<ChangePasswordInput>({
@@ -72,7 +74,6 @@ export default function SettingsPage() {
   const onProfileSubmit = async (values: UpdateProfileInput) => {
     const formData = new FormData()
     if (values.name) formData.append("name", values.name)
-    if (values.storeUrl) formData.append("storeUrl", values.storeUrl)
     if (avatarFile) formData.append("avatar", avatarFile)
     try {
       const updated = await updateProfile(formData)
@@ -104,10 +105,12 @@ export default function SettingsPage() {
     }
   }
 
-  // Example price calculations (platform fee: 5%, GST: 18% on product price)
-  const examplePrice = 1000
-  const platformFee = Math.round(examplePrice * 0.05)
-  const gst = Math.round(examplePrice * 0.18)
+  // Example price calculations driven by lib/config.ts
+  const examplePrice = EXAMPLE_PRODUCT_PRICE
+  const platformFee = Math.round(examplePrice * PLATFORM_FEE_PERCENT)
+  const gst = Math.round(examplePrice * GST_RATE)
+  const platformFeeLabel = pct(PLATFORM_FEE_PERCENT)
+  const gstLabel = pct(GST_RATE)
 
   if (storefrontLoading) {
     return (
@@ -131,7 +134,7 @@ export default function SettingsPage() {
           Your Preferences.
         </EditorsHeadline>
         <p className="font-display italic text-base text-muted-foreground mt-2">
-          Profile, defaults, password, danger zone.
+          Profile, defaults, password.
         </p>
       </header>
 
@@ -193,22 +196,6 @@ export default function SettingsPage() {
                 <FormLabel>Email</FormLabel>
                 <Input value={user?.email ?? ""} disabled className="bg-muted" />
               </div>
-              {user?.isSeller && (
-                <FormField control={profileForm.control} name="storeUrl" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Store URL</FormLabel>
-                    <FormControl>
-                      <div className="flex">
-                        <span className="flex items-center px-3 border border-r-0 rounded-l-md bg-muted text-sm text-muted-foreground">
-                          /store/
-                        </span>
-                        <Input className="rounded-l-none" placeholder="my-store" {...field} value={field.value ?? ""} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              )}
               <Button type="submit" shape="pill" disabled={isUpdating}>
                 {isUpdating ? "Saving..." : "Save Changes"}
               </Button>
@@ -256,7 +243,7 @@ export default function SettingsPage() {
             </div>
             <div>
               <CardTitle>Platform Fee Settings</CardTitle>
-              <CardDescription>Choose who pays the 5% platform fee</CardDescription>
+              <CardDescription>Choose who pays the {platformFeeLabel} platform fee</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -282,7 +269,7 @@ export default function SettingsPage() {
                   I&apos;ll absorb the platform fee
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  The 5% platform fee will be deducted from your earnings. Buyers pay only the product price + GST.
+                  The {platformFeeLabel} platform fee will be deducted from your earnings. Buyers pay only the product price + GST.
                 </p>
                 {platformFeeMode === "seller" && (
                   <div className="mt-3 p-3 bg-muted/50 rounded-lg text-sm space-y-1">
@@ -321,7 +308,7 @@ export default function SettingsPage() {
                   Buyer pays the platform fee
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  The 5% platform fee will be added to the buyer&apos;s total. You receive 100% of your product price.
+                  The {platformFeeLabel} platform fee will be added to the buyer&apos;s total. You receive 100% of your product price.
                 </p>
                 {platformFeeMode === "buyer" && (
                   <div className="mt-3 p-3 bg-muted/50 rounded-lg text-sm space-y-1">
@@ -331,11 +318,11 @@ export default function SettingsPage() {
                       <span>{fmt(examplePrice)}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Platform fee (10%):</span>
+                      <span>Platform fee ({platformFeeLabel}):</span>
                       <span>+{fmt(platformFee)}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>GST (18%):</span>
+                      <span>GST ({gstLabel}):</span>
                       <span>+{fmt(gst)}</span>
                     </div>
                     <Separator />

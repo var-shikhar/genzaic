@@ -10,6 +10,9 @@ import Image from "next/image"
 import { Upload, X, ExternalLink } from "lucide-react"
 import { useStorefront, useUpdateStorefront } from "@/lib/queries/storefront"
 import { useProducts } from "@/lib/queries/products"
+import { GenzaicLoader } from "@/components/ui/genzaic-loader"
+import { PublishStatusBadge } from "@/components/dashboard/PublishStatusBadge"
+import { PublishToShareDialog } from "@/components/dashboard/PublishToShareDialog"
 import {
   imprintCoverPresetSchema,
   imprintTypePairingSchema,
@@ -21,6 +24,7 @@ import {
   type PreviewStorefront,
 } from "@/components/store/StorefrontPreview"
 import type { CoverPreset, StoreAccent } from "@/components/brand/CoverPreview"
+import { presetToThemeId } from "@/lib/store/theme"
 import {
   EditorialSection,
   EditorsHeadline,
@@ -63,6 +67,10 @@ const COVER_PRESETS: Array<{ id: CoverPreset; name: string; desc: string }> = [
   { id: "studio", name: "Studio", desc: "Architectural grid." },
   { id: "archive", name: "Archive", desc: "Library card, paper-2." },
   { id: "riso", name: "Riso", desc: "Halftone pop." },
+  { id: "mono", name: "Mono", desc: "Newsprint, soft serif." },
+  { id: "sage", name: "Sage", desc: "Calm green, wellness." },
+  { id: "linen", name: "Linen", desc: "Warm cream, journal feel." },
+  { id: "noir", name: "Noir", desc: "Stark black, sharp edges." },
 ]
 
 const ACCENT_SWATCHES: Array<{ id: StoreAccent; name: string; hex: string }> = [
@@ -113,23 +121,6 @@ const accentToHex: Record<StoreAccent, string> = {
   plum: "#7A1F4A",
   ochre: "#9A6B12",
   slate: "#374151",
-}
-
-function presetToThemeId(p: CoverPreset): string {
-  switch (p) {
-    case "ink":
-      return "dark"
-    case "sunlit":
-      return "playful"
-    case "stamp":
-      return "elegant"
-    case "studio":
-      return "modern"
-    case "archive":
-      return "modern"
-    case "riso":
-      return "bold"
-  }
 }
 
 export function StorefrontEditor() {
@@ -184,6 +175,10 @@ export function StorefrontEditor() {
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
   const blobUrls = useRef<string[]>([])
+
+  // Publish-first modal state — opens when the seller clicks "View store"
+  // while the storefront is still in draft.
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false)
 
   // Cleanup blob URLs on unmount.
   useEffect(() => {
@@ -297,6 +292,17 @@ export function StorefrontEditor() {
     }
   }
 
+  // Hold the entire editor behind a full-page loader until real storefront
+  // data lands — otherwise the form renders for a beat with default values
+  // (the user's first name + "'s Store", default theme, etc.) which the
+  // seller momentarily sees as "the wrong store." The early-return must
+  // come after every hook call above so React's hook ordering rules hold.
+  if (!sf) {
+    return <GenzaicLoader.Page label="Curating your store" />
+  }
+
+  const liveSlug = sf.imprintSlug ?? sf.storeUrl ?? null
+
   return (
     <form onSubmit={form.handleSubmit(onSubmit)}>
       {/* Compact header strip */}
@@ -310,30 +316,33 @@ export function StorefrontEditor() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {(() => {
-            // Link uses the SAVED slug (not the unsaved form value) so the
-            // public page exists. Hidden until the seller has a slug at all.
-            const liveSlug = sf?.imprintSlug ?? sf?.storeUrl
-            if (!liveSlug) return null
-            return (
-              <Button
-                type="button"
-                variant="paper"
-                shape="pill"
-                asChild
-                className="gap-2"
-              >
-                <a
-                  href={`/store/${liveSlug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  View store
-                </a>
-              </Button>
-            )
-          })()}
+          <PublishStatusBadge published={sf.isPublished} />
+
+          {liveSlug && (
+            <Button
+              type="button"
+              variant="paper"
+              shape="pill"
+              className="gap-2"
+              onClick={() => {
+                // If the store is still a draft, intercept and show the
+                // publish-first modal so the seller doesn't get dumped on a
+                // 404 page (or worse, link a tester to one).
+                if (!sf.isPublished) {
+                  setPublishDialogOpen(true)
+                  return
+                }
+                window.open(
+                  `/store/${liveSlug}`,
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }}
+            >
+              <ExternalLink className="h-4 w-4" />
+              View store
+            </Button>
+          )}
           <Button type="submit" shape="pill" disabled={update.isPending}>
             {update.isPending ? "Saving…" : "Save store"}
           </Button>
@@ -693,6 +702,12 @@ export function StorefrontEditor() {
           </div>
         </aside>
       </div>
+
+      <PublishToShareDialog
+        open={publishDialogOpen}
+        onOpenChange={setPublishDialogOpen}
+        slug={liveSlug}
+      />
     </form>
   )
 }

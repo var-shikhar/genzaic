@@ -12,7 +12,12 @@ import {
 } from "lucide-react"
 import { getPublicStorefront } from "@/lib/data/public-storefront"
 import PublicProductBrowser from "@/components/store/PublicProductBrowser"
-import { themeFor } from "@/lib/store/theme"
+import {
+  themeFor,
+  presetToThemeId,
+  pairingDisplayFont,
+  PAIRING_BODY_STACK,
+} from "@/lib/store/theme"
 import { cn } from "@/lib/utils"
 
 // PERF: Server-render this page and let Next.js cache the rendered HTML for
@@ -42,15 +47,23 @@ export default async function PublicStorefrontPage({ params }: PageProps) {
   const storefront = result.payload
   const products = storefront.products
 
-  const themeId = storefront.themeId ?? "modern"
+  // Derive theme + fonts from the imprint columns (the source of truth the
+  // editor writes to). The legacy `themeId` / `fontFamily` columns are not
+  // updated by the imprint editor and would otherwise leave the public page
+  // stuck on the default "modern" theme regardless of what the seller picked.
+  const themeId = presetToThemeId(storefront.imprintCoverPreset)
   const themeColor = storefront.primaryColor ?? "#073f7c"
-  const fontFamily = storefront.fontFamily ?? "Inter"
-  // Single source of truth — same mapping the editor preview uses, so what
-  // a seller sees in the editor matches what visitors see on the public page.
+  const displayFont = pairingDisplayFont(storefront.imprintTypePairing)
   const t = themeFor(themeId, themeColor)
 
   return (
-    <div className={cn("min-h-screen", t.pageBg)} style={{ fontFamily }}>
+    <div
+      className={cn("min-h-screen", t.pageBg)}
+      style={{
+        fontFamily: PAIRING_BODY_STACK,
+        ["--store-heading" as string]: `${displayFont}, Georgia, serif`,
+      }}
+    >
       {/* Header / Cover */}
       <div className={t.pageBg}>
         <div
@@ -91,7 +104,10 @@ export default async function PublicStorefrontPage({ params }: PageProps) {
             </div>
 
             <div className="flex-1 text-center sm:text-left pb-4">
-              <h1 className={cn("text-2xl sm:text-3xl", t.fontWeightHeading, t.heroText)}>
+              <h1
+                className={cn("text-2xl sm:text-3xl", t.fontWeightHeading, t.heroText)}
+                style={{ fontFamily: "var(--store-heading)" }}
+              >
                 {storefront.storeName}
               </h1>
               <p className={cn("mt-1", t.subText)}>

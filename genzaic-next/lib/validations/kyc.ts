@@ -1,18 +1,38 @@
 import { z } from "zod"
 
+const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/
+const AADHAAR_RE = /^[2-9][0-9]{11}$/
+// UPI VPA: handle@psp. Razorpay's spec.
+const VPA_RE = /^[\w.\-_]{2,256}@[a-zA-Z]{2,64}$/
+const IFSC_RE = /^[A-Z]{4}0[A-Z0-9]{6}$/
+
 export const kycSchema = z
   .object({
-    documentType: z.enum(["pan", "aadhaar"]),
-    panNumber: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, "Invalid PAN number").optional().nullable(),
+    panNumber: z
+      .string()
+      .min(1, "PAN number is required")
+      .regex(PAN_RE, "Invalid PAN — should look like ABCDE1234F"),
     aadhaarNumber: z
       .string()
-      .regex(/^[2-9]{1}[0-9]{11}$/, "Invalid Aadhaar number")
-      .optional()
-      .nullable(),
-    accountHolderName: z.string().min(2, "Name must be at least 2 characters").max(255),
-    accountNumber: z.string().min(9, "Account number too short").max(18, "Account number too long"),
+      .min(1, "Aadhaar number is required")
+      .regex(AADHAAR_RE, "Invalid Aadhaar — must be 12 digits, not starting with 0 or 1"),
+    upiId: z
+      .string()
+      .min(1, "UPI ID is required")
+      .regex(VPA_RE, "Invalid UPI — should look like name@bank"),
+    accountHolderName: z
+      .string()
+      .min(2, "Name must be at least 2 characters")
+      .max(255),
+    accountNumber: z
+      .string()
+      .min(9, "Account number too short")
+      .max(18, "Account number too long"),
     confirmAccountNumber: z.string(),
-    ifscCode: z.string().regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, "Invalid IFSC code"),
+    ifscCode: z
+      .string()
+      .min(1, "IFSC code is required")
+      .regex(IFSC_RE, "Invalid IFSC code"),
     bankName: z.string().min(2, "Bank name too short").max(255),
   })
   .superRefine((data, ctx) => {
@@ -23,16 +43,25 @@ export const kycSchema = z
         path: ["confirmAccountNumber"],
       })
     }
-    if (data.documentType === "pan" && !data.panNumber) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "PAN number is required", path: ["panNumber"] })
-    }
-    if (data.documentType === "aadhaar" && !data.aadhaarNumber) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Aadhaar number is required",
-        path: ["aadhaarNumber"],
-      })
-    }
   })
 
 export type KycInput = z.infer<typeof kycSchema>
+
+// Field groups used by the multi-step wizard for per-step validation
+// (form.trigger(stepFields)).
+export const KYC_STEP_FIELDS = {
+  identity: ["panNumber", "aadhaarNumber"] as const,
+  payment: [
+    "upiId",
+    "accountHolderName",
+    "accountNumber",
+    "confirmAccountNumber",
+    "ifscCode",
+    "bankName",
+  ] as const,
+} as const
+
+export const KYC_FILE_LIMITS = {
+  maxBytes: 5 * 1024 * 1024, // 5 MB
+  acceptedMimes: ["image/jpeg", "image/png", "application/pdf"] as const,
+}

@@ -5,9 +5,7 @@ import { checkoutSchema } from "@/lib/validations/checkout"
 import { auth } from "@/lib/auth"
 import { enforceRateLimit } from "@/lib/rate-limit"
 import { cache, cacheKeys } from "@/lib/cache"
-
-const PLATFORM_FEE_PERCENT = 0.05 // 5%
-const GST_RATE = 0.18 // 18% GST on product price
+import { PLATFORM_FEE_PERCENT, GST_RATE } from "@/lib/config"
 
 // POST /api/checkout/create-order
 export async function POST(req: NextRequest) {

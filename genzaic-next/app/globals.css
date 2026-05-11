@@ -198,6 +198,63 @@
   50%      { opacity: 1; transform: scale(1.06); }
 }
 
+/* ─── GenZaic Loader ────────────────────────────────────────────────────── */
+/* Carousel motion — single tile glides through right → center → left.
+   Center dwell (14% of cycle, ≈1.26s) is intentionally less than the
+   16.66% stagger so two icons never both occupy translateX(0) — that
+   eliminates the "default icon being overwritten" overlap. */
+@keyframes genzaic-carousel {
+  0%      { transform: translateX(144px)  scale(0.72); opacity: 0; }
+  5%      { transform: translateX(72px)   scale(0.72); opacity: 0.42; }
+  16.66%  { transform: translateX(72px)   scale(0.72); opacity: 0.42; }
+  22.66%  { transform: translateX(0)      scale(1);    opacity: 1; }
+  36.66%  { transform: translateX(0)      scale(1);    opacity: 1; }
+  42.66%  { transform: translateX(-72px)  scale(0.72); opacity: 0.42; }
+  56.66%  { transform: translateX(-72px)  scale(0.72); opacity: 0.42; }
+  61.66%  { transform: translateX(-144px) scale(0.72); opacity: 0; }
+  100%    { transform: translateX(-144px) scale(0.72); opacity: 0; }
+}
+
+/* Inline (small) variant — same percentages, smaller travel + slot scale. */
+@keyframes genzaic-carousel-sm {
+  0%      { transform: translateX(56px)  scale(0.75); opacity: 0; }
+  5%      { transform: translateX(28px)  scale(0.75); opacity: 0.42; }
+  16.66%  { transform: translateX(28px)  scale(0.75); opacity: 0.42; }
+  22.66%  { transform: translateX(0)     scale(1);    opacity: 1; }
+  36.66%  { transform: translateX(0)     scale(1);    opacity: 1; }
+  42.66%  { transform: translateX(-28px) scale(0.75); opacity: 0.42; }
+  56.66%  { transform: translateX(-28px) scale(0.75); opacity: 0.42; }
+  61.66%  { transform: translateX(-56px) scale(0.75); opacity: 0; }
+  100%    { transform: translateX(-56px) scale(0.75); opacity: 0; }
+}
+
+/* Anchor halo at the center slot — soft purple glow that breathes. */
+@keyframes genzaic-halo {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.10); }
+}
+
+/* Pulsing dot next to the wordmark. */
+@keyframes genzaic-dot {
+  0%, 100% { transform: scale(1);   opacity: 0.55; }
+  50%      { transform: scale(1.5); opacity: 1; }
+}
+
+/* Sliding gradient underline below the wordmark. */
+@keyframes genzaic-bar {
+  0%   { background-position:   0% 0; }
+  100% { background-position: 220% 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .motion-bloom { animation: none !important; }
+  /* Freeze the carousel at center for users who opted out of motion. */
+  .genzaic-tile,
+  .genzaic-halo,
+  .genzaic-dot,
+  .genzaic-bar { animation: none !important; }
+  .genzaic-tile.genzaic-tile--reduced-fallback {
+    transform: translateX(0) scale(1) !important;
+    opacity: 1 !important;
+  }
 }

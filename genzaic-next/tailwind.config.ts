@@ -6,6 +6,11 @@ const config: Config = {
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    // Storefront theme classes are assembled in `lib/store/theme.ts` and only
+    // referenced via lookup at render time, so the JIT scan must include lib/
+    // or arbitrary-value utilities (custom hex bgs, custom shadow filters)
+    // silently no-op.
+    "./lib/store/theme.ts",
   ],
   theme: {
     container: {
@@ -119,6 +124,11 @@ const config: Config = {
         spotlight: "spotlight 2s ease .75s 1 forwards",
         scroll: "scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite",
         "move-up": "move-up 0.5s ease-out forwards",
+        "genzaic-carousel":    "genzaic-carousel 9s cubic-bezier(0.65,0,0.35,1) infinite both",
+        "genzaic-carousel-sm": "genzaic-carousel-sm 9s cubic-bezier(0.65,0,0.35,1) infinite both",
+        "genzaic-halo":        "genzaic-halo 2.4s ease-in-out infinite",
+        "genzaic-dot":         "genzaic-dot 1.2s ease-in-out infinite",
+        "genzaic-bar":         "genzaic-bar 1.6s ease-in-out infinite",
       },
     },
   },

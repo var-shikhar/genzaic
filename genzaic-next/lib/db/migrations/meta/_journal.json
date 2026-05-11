@@ -22,6 +22,20 @@
       "when": 1777738844777,
       "tag": "0002_confused_sunset_bain",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778421853001,
+      "tag": "0003_kyc_pan_aadhaar_upi",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778423206512,
+      "tag": "0004_panoramic_supreme_intelligence",
+      "breakpoints": true
     }
   ]
 }

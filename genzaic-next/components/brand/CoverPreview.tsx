@@ -5,7 +5,17 @@ import { Bloom, Grid, Halftone, Pinstripe, PostalRing } from "@/components/brand
 import { cn } from "@/lib/utils"
 import type { CSSProperties } from "react"
 
-export type CoverPreset = "ink" | "sunlit" | "stamp" | "studio" | "archive" | "riso"
+export type CoverPreset =
+  | "ink"
+  | "sunlit"
+  | "stamp"
+  | "studio"
+  | "archive"
+  | "riso"
+  | "mono"
+  | "sage"
+  | "linen"
+  | "noir"
 export type StoreAccent = "iris" | "sage" | "ink_blue" | "plum" | "ochre" | "slate"
 // Backwards-compat alias for callers still importing the old name.
 export type ImprintAccent = StoreAccent
@@ -77,6 +87,10 @@ const presetClass: Record<CoverPreset, string> = {
   studio:  "bg-background text-foreground border border-foreground",
   archive: "bg-paper-2 text-foreground",
   riso:    "bg-background text-foreground",
+  mono:    "bg-stone-50 text-stone-900",
+  sage:    "bg-emerald-50 text-emerald-950",
+  linen:   "bg-amber-50 text-amber-950",
+  noir:    "bg-neutral-950 text-neutral-50",
 }
 
 function presetMotif(preset: CoverPreset) {

@@ -6,16 +6,29 @@ import { deleteJSON, getJSON, postForm } from "@/lib/react-query/fetcher"
 
 export interface KycData {
   id: string
-  documentType: "pan" | "aadhaar"
+  // Identity
   panNumber?: string | null
+  panFileUrl?: string | null
+  panFileId?: string | null
   aadhaarNumber?: string | null
+  aadhaarFileUrl?: string | null
+  aadhaarFileId?: string | null
+  // Legacy single-document fields kept for back-compat with old rows.
+  documentType?: "pan" | "aadhaar" | null
   documentFileUrl?: string | null
+  // Payment — UPI
+  upiId?: string | null
+  vpaStatus: "pending" | "success" | "failed" | "error"
+  vpaHolderName?: string | null
+  // Payment — Bank
   accountHolderName: string
   accountNumber: string
   ifscCode: string
   bankName: string
-  verificationStatus: "not_submitted" | "pending" | "verified" | "rejected"
   pennyDropStatus: "pending" | "success" | "failed"
+  bankHolderName?: string | null
+  // Status
+  verificationStatus: "not_submitted" | "pending" | "verified" | "rejected"
   rejectionReason?: string | null
   verifiedAt?: string | null
   createdAt: string

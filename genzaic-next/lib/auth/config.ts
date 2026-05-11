@@ -30,7 +30,11 @@ export const authConfig = {
         token.onboardingComplete = (user as ExtendedUser).onboardingComplete
       }
       if (trigger === "update" && session) {
-        return { ...token, ...session.user }
+        const next = { ...token, ...session.user }
+        // NextAuth derives session.user.image from token.picture on reload, so
+        // mirror image -> picture to keep the avatar after a hard refresh.
+        if (session.user?.image !== undefined) next.picture = session.user.image
+        return next
       }
       return token
     },

@@ -1,6 +1,17 @@
 import { z } from "zod"
 
-export const imprintCoverPresetSchema = z.enum(["ink", "sunlit", "stamp", "studio", "archive", "riso"])
+export const imprintCoverPresetSchema = z.enum([
+  "ink",
+  "sunlit",
+  "stamp",
+  "studio",
+  "archive",
+  "riso",
+  "mono",
+  "sage",
+  "linen",
+  "noir",
+])
 export const imprintTypePairingSchema = z.enum(["house", "press", "studio", "plain"])
 export const imprintAccentSchema      = z.enum(["iris", "sage", "ink_blue", "plum", "ochre", "slate"])
 
