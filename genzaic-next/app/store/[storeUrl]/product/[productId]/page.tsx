@@ -10,11 +10,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { formatCurrency } from "@/lib/utils"
+import { env } from "@/lib/env"
 
 async function getProduct(storeUrl: string, productId: string) {
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/storefront/public/${storeUrl}/products/${productId}`,
+      `${env.NEXT_PUBLIC_APP_URL}/api/storefront/public/${storeUrl}/products/${productId}`,
       { next: { revalidate: 60 } }
     )
     if (!res.ok) return null

@@ -1,5 +1,6 @@
 "use client"
 
+import { useCallback } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { Product, Storefront as DbStorefront } from "@/lib/db/schema"
 import { getJSON, patchJSON, putForm } from "@/lib/react-query/fetcher"
@@ -21,7 +22,15 @@ export const storefrontKeys = {
   all: ["storefront"] as const,
   current: () => [...storefrontKeys.all, "current"] as const,
   public: (slug: string) => [...storefrontKeys.all, "public", slug] as const,
+  slugCheck: (slug: string) => [...storefrontKeys.all, "slug-check", slug] as const,
+  stats: () => [...storefrontKeys.all, "stats"] as const,
 } as const
+
+export interface StorefrontStats {
+  totalViews: number
+  totalRevenue: string
+  totalOrders: number
+}
 
 export function useStorefront() {
   return useQuery({
@@ -61,5 +70,33 @@ export function useTogglePublish() {
       qc.invalidateQueries({ queryKey: storefrontKeys.current() })
     },
   })
+}
+
+/** Lifetime stats for the seller's own storefront — views, revenue, order count. */
+export function useStorefrontStats() {
+  return useQuery({
+    queryKey: storefrontKeys.stats(),
+    queryFn: () => getJSON<StorefrontStats>("/api/storefront/stats"),
+    staleTime: 30_000,
+  })
+}
+
+/**
+ * Imperative slug-availability check. Returns a stable function — call it
+ * with a candidate slug to fetch availability. Caches per-slug via TanStack
+ * Query so repeated checks of the same string don't re-hit the network.
+ */
+export function useCheckSlug() {
+  const qc = useQueryClient()
+  return useCallback(
+    (slug: string) =>
+      qc.fetchQuery({
+        queryKey: storefrontKeys.slugCheck(slug),
+        queryFn: () =>
+          getJSON<{ available: boolean }>(`/api/storefront/check-slug/${slug}`),
+        staleTime: 60_000,
+      }),
+    [qc],
+  )
 }
 

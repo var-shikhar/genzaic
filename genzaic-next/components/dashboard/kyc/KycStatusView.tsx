@@ -35,7 +35,7 @@ export function KycStatusView({ kyc, onEditSection }: KycStatusViewProps) {
   const vpaFailed = kyc.vpaStatus === "failed"
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-3xl">
       <header className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-6 items-end pb-6 border-b border-primary/30">
         <div className="space-y-2">
           <EyebrowLabel>Verification</EyebrowLabel>
@@ -59,7 +59,7 @@ export function KycStatusView({ kyc, onEditSection }: KycStatusViewProps) {
             {status === "rejected" &&
               "Something didn't check out. Update the relevant section below — we'll re-run verification right away."}
             {status === "pending" &&
-              "We're checking your bank and UPI now. Final approval comes from our team after document review — usually 1–2 business days."}
+              "We're checking your bank and UPI now — this usually takes a minute. Once auto-checks finish and our team has reviewed your documents (1–2 business days), we'll email you with the result. Feel free to close this page."}
           </p>
         </div>
         {status === "verified" && (

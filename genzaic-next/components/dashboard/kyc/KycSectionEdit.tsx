@@ -1,15 +1,10 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
 import { FormProvider, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { ArrowLeft } from "lucide-react"
-import {
-  kycSchema,
-  KYC_FILE_LIMITS,
-  type KycInput,
-} from "@/lib/validations/kyc"
+import { kycSchema, type KycInput } from "@/lib/validations/kyc"
 import { useSubmitKyc, type KycData } from "@/lib/queries/kyc"
 import { getApiErrorMessage } from "@/lib/api-error"
 import { Button } from "@/components/ui/button"
@@ -20,6 +15,10 @@ import {
 } from "@/components/brand/primitives"
 import { StepIdentity } from "./StepIdentity"
 import { StepPayment } from "./StepPayment"
+import {
+  KycDocumentProvider,
+  useKycDocuments,
+} from "./KycDocumentContext"
 
 export type EditSection = "identity" | "payment"
 
@@ -43,26 +42,24 @@ interface KycSectionEditProps {
  * values with the existing record's values, so the API never receives a
  * partial payload.
  */
-export function KycSectionEdit({
+export function KycSectionEdit(props: KycSectionEditProps) {
+  return (
+    <KycDocumentProvider
+      panExistingUrl={props.existing.panFileUrl ?? null}
+      aadhaarExistingUrl={props.existing.aadhaarFileUrl ?? null}
+    >
+      <KycSectionEditInner {...props} />
+    </KycDocumentProvider>
+  )
+}
+
+function KycSectionEditInner({
   existing,
   section,
   onCancel,
 }: KycSectionEditProps) {
   const submitKyc = useSubmitKyc()
-
-  // Files staged locally (only relevant on the Identity section). Bank /
-  // UPI edits don't touch documents — the API keeps the existing files.
-  const [panFile, setPanFile] = useState<File | null>(null)
-  const [panPreview, setPanPreview] = useState<string | null>(null)
-  const [aadhaarFile, setAadhaarFile] = useState<File | null>(null)
-  const [aadhaarPreview, setAadhaarPreview] = useState<string | null>(null)
-  const blobUrls = useRef<string[]>([])
-
-  useEffect(() => {
-    return () => {
-      blobUrls.current.forEach((u) => URL.revokeObjectURL(u))
-    }
-  }, [])
+  const { panFile, aadhaarFile } = useKycDocuments()
 
   const form = useForm<KycInput>({
     resolver: zodResolver(kycSchema),
@@ -83,34 +80,6 @@ export function KycSectionEdit({
       bankName: existing.bankName ?? "",
     },
   })
-
-  // ─── File staging ───────────────────────────────────────────────────────────
-
-  const stageFile = (kind: "pan" | "aadhaar", file: File | null) => {
-    if (file) {
-      if (file.size > KYC_FILE_LIMITS.maxBytes) {
-        toast.error("— File must be under 5 MB.")
-        return
-      }
-      const accepted = KYC_FILE_LIMITS.acceptedMimes as readonly string[]
-      if (file.type && !accepted.includes(file.type)) {
-        toast.error("— File must be a JPG, PNG, or PDF.")
-        return
-      }
-    }
-    const url = file ? URL.createObjectURL(file) : null
-    if (url) blobUrls.current.push(url)
-    if (kind === "pan") {
-      setPanFile(file)
-      setPanPreview(url)
-    } else {
-      setAadhaarFile(file)
-      setAadhaarPreview(url)
-    }
-  }
-
-  const panIsPdf = panFile?.type === "application/pdf"
-  const aadhaarIsPdf = aadhaarFile?.type === "application/pdf"
 
   // ─── Submit ────────────────────────────────────────────────────────────────
 
@@ -155,7 +124,7 @@ export function KycSectionEdit({
     <FormProvider {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-8"
+        className="space-y-8 max-w-3xl"
       >
         <header className="space-y-3">
           <EyebrowLabel>{sectionMeta.eyebrow}</EyebrowLabel>
@@ -167,22 +136,7 @@ export function KycSectionEdit({
           </p>
         </header>
 
-        {section === "identity" ? (
-          <StepIdentity
-            panFile={panFile}
-            panPreview={panPreview}
-            panIsPdf={!!panIsPdf}
-            panExistingUrl={existing.panFileUrl ?? null}
-            onPickPan={(f) => stageFile("pan", f)}
-            aadhaarFile={aadhaarFile}
-            aadhaarPreview={aadhaarPreview}
-            aadhaarIsPdf={!!aadhaarIsPdf}
-            aadhaarExistingUrl={existing.aadhaarFileUrl ?? null}
-            onPickAadhaar={(f) => stageFile("aadhaar", f)}
-          />
-        ) : (
-          <StepPayment />
-        )}
+        {section === "identity" ? <StepIdentity /> : <StepPayment />}
 
         <div className="flex items-center justify-between gap-3 pt-4 border-t border-border">
           <Button
@@ -213,4 +167,3 @@ export function KycSectionEdit({
     </FormProvider>
   )
 }
-

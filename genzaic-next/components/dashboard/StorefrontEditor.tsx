@@ -8,8 +8,15 @@ import { toast } from "sonner"
 import { z } from "zod"
 import Image from "next/image"
 import { Upload, X, ExternalLink } from "lucide-react"
-import { useStorefront, useUpdateStorefront } from "@/lib/queries/storefront"
+import {
+  useStorefront,
+  useUpdateStorefront,
+  useCheckSlug,
+  useStorefrontStats,
+} from "@/lib/queries/storefront"
 import { useProducts } from "@/lib/queries/products"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
+import { formatCurrency } from "@/lib/utils"
 import { GenzaicLoader } from "@/components/ui/genzaic-loader"
 import { PublishStatusBadge } from "@/components/dashboard/PublishStatusBadge"
 import { PublishToShareDialog } from "@/components/dashboard/PublishToShareDialog"
@@ -208,6 +215,50 @@ export function StorefrontEditor() {
 
   const watch = form.watch()
 
+  // ─── Live slug check ──────────────────────────────────────────────────────
+  // Watch the slug field, debounce, then ask the server if it's free. Local
+  // status drives the inline message AND gates the Save button so the seller
+  // doesn't hit a 400 at submit time.
+  const checkSlug = useCheckSlug()
+  const [slugStatus, setSlugStatus] = useState<
+    "idle" | "checking" | "available" | "taken" | "invalid"
+  >("idle")
+  const debouncedSlug = useDebouncedValue((watch.imprintSlug ?? "").trim(), 400)
+  const persistedSlug = sf?.imprintSlug ?? sf?.storeUrl ?? ""
+
+  useEffect(() => {
+    if (!debouncedSlug || debouncedSlug === persistedSlug) {
+      setSlugStatus("idle")
+      return
+    }
+    if (
+      debouncedSlug.length < 2 ||
+      debouncedSlug.length > 64 ||
+      !/^[a-z0-9][a-z0-9-]*$/.test(debouncedSlug)
+    ) {
+      setSlugStatus("invalid")
+      return
+    }
+    let cancelled = false
+    setSlugStatus("checking")
+    checkSlug(debouncedSlug)
+      .then((r) => {
+        if (cancelled) return
+        setSlugStatus(r.available ? "available" : "taken")
+      })
+      .catch(() => {
+        // Silent — submit-time server check still gates the actual save.
+        if (cancelled) return
+        setSlugStatus("idle")
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [debouncedSlug, persistedSlug, checkSlug])
+
+  // ─── Storefront stats ─────────────────────────────────────────────────────
+  const { data: stats } = useStorefrontStats()
+
   // Resolved preview color: custom primaryColor wins over swatch enum.
   const resolvedColor =
     watch.primaryColor && HEX_RE.test(watch.primaryColor)
@@ -343,11 +394,33 @@ export function StorefrontEditor() {
               View store
             </Button>
           )}
-          <Button type="submit" shape="pill" disabled={update.isPending}>
+          <Button
+            type="submit"
+            shape="pill"
+            disabled={update.isPending || slugStatus === "taken"}
+          >
             {update.isPending ? "Saving…" : "Save store"}
           </Button>
         </div>
       </header>
+
+      {/* Stats strip — lifetime views / revenue / orders for this storefront. */}
+      <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-6 pb-2">
+        {[
+          { label: "Views", value: stats ? stats.totalViews.toLocaleString("en-IN") : "—" },
+          { label: "Revenue", value: stats ? formatCurrency(stats.totalRevenue) : "—" },
+          { label: "Orders", value: stats ? stats.totalOrders.toLocaleString("en-IN") : "—" },
+        ].map((tile) => (
+          <div key={tile.label}>
+            <div className="font-display text-2xl sm:text-3xl font-semibold tracking-[-0.02em] num-tabular">
+              {tile.value}
+            </div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground mt-1">
+              {tile.label}
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Two-pane body: 40 / 60 split. Default grid stretch lets the right
           cell match the left's height — that's what gives the inner sticky
@@ -395,6 +468,22 @@ export function StorefrontEditor() {
                     — {form.formState.errors.imprintSlug.message}
                   </p>
                 )}
+                {!form.formState.errors.imprintSlug && slugStatus !== "idle" && (
+                  <p
+                    className={cn(
+                      "font-mono text-[10px] uppercase tracking-[0.12em] mt-1",
+                      slugStatus === "checking" && "text-muted-foreground",
+                      slugStatus === "available" && "text-emerald-600 dark:text-emerald-400",
+                      slugStatus === "taken" && "text-flicker",
+                      slugStatus === "invalid" && "text-flicker",
+                    )}
+                  >
+                    {slugStatus === "checking" && "— Checking…"}
+                    {slugStatus === "available" && "— Available"}
+                    {slugStatus === "taken" && "— Taken, try another"}
+                    {slugStatus === "invalid" && "— Lowercase letters, numbers, hyphens only"}
+                  </p>
+                )}
               </div>
               <div>
                 <Label className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
@@ -421,8 +510,8 @@ export function StorefrontEditor() {
               </div>
 
               {/* Logo */}
-              <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-4 items-start pt-2">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-6 sm:gap-4 items-start pt-2">
+                <div className="w-32 mx-auto sm:w-auto sm:mx-0">
                   <Label className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
                     Logo
                   </Label>

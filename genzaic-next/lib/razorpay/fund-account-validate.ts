@@ -1,4 +1,5 @@
 import "server-only"
+import { env } from "@/lib/env"
 
 // Razorpay's Fund Account Validation API.
 // https://razorpay.com/docs/api/x/fund-account-validations/
@@ -29,19 +30,17 @@ interface RazorpayValidationResponse {
   error?: { description?: string; reason?: string }
 }
 
-function authHeader(): string | null {
-  const id = process.env.RAZORPAY_KEY_ID
-  const secret = process.env.RAZORPAY_KEY_SECRET
-  if (!id || !secret) return null
-  return "Basic " + Buffer.from(`${id}:${secret}`).toString("base64")
+function authHeader(): string {
+  return (
+    "Basic " +
+    Buffer.from(`${env.RAZORPAY_KEY_ID}:${env.RAZORPAY_KEY_SECRET}`).toString(
+      "base64",
+    )
+  )
 }
 
 async function callRazorpay(body: Record<string, unknown>): Promise<ValidationResult> {
   const auth = authHeader()
-  if (!auth) {
-    console.warn("[razorpay] RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET not set — skipping validation")
-    return { status: "error", reason: "Razorpay not configured" }
-  }
 
   let res: Response
   try {

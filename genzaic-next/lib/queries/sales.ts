@@ -93,7 +93,7 @@ export function useDownloadLogs(filters: { page?: number; limit?: number } = {})
     queryKey: salesKeys.downloadList(filters),
     queryFn: () => {
       const { page = 1, limit = 10 } = filters
-      return getJSON<DownloadLog[]>(`/api/sales/downloads?page=${page}&limit=${limit}`)
+      return getJSON<{ logs: DownloadLog[]; total: number }>(`/api/sales/downloads?page=${page}&limit=${limit}`)
     },
   })
 }

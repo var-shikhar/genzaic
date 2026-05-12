@@ -220,7 +220,7 @@ function deriveStages(kyc: KycData): Stage[] {
             ? "Rejected — see reason above"
             : !validationComplete
               ? "Waits for validation"
-              : "Awaiting admin review (1–2 business days)",
+              : "Awaiting admin review · email when done",
       state:
         status === "verified"
           ? "done"

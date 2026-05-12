@@ -1,6 +1,8 @@
 node_modules
 .next
+*.tsbuildinfo
 .env.local
+.env*.local
 SETUP.md
 logs/
 .superpowers/

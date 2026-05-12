@@ -5,6 +5,7 @@ import { randomBytes } from "crypto"
 import { sendPasswordResetEmail } from "@/lib/email"
 import { forgotPasswordSchema } from "@/lib/validations/auth"
 import { enforceRateLimit } from "@/lib/rate-limit"
+import { env } from "@/lib/env"
 
 export async function POST(req: NextRequest) {
   // 3 reset attempts per IP per 10 minutes — prevents email enumeration spam.
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
       updatedAt: new Date(),
     }).where(eq(users.id, user.id))
 
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${token}`
+    const resetUrl = `${env.NEXT_PUBLIC_APP_URL}/reset-password?token=${token}`
     await sendPasswordResetEmail(email, user.name, resetUrl)
 
     return NextResponse.json({ message: "If that email exists, a reset link was sent." })

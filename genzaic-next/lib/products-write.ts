@@ -1,6 +1,7 @@
-import { db, tags, productTags, productImages } from "@/lib/db"
-import { eq, inArray } from "drizzle-orm"
+import { db, tags, productTags, productImages, products } from "@/lib/db"
+import { and, eq, inArray } from "drizzle-orm"
 import { uploadToImageKit, deleteFromImageKit, IMAGEKIT_FOLDERS } from "@/lib/imagekit"
+import { generateHexCode } from "@/lib/brand/hex-code"
 
 export function slugify(input: string): string {
   return input
@@ -8,6 +9,47 @@ export function slugify(input: string): string {
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
+}
+
+/**
+ * Pick a slug for a new product that doesn't clash with existing products in
+ * the storefront. Falls back to `<base>-<random>` on conflict. Caller still
+ * relies on the DB unique constraint as the final guard (race conditions are
+ * resolved at insert time via integrity error retry, not here).
+ */
+export async function pickUniqueSlug(
+  storefrontId: string,
+  title: string,
+): Promise<string> {
+  const baseSlug = slugify(title) || "product"
+  let slug = baseSlug
+  for (let attempts = 0; attempts < 5; attempts += 1) {
+    const [clash] = await db
+      .select({ id: products.id })
+      .from(products)
+      .where(and(eq(products.storefrontId, storefrontId), eq(products.slug, slug)))
+      .limit(1)
+    if (!clash) return slug
+    slug = `${baseSlug}-${Math.random().toString(36).slice(2, 7)}`
+  }
+  return slug
+}
+
+/** Pick a 4-char hex code unique within the storefront. */
+export async function pickUniqueHexCode(storefrontId: string): Promise<string> {
+  let hexCode = generateHexCode()
+  for (let attempts = 0; attempts < 32; attempts += 1) {
+    const [clash] = await db
+      .select({ id: products.id })
+      .from(products)
+      .where(
+        and(eq(products.storefrontId, storefrontId), eq(products.hexCode, hexCode)),
+      )
+      .limit(1)
+    if (!clash) return hexCode
+    hexCode = generateHexCode()
+  }
+  return hexCode
 }
 
 export function parseStringArray(formData: FormData, key: string): string[] {

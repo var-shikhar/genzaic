@@ -6,35 +6,26 @@ import { useFormContext } from "react-hook-form"
 import type { KycInput } from "@/lib/validations/kyc"
 import { cn } from "@/lib/utils"
 import type { WizardStep } from "./WizardProgress"
+import { useKycDocuments } from "./KycDocumentContext"
 
 interface StepReviewProps {
-  panFile: File | null
-  panPreview: string | null
-  panIsPdf: boolean
-  panExistingUrl: string | null
-
-  aadhaarFile: File | null
-  aadhaarPreview: string | null
-  aadhaarIsPdf: boolean
-  aadhaarExistingUrl: string | null
-
   /** Click an "Edit" link to jump back to a step. */
   onEdit: (step: WizardStep) => void
 }
 
-export function StepReview({
-  panFile,
-  panPreview,
-  panIsPdf,
-  panExistingUrl,
-  aadhaarFile,
-  aadhaarPreview,
-  aadhaarIsPdf,
-  aadhaarExistingUrl,
-  onEdit,
-}: StepReviewProps) {
+export function StepReview({ onEdit }: StepReviewProps) {
   const { getValues } = useFormContext<KycInput>()
   const v = getValues()
+  const {
+    panFile,
+    panPreview,
+    panIsPdf,
+    panExistingUrl,
+    aadhaarFile,
+    aadhaarPreview,
+    aadhaarIsPdf,
+    aadhaarExistingUrl,
+  } = useKycDocuments()
 
   const panThumb = panPreview ?? panExistingUrl
   const aadhaarThumb = aadhaarPreview ?? aadhaarExistingUrl

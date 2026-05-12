@@ -79,8 +79,8 @@ function SidebarNav({
           "flex items-center rounded-lg text-sm font-medium transition-all",
           collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-3 py-2.5",
           isActive
-            ? "bg-primary/10 text-primary"
-            : "text-muted-foreground hover:bg-accent hover:text-foreground",
+            ? "bg-primary/20 text-primary"
+            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
         )}
         aria-label={collapsed ? item.label : undefined}
       >
@@ -124,7 +124,7 @@ function Sidebar({
   return (
     <aside
       className={cn(
-        "hidden lg:flex flex-col border-r bg-card sticky top-0 h-screen shrink-0 transition-[width] duration-200 ease-out",
+        "hidden lg:flex flex-col border-r bg-primary/10 sticky top-0 h-screen shrink-0 transition-[width] duration-200 ease-out",
         collapsed ? "w-16" : "w-64",
       )}
     >
@@ -228,7 +228,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
+            <SheetContent side="left" className="w-64 p-0 bg-primary/10">
               <div className="p-5 border-b">
                 <Link
                   href="/dashboard"

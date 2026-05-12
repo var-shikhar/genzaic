@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import {
@@ -12,17 +13,27 @@ import {
   Info,
   AlertCircle,
   ArrowRight,
+  XCircle,
 } from "lucide-react"
-import { usePayoutStats, usePayouts } from "@/lib/queries/payouts"
+import { usePayoutStats, usePayouts, usePayout } from "@/lib/queries/payouts"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatCurrency, formatDate } from "@/lib/utils"
-import { EditorsHeadline, EyebrowLabel, MonoLabel } from "@/components/brand/primitives"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet"
+import { formatCurrency } from "@/lib/utils"
+import { EditorsHeadline, EyebrowLabel } from "@/components/brand/primitives"
 import { Pinstripe } from "@/components/brand/motifs"
 
 export default function PayoutsPage() {
   const { data: stats, isLoading: statsLoading } = usePayoutStats()
   const { data: payoutsData, isLoading: payoutsLoading } = usePayouts({})
+  const [selectedPayoutId, setSelectedPayoutId] = useState<string | null>(null)
+  const { data: detail, isLoading: detailLoading } = usePayout(selectedPayoutId)
 
   if (statsLoading) {
     return (
@@ -217,7 +228,11 @@ export default function PayoutsPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {payoutsData.payouts.map((payout) => (
-                  <tr key={payout.id} className="hover:bg-muted/30 transition-colors">
+                  <tr
+                    key={payout.id}
+                    onClick={() => setSelectedPayoutId(payout.id)}
+                    className="hover:bg-muted/30 transition-colors cursor-pointer"
+                  >
                     <td className="px-6 py-4">
                       <span className="font-mono text-sm font-medium">
                         {payout.id.substring(0, 8)}...
@@ -265,6 +280,121 @@ export default function PayoutsPage() {
           </div>
         )}
       </motion.div>
+
+      {/* Payout detail Sheet — opens when a row is clicked. */}
+      <Sheet
+        open={Boolean(selectedPayoutId)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedPayoutId(null)
+        }}
+      >
+        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <EyebrowLabel>Payout detail</EyebrowLabel>
+            <SheetTitle className="font-display text-3xl font-semibold tracking-[-0.02em]">
+              {detail ? formatCurrency(detail.amount) : "—"}
+            </SheetTitle>
+            <SheetDescription className="font-mono text-[10px] uppercase tracking-[0.15em]">
+              {selectedPayoutId
+                ? `ID · ${selectedPayoutId.substring(0, 8)}…`
+                : ""}
+            </SheetDescription>
+          </SheetHeader>
+
+          {detailLoading || !detail ? (
+            <div className="space-y-3 mt-8">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-12" />
+              ))}
+            </div>
+          ) : (
+            <dl className="mt-8 divide-y divide-border">
+              <DetailRow label="Status">
+                <span
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                    detail.status === "completed"
+                      ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+                      : detail.status === "pending"
+                        ? "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
+                        : detail.status === "processing"
+                          ? "bg-primary/10 text-primary"
+                          : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                  }`}
+                >
+                  {detail.status === "completed" && <CheckCircle className="w-3 h-3" />}
+                  {detail.status === "pending" && <Clock className="w-3 h-3" />}
+                  {detail.status === "failed" && <XCircle className="w-3 h-3" />}
+                  {detail.status.charAt(0).toUpperCase() + detail.status.slice(1)}
+                </span>
+              </DetailRow>
+
+              <DetailRow label="UTR number">
+                <span className="font-mono text-sm">
+                  {detail.utrNumber || "—"}
+                </span>
+              </DetailRow>
+
+              <DetailRow label="Transaction ID">
+                <span className="font-mono text-sm">
+                  {detail.transactionId || "—"}
+                </span>
+              </DetailRow>
+
+              <DetailRow label="Created">
+                <span className="font-mono text-sm">
+                  {new Date(detail.createdAt).toLocaleString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </DetailRow>
+
+              <DetailRow label="Processed">
+                <span className="font-mono text-sm">
+                  {detail.processedAt
+                    ? new Date(detail.processedAt).toLocaleString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "—"}
+                </span>
+              </DetailRow>
+
+              {detail.failureReason && (
+                <DetailRow label="Failure reason">
+                  <span className="text-sm text-flicker">
+                    {detail.failureReason}
+                  </span>
+                </DetailRow>
+              )}
+            </dl>
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
+  )
+}
+
+/** Editorial label/value row used inside the payout detail Sheet. */
+function DetailRow({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="grid grid-cols-[120px_1fr] gap-4 items-center py-3">
+      <dt className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="text-right">{children}</dd>
     </div>
   )
 }

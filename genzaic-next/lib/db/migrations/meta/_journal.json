@@ -36,6 +36,13 @@
       "when": 1778423206512,
       "tag": "0004_panoramic_supreme_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778610085262,
+      "tag": "0005_lying_strong_guy",
+      "breakpoints": true
     }
   ]
 }

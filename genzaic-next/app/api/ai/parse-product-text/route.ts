@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { z } from "zod"
 import { GoogleGenerativeAI } from "@google/generative-ai"
+import { env } from "@/lib/env"
 
 const parseTextSchema = z.object({
   text: z.string().min(10, "Text must be at least 10 characters").max(10000, "Text is too long"),
 })
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY ?? "")
+const genAI = new GoogleGenerativeAI(env.GOOGLE_AI_API_KEY)
 
 // POST /api/ai/parse-product-text - extract product details from raw text using Gemini
 export async function POST(req: NextRequest) {

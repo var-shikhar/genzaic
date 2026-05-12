@@ -1,5 +1,6 @@
 import fs from "fs"
 import path from "path"
+import { env } from "@/lib/env"
 
 // ─── Log Levels ───────────────────────────────────────────────────────────────
 export type LogLevel = "debug" | "info" | "warn" | "error" | "fatal"
@@ -22,9 +23,9 @@ const LEVEL_LABELS: Record<LogLevel, string> = {
 
 // ─── Configuration ────────────────────────────────────────────────────────────
 const LOG_DIR = path.join(process.cwd(), "logs")
-const MIN_LEVEL: LogLevel = (process.env.LOG_LEVEL as LogLevel) ?? "info"
+const MIN_LEVEL: LogLevel = env.LOG_LEVEL
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB per file before rotation
-const ENABLE_CONSOLE = process.env.NODE_ENV !== "test"
+const ENABLE_CONSOLE = env.NODE_ENV !== "test"
 const ENABLE_FILE = typeof window === "undefined" // only server-side
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

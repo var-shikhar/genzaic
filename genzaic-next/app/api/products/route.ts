@@ -14,9 +14,9 @@ import {
   ensureTagIds,
   setProductTags,
   addGalleryImages,
-  slugify,
+  pickUniqueSlug,
+  pickUniqueHexCode,
 } from "@/lib/products-write"
-import { generateHexCode } from "@/lib/brand/hex-code"
 
 // GET /api/products - list with pagination/search/filter
 export async function GET(req: NextRequest) {
@@ -142,30 +142,8 @@ export async function POST(req: NextRequest) {
       sellerContactEmail, sellerContactPhone, sellerContactWhatsapp,
       subscriptionDuration, stock, isActive, tagIds, tagNames } = parsed.data
 
-    // Pick a unique slug per storefront. If conflict, append a short suffix.
-    const baseSlug = slugify(title) || "product"
-    let slug = baseSlug
-    for (let attempts = 0; attempts < 5; attempts += 1) {
-      const [clash] = await db
-        .select({ id: products.id })
-        .from(products)
-        .where(and(eq(products.storefrontId, storefront.id), eq(products.slug, slug)))
-        .limit(1)
-      if (!clash) break
-      slug = `${baseSlug}-${Math.random().toString(36).slice(2, 7)}`
-    }
-
-    // Pick a unique 4-char hex code per storefront. Retry on collision.
-    let hexCode = generateHexCode()
-    for (let attempts = 0; attempts < 32; attempts += 1) {
-      const [clash] = await db
-        .select({ id: products.id })
-        .from(products)
-        .where(and(eq(products.storefrontId, storefront.id), eq(products.hexCode, hexCode)))
-        .limit(1)
-      if (!clash) break
-      hexCode = generateHexCode()
-    }
+    const slug = await pickUniqueSlug(storefront.id, title)
+    const hexCode = await pickUniqueHexCode(storefront.id)
 
     // Atomic: product insert + denormalized counter recount, so a partial
      // failure can't leave users.totalProducts out of sync with the products

@@ -303,8 +303,11 @@ function GenzaicGridBackdrop({ className }: { className?: string }) {
 }
 
 /**
- * Full-bleed in-pane loader. Fills its parent column with the brand
- * background, dropped-out grid backdrop, and the root loader centered.
+ * Full-layout overlay loader. Covers the entire viewport (sidebar, header,
+ * content) so the loading state reads as one page-wide moment instead of a
+ * panel inside the chrome. Sits at z-50, below RouteLoadingOverlay (z-60),
+ * so the timed route overlay covers it during the initial nav window and
+ * this one takes over seamlessly when data is still in flight.
  */
 function GenzaicLoaderPage({
   label = "Loading",
@@ -313,8 +316,10 @@ function GenzaicLoaderPage({
 }: GenzaicLoaderProps) {
   return (
     <div
+      role="status"
+      aria-live="polite"
       className={cn(
-        "relative min-h-[60vh] w-full grid place-items-center bg-background overflow-hidden",
+        "fixed inset-0 z-50 grid place-items-center bg-background overflow-hidden",
         className,
       )}
     >

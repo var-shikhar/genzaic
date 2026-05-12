@@ -345,7 +345,7 @@ export default function SalesPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(downloadLogs ?? []).map((log: { id: string; productTitle: string; buyerName: string; buyerEmail: string; downloadedAt: string; ipAddress?: string | null }) => (
+                    {(downloadLogs?.logs ?? []).map((log) => (
                       <TableRow key={log.id}>
                         <TableCell className="font-medium">{log.productTitle}</TableCell>
                         <TableCell>{log.buyerName}</TableCell>
@@ -359,7 +359,7 @@ export default function SalesPage() {
                   </TableBody>
                 </Table>
               )}
-              {!logsLoading && !(downloadLogs ?? []).length && (
+              {!logsLoading && !(downloadLogs?.logs ?? []).length && (
                 <div className="py-12 text-center">
                   <Download className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
                   <p className="text-muted-foreground">No downloads yet</p>

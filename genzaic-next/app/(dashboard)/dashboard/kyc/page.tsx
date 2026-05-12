@@ -4,7 +4,7 @@ import { KycPanel } from "@/components/dashboard/kyc/KycPanel"
 
 export default function KYCPage() {
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <Suspense fallback={<GenzaicLoader.Page label="Loading your KYC" />}>
         <KycPanel />
       </Suspense>

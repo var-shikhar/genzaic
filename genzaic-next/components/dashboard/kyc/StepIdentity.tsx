@@ -6,22 +6,7 @@ import { EditorialSection } from "@/components/brand/primitives"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { KycDocumentDrop } from "./KycDocumentDrop"
-
-interface StepIdentityProps {
-  panFile: File | null
-  panPreview: string | null
-  panIsPdf: boolean
-  /** Existing remote URL — shown when seller hasn't picked a new file yet
-   *  but already had one from a previous submission. */
-  panExistingUrl: string | null
-  onPickPan: (file: File | null) => void
-
-  aadhaarFile: File | null
-  aadhaarPreview: string | null
-  aadhaarIsPdf: boolean
-  aadhaarExistingUrl: string | null
-  onPickAadhaar: (file: File | null) => void
-}
+import { useKycDocuments } from "./KycDocumentContext"
 
 /**
  * Step 01 — PAN, Step 02 — Aadhaar. Both required.
@@ -30,23 +15,24 @@ interface StepIdentityProps {
  * uploaded remote URL if the seller is resubmitting). On resubmit the
  * existing thumbnail acts as a "this is what was uploaded before" cue —
  * the seller still needs to re-pick to actually replace.
+ *
+ * File state lives in `KycDocumentContext` so neither the wizard nor the
+ * section-edit wrapper has to drill 10 props through this component.
  */
-export function StepIdentity({
-  panFile,
-  panPreview,
-  panIsPdf,
-  panExistingUrl,
-  onPickPan,
-  aadhaarFile,
-  aadhaarPreview,
-  aadhaarIsPdf,
-  aadhaarExistingUrl,
-  onPickAadhaar,
-}: StepIdentityProps) {
+export function StepIdentity() {
   const { control, register, formState } = useFormContext<KycInput>()
+  const {
+    panFile,
+    panPreview,
+    panIsPdf,
+    panExistingUrl,
+    aadhaarFile,
+    aadhaarPreview,
+    aadhaarIsPdf,
+    aadhaarExistingUrl,
+    stageFile,
+  } = useKycDocuments()
 
-  // Show the freshly-picked preview if any, otherwise fall back to the
-  // existing remote URL from the previous submission.
   const panThumb = panPreview ?? panExistingUrl
   const aadhaarThumb = aadhaarPreview ?? aadhaarExistingUrl
 
@@ -98,7 +84,7 @@ export function StepIdentity({
               preview={panThumb}
               fileName={panFile?.name ?? null}
               isPdf={panFile ? panIsPdf : false}
-              onPick={onPickPan}
+              onPick={(f) => stageFile("pan", f)}
               helpText={
                 panExistingUrl && !panFile
                   ? "Previous upload — re-upload to replace"
@@ -120,15 +106,48 @@ export function StepIdentity({
             <Label className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
               Aadhaar number
             </Label>
-            <Input
-              variant="editorial"
-              className="font-mono text-base mt-1"
-              placeholder="XXXX XXXX XXXX"
-              maxLength={12}
-              inputMode="numeric"
-              {...register("aadhaarNumber")}
-              aria-invalid={!!formState.errors.aadhaarNumber}
-            />
+            {(() => {
+              const aadhaarReg = register("aadhaarNumber")
+              return (
+                <Input
+                  variant="editorial"
+                  className="font-mono text-base mt-1"
+                  placeholder="XXXX XXXX XXXX"
+                  maxLength={12}
+                  inputMode="numeric"
+                  autoComplete="off"
+                  {...aadhaarReg}
+                  // Strip non-digits before RHF sees the value, so a stray
+                  // keystroke (or paste with spaces/letters) can never enter
+                  // form state and trip validation on submit.
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "")
+                    if (digits !== e.target.value) {
+                      e.target.value = digits
+                    }
+                    aadhaarReg.onChange(e)
+                  }}
+                  onPaste={(e) => {
+                    const text = e.clipboardData.getData("text")
+                    if (/\D/.test(text)) {
+                      e.preventDefault()
+                      const digits = text.replace(/\D/g, "").slice(0, 12)
+                      const input = e.currentTarget
+                      const start = input.selectionStart ?? input.value.length
+                      const end = input.selectionEnd ?? input.value.length
+                      const next = (
+                        input.value.slice(0, start) +
+                        digits +
+                        input.value.slice(end)
+                      ).slice(0, 12)
+                      input.value = next
+                      aadhaarReg.onChange({ target: input } as unknown as React.ChangeEvent<HTMLInputElement>)
+                    }
+                  }}
+                  aria-invalid={!!formState.errors.aadhaarNumber}
+                />
+              )
+            })()}
             {formState.errors.aadhaarNumber && (
               <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-flicker mt-1">
                 — {formState.errors.aadhaarNumber.message}
@@ -144,7 +163,7 @@ export function StepIdentity({
               preview={aadhaarThumb}
               fileName={aadhaarFile?.name ?? null}
               isPdf={aadhaarFile ? aadhaarIsPdf : false}
-              onPick={onPickAadhaar}
+              onPick={(f) => stageFile("aadhaar", f)}
               helpText={
                 aadhaarExistingUrl && !aadhaarFile
                   ? "Previous upload — re-upload to replace"
