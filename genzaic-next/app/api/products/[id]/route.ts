@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { db, storefronts, products, productImages, productTags, tags } from "@/lib/db"
-import { eq, and, or, asc } from "drizzle-orm"
+import { db, products, productImages, productTags, tags, users } from "@/lib/db"
+import { eq, and, asc, count } from "drizzle-orm"
+import { getStorefrontByUser } from "@/lib/db/storefront-helpers"
+import { coerceFormData } from "@/lib/api-form-data"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -35,12 +37,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 
     const { id } = await params
 
-    const [storefront] = await db
-      .select({ id: storefronts.id, storeUrl: storefronts.storeUrl })
-      .from(storefronts)
-      .where(eq(storefronts.userId, userId))
-      .limit(1)
-
+    const storefront = await getStorefrontByUser(userId)
     if (!storefront) return NextResponse.json({ error: "Product not found" }, { status: 404 })
 
     const [product] = await db
@@ -80,12 +77,7 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
 
     const { id } = await params
 
-    const [storefront] = await db
-      .select({ id: storefronts.id, storeUrl: storefronts.storeUrl })
-      .from(storefronts)
-      .where(eq(storefronts.userId, userId))
-      .limit(1)
-
+    const storefront = await getStorefrontByUser(userId)
     if (!storefront) return NextResponse.json({ error: "Product not found" }, { status: 404 })
 
     const [existing] = await db
@@ -98,15 +90,9 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
 
     const formData = await req.formData()
 
-    const ARRAY_KEYS = new Set(["tagIds", "tagNames", "galleryImages", "removedGalleryImageIds"])
-    const FILE_KEYS = new Set(["thumbnail", "productFile"])
-    const raw: Record<string, unknown> = {}
-    formData.forEach((value, key) => {
-      if (FILE_KEYS.has(key) || ARRAY_KEYS.has(key)) return
-      if (value === "true") raw[key] = true
-      else if (value === "false") raw[key] = false
-      else if (value === "") raw[key] = undefined
-      else raw[key] = value
+    const raw = coerceFormData(formData, {
+      fileKeys: ["thumbnail", "productFile"],
+      arrayKeys: ["tagIds", "tagNames", "galleryImages", "removedGalleryImageIds"],
     })
     const tagIdsArr = parseStringArray(formData, "tagIds")
     const tagNamesArr = parseStringArray(formData, "tagNames")
@@ -232,12 +218,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
 
     const { id } = await params
 
-    const [storefront] = await db
-      .select({ id: storefronts.id, storeUrl: storefronts.storeUrl })
-      .from(storefronts)
-      .where(eq(storefronts.userId, userId))
-      .limit(1)
-
+    const storefront = await getStorefrontByUser(userId)
     if (!storefront) return NextResponse.json({ error: "Product not found" }, { status: 404 })
 
     const [existing] = await db
@@ -256,7 +237,19 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
       await deleteFromImageKit(existing.fileId).catch(() => {})
     }
 
-    await db.delete(products).where(eq(products.id, existing.id))
+    // Atomic delete + denormalized counter recount so users.totalProducts
+    // doesn't drift upward as products are removed.
+    await db.transaction(async (tx) => {
+      await tx.delete(products).where(eq(products.id, existing.id))
+      const [countResult] = await tx
+        .select({ count: count() })
+        .from(products)
+        .where(eq(products.storefrontId, storefront.id))
+      await tx
+        .update(users)
+        .set({ totalProducts: Number(countResult?.count ?? 0), updatedAt: new Date() })
+        .where(eq(users.id, userId))
+    })
 
     // Bust stale reads: product stats + public storefront listing.
     cache.delete(cacheKeys.productStats(storefront.id))

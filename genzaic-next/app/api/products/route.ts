@@ -6,6 +6,8 @@ import { productSchema } from "@/lib/validations/product"
 import { uploadToImageKit, IMAGEKIT_FOLDERS } from "@/lib/imagekit"
 import { cache, cacheKeys } from "@/lib/cache"
 import { invalidatePublicStorefrontBySlug } from "@/lib/data/public-storefront"
+import { getStorefrontByUser } from "@/lib/db/storefront-helpers"
+import { coerceFormData } from "@/lib/api-form-data"
 import {
   parseStringArray,
   parseFileArray,
@@ -30,13 +32,7 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get("search") ?? ""
     const status = searchParams.get("status") // "active" | "inactive" | undefined
 
-    // Get the user's storefront
-    const [storefront] = await db
-      .select({ id: storefronts.id })
-      .from(storefronts)
-      .where(eq(storefronts.userId, userId))
-      .limit(1)
-
+    const storefront = await getStorefrontByUser(userId)
     if (!storefront) {
       return NextResponse.json({ products: [], total: 0, page, limit })
     }
@@ -88,15 +84,9 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData()
 
-    // Extract and coerce fields from FormData (skipping file fields and array fields)
-    const ARRAY_KEYS = new Set(["tagIds", "tagNames", "galleryImages", "removedGalleryImageIds"])
-    const FILE_KEYS = new Set(["thumbnail", "productFile"])
-    const raw: Record<string, unknown> = {}
-    formData.forEach((value, key) => {
-      if (FILE_KEYS.has(key) || ARRAY_KEYS.has(key)) return
-      if (value === "true") raw[key] = true
-      else if (value === "false") raw[key] = false
-      else raw[key] = value === "" ? undefined : value
+    const raw = coerceFormData(formData, {
+      fileKeys: ["thumbnail", "productFile"],
+      arrayKeys: ["tagIds", "tagNames", "galleryImages", "removedGalleryImageIds"],
     })
     raw.tagIds = parseStringArray(formData, "tagIds")
     raw.tagNames = parseStringArray(formData, "tagNames")
@@ -110,28 +100,20 @@ export async function POST(req: NextRequest) {
     }
 
     // Get or create storefront for this user
-    let [storefront] = await db
-      .select({ id: storefronts.id, storeUrl: storefronts.storeUrl })
-      .from(storefronts)
-      .where(eq(storefronts.userId, userId))
-      .limit(1)
-
+    let storefront = await getStorefrontByUser(userId)
     if (!storefront) {
       const [user] = await db
         .select({ name: users.name })
         .from(users)
         .where(eq(users.id, userId))
         .limit(1)
-
-      const [newStorefront] = await db
+      ;[storefront] = await db
         .insert(storefronts)
         .values({
           userId,
           storeName: user?.name ? `${user.name}'s Store` : undefined,
         })
-        .returning({ id: storefronts.id, storeUrl: storefronts.storeUrl })
-
-      storefront = newStorefront
+        .returning()
     }
 
     // Handle thumbnail upload
@@ -185,31 +167,47 @@ export async function POST(req: NextRequest) {
       hexCode = generateHexCode()
     }
 
-    const [product] = await db
-      .insert(products)
-      .values({
-        storefrontId: storefront.id,
-        categoryId: categoryId ?? null,
-        slug,
-        hexCode,
-        title,
-        description: description ?? null,
-        price: String(price),
-        originalPrice: originalPrice != null ? String(originalPrice) : null,
-        deliveryType,
-        externalUrl: externalUrl ?? null,
-        sellerContactEmail: sellerContactEmail ?? null,
-        sellerContactPhone: sellerContactPhone ?? null,
-        sellerContactWhatsapp: sellerContactWhatsapp ?? null,
-        subscriptionDuration: subscriptionDuration ?? null,
-        stock: stock ?? null,
-        isActive: isActive ?? true,
-        coverImageUrl: coverImageUrl ?? null,
-        coverImageFileId: coverImageFileId ?? null,
-        fileUrl: fileUrl ?? null,
-        fileId: fileId ?? null,
-      })
-      .returning()
+    // Atomic: product insert + denormalized counter recount, so a partial
+     // failure can't leave users.totalProducts out of sync with the products
+     // table.
+    const product = await db.transaction(async (tx) => {
+      const [inserted] = await tx
+        .insert(products)
+        .values({
+          storefrontId: storefront.id,
+          categoryId: categoryId ?? null,
+          slug,
+          hexCode,
+          title,
+          description: description ?? null,
+          price: String(price),
+          originalPrice: originalPrice != null ? String(originalPrice) : null,
+          deliveryType,
+          externalUrl: externalUrl ?? null,
+          sellerContactEmail: sellerContactEmail ?? null,
+          sellerContactPhone: sellerContactPhone ?? null,
+          sellerContactWhatsapp: sellerContactWhatsapp ?? null,
+          subscriptionDuration: subscriptionDuration ?? null,
+          stock: stock ?? null,
+          isActive: isActive ?? true,
+          coverImageUrl: coverImageUrl ?? null,
+          coverImageFileId: coverImageFileId ?? null,
+          fileUrl: fileUrl ?? null,
+          fileId: fileId ?? null,
+        })
+        .returning()
+
+      const [countResult] = await tx
+        .select({ count: count() })
+        .from(products)
+        .where(eq(products.storefrontId, storefront.id))
+      await tx
+        .update(users)
+        .set({ totalProducts: Number(countResult?.count ?? 0), updatedAt: new Date() })
+        .where(eq(users.id, userId))
+
+      return inserted
+    })
 
     // Tags: ensure rows exist, write join table.
     const finalTagIds = await ensureTagIds(tagIds ?? [], tagNames ?? [])
@@ -218,16 +216,6 @@ export async function POST(req: NextRequest) {
     // Gallery: upload any provided images.
     const galleryFiles = parseFileArray(formData, "galleryImages")
     if (galleryFiles.length > 0) await addGalleryImages(product.id, galleryFiles)
-
-    // Update totalProducts counter on user
-    const [countResult] = await db
-      .select({ count: count() })
-      .from(products)
-      .where(eq(products.storefrontId, storefront.id))
-    await db
-      .update(users)
-      .set({ totalProducts: Number(countResult?.count ?? 0), updatedAt: new Date() })
-      .where(eq(users.id, userId))
 
     // Bust caches that now contain stale data: dashboard stats + the
     // public storefront payload that lists this product.

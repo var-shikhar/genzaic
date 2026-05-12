@@ -2,8 +2,8 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 // ─── Icons ─────────────────────────────────────────────────────────────────
-// Six inline SVGs in carousel order: eBook, template grid, video, audio
-// waveform, design palette, code. All strokes use `currentColor` so the
+// Six inline SVGs in marquee order: eBook, template grid, video, audio
+// waveform, design palette, code. Strokes use `currentColor` so the
 // surrounding tile colors them via `text-primary`.
 const ICONS: Array<(props: React.SVGProps<SVGSVGElement>) => React.JSX.Element> = [
   (p) => (
@@ -100,7 +100,7 @@ const ICONS: Array<(props: React.SVGProps<SVGSVGElement>) => React.JSX.Element> 
   ),
 ]
 
-// Negative animation-delays so the icons stagger across the cycle.
+// Negative animation-delays so the inline carousel staggers across the cycle.
 // 6 icons × 1.5s stagger = 9s total cycle.
 const TILE_DELAYS = [
   "[animation-delay:0s]",
@@ -111,13 +111,13 @@ const TILE_DELAYS = [
   "[animation-delay:-7.5s]",
 ] as const
 
-const STAGE_MASK =
-  "[mask-image:linear-gradient(90deg,transparent_0%,black_14%,black_86%,transparent_100%)] " +
-  "[-webkit-mask-image:linear-gradient(90deg,transparent_0%,black_14%,black_86%,transparent_100%)]"
-
 const INLINE_STAGE_MASK =
   "[mask-image:linear-gradient(90deg,transparent_0%,black_18%,black_82%,transparent_100%)] " +
   "[-webkit-mask-image:linear-gradient(90deg,transparent_0%,black_18%,black_82%,transparent_100%)]"
+
+const BELT_STAGE_MASK =
+  "[mask-image:linear-gradient(90deg,transparent_0%,black_16%,black_84%,transparent_100%)] " +
+  "[-webkit-mask-image:linear-gradient(90deg,transparent_0%,black_16%,black_84%,transparent_100%)]"
 
 interface GenzaicLoaderProps {
   /** Mono-uppercase caption shown beneath the wordmark. */
@@ -128,79 +128,91 @@ interface GenzaicLoaderProps {
 }
 
 /**
- * Default block-level loader. Centers itself within its parent.
+ * Block-level loader. Centers itself within its parent.
+ * Composition: marquee icon belt → wordmark with sweeping beam → bar → caption.
  */
 function GenzaicLoaderRoot({
-  label = "Loading the marketplace",
+  label = "Loading",
   brand = "GenZaic",
   className,
 }: GenzaicLoaderProps) {
+  // Two copies of the 6-icon set so the marquee can loop seamlessly.
+  const beltIcons = React.useMemo(() => [...ICONS, ...ICONS], [])
+
   return (
     <div
-      className={cn(
-        "flex flex-col items-center gap-[22px]",
-        className,
-      )}
+      className={cn("relative flex flex-col items-center gap-[18px]", className)}
       role="status"
       aria-live="polite"
     >
       <span className="sr-only">{label}</span>
 
-      {/* Stage: 260×96, halo at center, 6 sliding tiles */}
+      {/* Marquee belt — 280×80 stage, edges fade via mask. */}
       <div
         aria-hidden="true"
         className={cn(
-          "relative w-[260px] h-24 grid place-items-center",
-          STAGE_MASK,
+          "relative overflow-hidden w-[280px] h-20",
+          BELT_STAGE_MASK,
         )}
       >
-        {/* Anchor halo */}
-        <span
-          className={cn(
-            "absolute w-24 h-24 rounded-3xl pointer-events-none",
-            "bg-[radial-gradient(closest-side,hsl(var(--primary)/0.18),transparent_70%)]",
-            "animate-genzaic-halo",
-            "genzaic-halo",
-          )}
-        />
-
-        {/* Sliding tiles */}
-        {ICONS.map((Icon, i) => (
-          <span
-            key={i}
-            className={cn(
-              "absolute top-1/2 left-1/2 -mt-9 -ml-9 w-[72px] h-[72px]",
-              "rounded-2xl grid place-items-center",
-              "bg-gradient-to-b from-white to-[hsl(var(--primary)/0.10)]",
-              "border border-[hsl(var(--primary)/0.20)]",
-              "shadow-[0_8px_24px_hsl(var(--primary)/0.10)]",
-              // Static initial state matches 0% keyframe — no first-frame stacking flash.
-              "translate-x-[144px] scale-[0.72] opacity-0",
-              "animate-genzaic-carousel genzaic-tile",
-              i === 2 && "genzaic-tile--reduced-fallback",
-              TILE_DELAYS[i],
-            )}
-          >
-            <Icon className="w-8 h-8 text-primary" />
-          </span>
-        ))}
+        <div className="absolute top-1/2 left-0 flex gap-[18px] pl-[18px] genzaic-belt animate-genzaic-belt will-change-transform">
+          {beltIcons.map((Icon, i) => (
+            <span
+              key={i}
+              className={cn(
+                "flex-none w-[60px] h-[60px] rounded-[14px] grid place-items-center",
+                "border border-primary/20 text-primary",
+                "bg-gradient-to-b from-background to-primary/10",
+                "shadow-[0_6px_18px_hsl(var(--primary)/0.10)]",
+                "dark:shadow-[0_8px_22px_hsl(var(--primary)/0.28)]",
+                "dark:border-primary/40",
+              )}
+            >
+              <Icon className="w-[26px] h-[26px]" />
+            </span>
+          ))}
+        </div>
       </div>
 
-      {/* Wordmark + dot */}
-      <div className="font-display font-semibold text-[22px] tracking-[-0.01em] flex items-center gap-2.5">
-        <span>{brand}</span>
+      {/* Wordmark zone — beam scans across this row only. */}
+      <div className="relative w-[280px] flex items-center justify-center py-2">
+        {/* Beam layer */}
         <span
-          className={cn(
-            "inline-block w-[7px] h-[7px] rounded-full bg-primary",
-            "animate-genzaic-dot genzaic-dot",
-          )}
-        />
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 overflow-hidden"
+        >
+          <span
+            className={cn(
+              "absolute top-1/2 left-0 h-12 w-[140px] rounded-full blur-[12px]",
+              "bg-gradient-to-r from-transparent via-primary/55 to-transparent",
+              "mix-blend-multiply dark:mix-blend-plus-lighter",
+              "animate-genzaic-beam-sweep genzaic-beam",
+            )}
+          />
+          <span
+            className={cn(
+              "absolute top-1/2 left-[20%] h-px w-[60%]",
+              "bg-gradient-to-r from-transparent via-primary to-transparent",
+              "animate-genzaic-beam-line genzaic-beam-line",
+            )}
+          />
+        </span>
+
+        <div className="relative z-10 inline-flex items-center gap-2.5 font-display font-semibold text-[22px] tracking-[-0.01em]">
+          <span>{brand}</span>
+          <span
+            className={cn(
+              "inline-block w-[7px] h-[7px] rounded-full bg-primary",
+              "animate-genzaic-dot genzaic-dot",
+            )}
+          />
+        </div>
       </div>
 
       {/* Sliding underline bar */}
       <div
         className={cn(
-          "w-[84px] h-[2px] rounded-[2px] [background-size:220%_100%]",
+          "w-[90px] h-[2px] rounded-[2px] [background-size:220%_100%]",
           "bg-[linear-gradient(90deg,transparent,hsl(var(--primary)),transparent)]",
           "animate-genzaic-bar genzaic-bar",
         )}
@@ -216,9 +228,10 @@ function GenzaicLoaderRoot({
 
 /**
  * Inline pill — small carousel + caption. For buttons, list rows, modals.
+ * Unchanged from the previous implementation.
  */
 function GenzaicLoaderInline({
-  label = "Loading the marketplace",
+  label = "Loading",
   className,
 }: GenzaicLoaderProps) {
   return (
@@ -233,10 +246,7 @@ function GenzaicLoaderInline({
       <span className="sr-only">{label}</span>
       <div
         aria-hidden="true"
-        className={cn(
-          "relative w-[110px] h-8",
-          INLINE_STAGE_MASK,
-        )}
+        className={cn("relative w-[110px] h-8", INLINE_STAGE_MASK)}
       >
         <span
           className={cn(
@@ -251,15 +261,15 @@ function GenzaicLoaderInline({
             className={cn(
               "absolute top-1/2 left-1/2 -mt-[13px] -ml-[13px] w-[26px] h-[26px]",
               "rounded-[7px] grid place-items-center",
-              "bg-gradient-to-b from-white to-[hsl(var(--primary)/0.10)]",
-              "border border-[hsl(var(--primary)/0.22)]",
+              "bg-gradient-to-b from-background to-primary/10",
+              "border border-primary/20 text-primary",
               "translate-x-[56px] scale-[0.75] opacity-0",
               "animate-genzaic-carousel-sm genzaic-tile",
               i === 2 && "genzaic-tile--reduced-fallback",
               TILE_DELAYS[i],
             )}
           >
-            <Icon className="w-3.5 h-3.5 text-primary" />
+            <Icon className="w-3.5 h-3.5" />
           </span>
         ))}
       </div>
@@ -271,22 +281,47 @@ function GenzaicLoaderInline({
 }
 
 /**
- * Full-screen overlay. Fills the viewport, uses the same default loader
- * centered against the page background.
+ * Subtle shadcn-style grid backdrop. Two layered linear-gradients form 32×32
+ * grid cells in `currentColor`; a radial mask hollows out the center so the
+ * loader sits on a clean stage and the grid only reads at the edges.
+ */
+function GenzaicGridBackdrop({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "pointer-events-none absolute inset-0",
+        "[background-image:linear-gradient(currentColor_1px,transparent_1px),linear-gradient(90deg,currentColor_1px,transparent_1px)]",
+        "[background-size:32px_32px]",
+        "opacity-[0.035] dark:opacity-[0.06]",
+        "[mask-image:radial-gradient(ellipse_70%_60%_at_center,transparent_0%,rgba(0,0,0,0.45)_35%,black_70%)]",
+        "[-webkit-mask-image:radial-gradient(ellipse_70%_60%_at_center,transparent_0%,rgba(0,0,0,0.45)_35%,black_70%)]",
+        className,
+      )}
+    />
+  )
+}
+
+/**
+ * Full-bleed in-pane loader. Fills its parent column with the brand
+ * background, dropped-out grid backdrop, and the root loader centered.
  */
 function GenzaicLoaderPage({
-  label = "Loading the marketplace",
+  label = "Loading",
   brand,
   className,
 }: GenzaicLoaderProps) {
   return (
     <div
       className={cn(
-        "min-h-[60vh] w-full grid place-items-center bg-background",
+        "relative min-h-[60vh] w-full grid place-items-center bg-background overflow-hidden",
         className,
       )}
     >
-      <GenzaicLoaderRoot label={label} brand={brand} />
+      <GenzaicGridBackdrop />
+      <div className="relative z-10">
+        <GenzaicLoaderRoot label={label} brand={brand} />
+      </div>
     </div>
   )
 }
@@ -294,11 +329,13 @@ function GenzaicLoaderPage({
 type GenzaicLoaderType = typeof GenzaicLoaderRoot & {
   Inline: typeof GenzaicLoaderInline
   Page: typeof GenzaicLoaderPage
+  GridBackdrop: typeof GenzaicGridBackdrop
 }
 
 const GenzaicLoader = GenzaicLoaderRoot as GenzaicLoaderType
 GenzaicLoader.Inline = GenzaicLoaderInline
 GenzaicLoader.Page = GenzaicLoaderPage
+GenzaicLoader.GridBackdrop = GenzaicGridBackdrop
 
 export { GenzaicLoader }
 export type { GenzaicLoaderProps }

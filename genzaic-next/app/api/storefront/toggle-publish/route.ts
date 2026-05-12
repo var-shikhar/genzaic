@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { db, storefronts } from "@/lib/db"
 import { eq } from "drizzle-orm"
 import { invalidatePublicStorefrontBySlug } from "@/lib/data/public-storefront"
+import { getStorefrontByUser } from "@/lib/db/storefront-helpers"
 
 // PATCH /api/storefront/toggle-publish
 export async function PATCH(_req: NextRequest) {
@@ -11,16 +12,7 @@ export async function PATCH(_req: NextRequest) {
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     const userId = session.user.id as string
 
-    const [existing] = await db
-      .select({
-        id: storefronts.id,
-        isPublished: storefronts.isPublished,
-        storeUrl: storefronts.storeUrl,
-      })
-      .from(storefronts)
-      .where(eq(storefronts.userId, userId))
-      .limit(1)
-
+    const existing = await getStorefrontByUser(userId)
     if (!existing) {
       return NextResponse.json({ error: "Storefront not found" }, { status: 404 })
     }

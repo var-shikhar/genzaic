@@ -34,15 +34,15 @@ export function EditorialSection({
   return (
     <section
       className={cn(
-        "grid grid-cols-[80px_1fr] gap-6 py-8 border-b border-border",
+        "grid grid-cols-1 sm:grid-cols-[80px_1fr] gap-4 sm:gap-6 py-8 border-b border-border",
         className,
       )}
     >
-      <div>
+      <div className="text-center sm:text-left">
         <div className="font-display text-5xl font-semibold tracking-[-0.04em] leading-none">
           {renderedNumber}
         </div>
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground mt-3.5">
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground mt-2 sm:mt-3.5">
           {label}
         </div>
       </div>

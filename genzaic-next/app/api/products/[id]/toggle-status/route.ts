@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { db, storefronts, products } from "@/lib/db"
+import { db, products } from "@/lib/db"
 import { eq, and } from "drizzle-orm"
 import { cache, cacheKeys } from "@/lib/cache"
 import { invalidatePublicStorefrontBySlug } from "@/lib/data/public-storefront"
+import { getStorefrontByUser } from "@/lib/db/storefront-helpers"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -16,12 +17,7 @@ export async function PATCH(_req: NextRequest, { params }: RouteContext) {
 
     const { id } = await params
 
-    const [storefront] = await db
-      .select({ id: storefronts.id, storeUrl: storefronts.storeUrl })
-      .from(storefronts)
-      .where(eq(storefronts.userId, userId))
-      .limit(1)
-
+    const storefront = await getStorefrontByUser(userId)
     if (!storefront) return NextResponse.json({ error: "Product not found" }, { status: 404 })
 
     const [existing] = await db

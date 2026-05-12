@@ -1,6 +1,7 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useSession } from "next-auth/react"
 import { getJSON, postJSON } from "@/lib/react-query/fetcher"
 
 export const onboardingKeys = {
@@ -25,16 +26,27 @@ export function useSelectPlan() {
 
 export function useCompleteOnboarding() {
   const qc = useQueryClient()
+  const { update } = useSession()
   return useMutation({
     mutationFn: () => postJSON<undefined, unknown>("/api/onboarding/complete"),
-    onSuccess: () => qc.invalidateQueries({ queryKey: onboardingKeys.status() }),
+    onSuccess: async () => {
+      // Rotate the JWT so `middleware.ts` sees `onboardingComplete: true` on
+      // the next request — otherwise the user can be looped back to /onboarding
+      // until their token naturally refreshes (lib/auth/config.ts).
+      await update({ onboardingComplete: true })
+      qc.invalidateQueries({ queryKey: onboardingKeys.status() })
+    },
   })
 }
 
 export function useSkipOnboarding() {
   const qc = useQueryClient()
+  const { update } = useSession()
   return useMutation({
     mutationFn: () => postJSON<undefined, unknown>("/api/onboarding/skip"),
-    onSuccess: () => qc.invalidateQueries({ queryKey: onboardingKeys.status() }),
+    onSuccess: async () => {
+      await update({ onboardingComplete: true })
+      qc.invalidateQueries({ queryKey: onboardingKeys.status() })
+    },
   })
 }

@@ -3,8 +3,8 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { orders } from "@/lib/db/schema/commerce"
 import { products } from "@/lib/db/schema/catalog"
-import { storefronts } from "@/lib/db/schema/storefronts"
 import { and, eq, gte, sql } from "drizzle-orm"
+import { getStorefrontByUser } from "@/lib/db/storefront-helpers"
 
 export async function GET() {
   const session = await auth()
@@ -15,12 +15,8 @@ export async function GET() {
   since.setDate(since.getDate() - 6)
   since.setHours(0, 0, 0, 0)
 
-  const sf = await db
-    .select({ id: storefronts.id })
-    .from(storefronts)
-    .where(eq(storefronts.userId, userId))
-    .limit(1)
-  const sfId = sf[0]?.id
+  const sf = await getStorefrontByUser(userId)
+  const sfId = sf?.id
 
   // sales = orders with this seller, completed
   const dailySales = await db

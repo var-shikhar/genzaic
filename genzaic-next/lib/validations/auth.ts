@@ -1,5 +1,12 @@
 import { z } from "zod"
 
+/** Shared complexity rule for any new password the user types. */
+export const strongPasswordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[A-Z]/, "Must contain at least one uppercase letter")
+  .regex(/[0-9]/, "Must contain at least one number")
+
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
@@ -8,11 +15,7 @@ export const loginSchema = z.object({
 export const signupApiSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100),
   email: z.string().email("Invalid email address"),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Must contain at least one uppercase letter")
-    .regex(/[0-9]/, "Must contain at least one number"),
+  password: strongPasswordSchema,
   role: z.literal("seller").default("seller"),
 })
 
@@ -38,11 +41,7 @@ export const forgotPasswordSchema = z.object({
 export const resetPasswordSchema = z
   .object({
     token: z.string().min(1),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Must contain at least one uppercase letter")
-      .regex(/[0-9]/, "Must contain at least one number"),
+    password: strongPasswordSchema,
     confirmPassword: z.string(),
   })
   .refine((d) => d.password === d.confirmPassword, {
@@ -53,11 +52,7 @@ export const resetPasswordSchema = z
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Current password is required"),
-    newPassword: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Must contain at least one uppercase letter")
-      .regex(/[0-9]/, "Must contain at least one number"),
+    newPassword: strongPasswordSchema,
     confirmPassword: z.string(),
   })
   .refine((d) => d.newPassword === d.confirmPassword, {

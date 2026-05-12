@@ -46,7 +46,9 @@ export const kyc = pgTable("kyc", {
   vpaHolderName: text("vpa_holder_name"),
 
   accountHolderName: varchar("account_holder_name", { length: 255 }).notNull(),
-  accountNumber: varchar("account_number", { length: 50 }).notNull(),
+  // Length matches the Zod schema (lib/validations/kyc.ts) — Indian bank
+  // account numbers are 9–18 digits.
+  accountNumber: varchar("account_number", { length: 18 }).notNull(),
   ifscCode: varchar("ifsc_code", { length: 20 }).notNull(),
   bankName: varchar("bank_name", { length: 255 }).notNull(),
   pennyDropStatus: pennyDropStatusEnum("penny_drop_status")

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db, users, storefronts, products } from "@/lib/db"
 import { eq, count } from "drizzle-orm"
+import { getStorefrontByUser } from "@/lib/db/storefront-helpers"
 
 // GET /api/onboarding/status - current onboarding state for the user
 export async function GET(_req: NextRequest) {
@@ -35,11 +36,7 @@ export async function GET(_req: NextRequest) {
     if (user.isSeller || user.planType !== "creator") step = Math.max(step, 2)
 
     // Step 2: storefront setup
-    const [storefront] = await db
-      .select({ id: storefronts.id, storeName: storefronts.storeName, storeUrl: storefronts.storeUrl })
-      .from(storefronts)
-      .where(eq(storefronts.userId, userId))
-      .limit(1)
+    const storefront = await getStorefrontByUser(userId)
 
     if (storefront?.storeName || storefront?.storeUrl) step = Math.max(step, 3)
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useSession } from "next-auth/react"
 import { useOptimisticMutation } from "@/lib/react-query/use-optimistic-mutation"
 import { deleteJSON, getJSON, postForm } from "@/lib/react-query/fetcher"
 
@@ -48,6 +49,7 @@ export function useKyc() {
 }
 
 export function useSubmitKyc() {
+  const { update } = useSession()
   return useOptimisticMutation<FormData, KycData, KycData | null>({
     mutationFn: (form) => postForm<KycData>("/api/kyc/", form),
     optimistic: {
@@ -58,13 +60,24 @@ export function useSubmitKyc() {
       },
     },
     invalidateKeys: [kycKeys.current()],
+    onSuccess: (data) => {
+      // Mirror the server-side kycStatus into the JWT so middleware/payout
+      // gates see the new status without forcing a re-login.
+      const kycStatus =
+        data.verificationStatus === "rejected" ? "rejected" : "pending"
+      void update({ kycStatus })
+    },
   })
 }
 
 export function useDeleteKyc() {
   const qc = useQueryClient()
+  const { update } = useSession()
   return useMutation({
     mutationFn: () => deleteJSON("/api/kyc/"),
-    onSuccess: () => qc.invalidateQueries({ queryKey: kycKeys.current() }),
+    onSuccess: async () => {
+      await update({ kycStatus: "not_submitted" })
+      qc.invalidateQueries({ queryKey: kycKeys.current() })
+    },
   })
 }

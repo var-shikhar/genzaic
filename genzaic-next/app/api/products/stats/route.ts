@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { db, storefronts, products } from "@/lib/db"
+import { db, products } from "@/lib/db"
 import { eq, and, sum, count } from "drizzle-orm"
 import { cache, cacheKeys, cacheTTL } from "@/lib/cache"
+import { getStorefrontByUser } from "@/lib/db/storefront-helpers"
 
 // GET /api/products/stats
 //
@@ -18,12 +19,7 @@ export async function GET(_req: NextRequest) {
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     const userId = session.user.id as string
 
-    const [storefront] = await db
-      .select({ id: storefronts.id })
-      .from(storefronts)
-      .where(eq(storefronts.userId, userId))
-      .limit(1)
-
+    const storefront = await getStorefrontByUser(userId)
     if (!storefront) {
       return NextResponse.json({
         totalProducts: 0,

@@ -41,6 +41,7 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle"
 import { getInitials } from "@/lib/utils"
 import { Wordmark } from "@/components/brand/primitives"
+import { RouteLoadingOverlay } from "@/components/layout/RouteLoadingOverlay"
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -214,6 +215,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-background">
+      <RouteLoadingOverlay />
       <Sidebar collapsed={collapsed} onToggle={handleToggle} />
 
       <div className="flex flex-col flex-1 min-w-0">

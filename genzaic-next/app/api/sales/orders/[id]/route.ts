@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth"
 import { db, orders, orderItems, downloadLogs } from "@/lib/db"
 import { eq, and, desc, inArray } from "drizzle-orm"
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 type RouteContext = { params: Promise<{ id: string }> }
 
 // GET /api/sales/orders/[id] - single order detail for the seller
@@ -13,6 +15,9 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     const userId = session.user.id as string
 
     const { id } = await params
+    if (!UUID_RE.test(id)) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 })
+    }
 
     const [order] = await db
       .select()

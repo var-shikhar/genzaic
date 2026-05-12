@@ -199,20 +199,35 @@
 }
 
 /* ─── GenZaic Loader ────────────────────────────────────────────────────── */
-/* Carousel motion — single tile glides through right → center → left.
-   Center dwell (14% of cycle, ≈1.26s) is intentionally less than the
-   16.66% stagger so two icons never both occupy translateX(0) — that
-   eliminates the "default icon being overwritten" overlap. */
-@keyframes genzaic-carousel {
-  0%      { transform: translateX(144px)  scale(0.72); opacity: 0; }
-  5%      { transform: translateX(72px)   scale(0.72); opacity: 0.42; }
-  16.66%  { transform: translateX(72px)   scale(0.72); opacity: 0.42; }
-  22.66%  { transform: translateX(0)      scale(1);    opacity: 1; }
-  36.66%  { transform: translateX(0)      scale(1);    opacity: 1; }
-  42.66%  { transform: translateX(-72px)  scale(0.72); opacity: 0.42; }
-  56.66%  { transform: translateX(-72px)  scale(0.72); opacity: 0.42; }
-  61.66%  { transform: translateX(-144px) scale(0.72); opacity: 0; }
-  100%    { transform: translateX(-144px) scale(0.72); opacity: 0; }
+/* Marquee belt — two copies of the 6-icon set form the track; translating by
+   exactly one set's width (468px = 6 × (60 tile + 18 gap)) seamlessly loops. */
+@keyframes genzaic-belt {
+  from { transform: translate3d(0, -50%, 0); }
+  to   { transform: translate3d(-468px, -50%, 0); }
+}
+
+/* Beam: a soft horizontal blob that scans across the wordmark row. */
+@keyframes genzaic-beam-sweep {
+  0%, 100% { transform: translate3d(-110%, -50%, 0); opacity: 0; }
+  20%      { opacity: 0.85; }
+  50%      { transform: translate3d(300%, -50%, 0); opacity: 0.85; }
+  80%      { opacity: 0.85; }
+}
+
+/* Beam laser line: hairline rule that fades in over the wordmark at midpoint. */
+@keyframes genzaic-beam-line {
+  0%, 100% { opacity: 0; transform: translate3d(-30%, -50%, 0); }
+  50%      { opacity: 1; transform: translate3d(30%, -50%, 0); }
+}
+
+/* Overlay enter/exit fades. */
+@keyframes genzaic-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes genzaic-overlay-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
 /* Inline (small) variant — same percentages, smaller travel + slot scale. */
@@ -248,11 +263,17 @@
 
 @media (prefers-reduced-motion: reduce) {
   .motion-bloom { animation: none !important; }
-  /* Freeze the carousel at center for users who opted out of motion. */
+  /* Freeze all loader motion for users who opted out. */
+  .genzaic-belt,
+  .genzaic-beam,
+  .genzaic-beam-line,
   .genzaic-tile,
   .genzaic-halo,
   .genzaic-dot,
   .genzaic-bar { animation: none !important; }
+  .genzaic-belt {
+    transform: translate3d(-78px, -50%, 0) !important;
+  }
   .genzaic-tile.genzaic-tile--reduced-fallback {
     transform: translateX(0) scale(1) !important;
     opacity: 1 !important;

@@ -201,21 +201,25 @@ export async function POST(req: NextRequest) {
       updatedAt: new Date(),
     }
 
-    let row
-    if (existing) {
-      ;[row] = await db
-        .update(kyc)
-        .set(baseValues)
-        .where(eq(kyc.userId, userId))
-        .returning()
-    } else {
-      ;[row] = await db.insert(kyc).values(baseValues).returning()
-    }
-
-    await db
-      .update(users)
-      .set({ kycStatus: "pending", updatedAt: new Date() })
-      .where(eq(users.id, userId))
+    // Atomic: persist the kyc row + mirror users.kycStatus together so the
+    // user record and the kyc record can never disagree on the current state.
+    const row = await db.transaction(async (tx) => {
+      let inserted
+      if (existing) {
+        ;[inserted] = await tx
+          .update(kyc)
+          .set(baseValues)
+          .where(eq(kyc.userId, userId))
+          .returning()
+      } else {
+        ;[inserted] = await tx.insert(kyc).values(baseValues).returning()
+      }
+      await tx
+        .update(users)
+        .set({ kycStatus: "pending", updatedAt: new Date() })
+        .where(eq(users.id, userId))
+      return inserted
+    })
 
     // ─── Razorpay validations (bank + VPA) ──────────────────────────────────
     const [bankResult, vpaResult] = await Promise.all([
@@ -229,19 +233,22 @@ export async function POST(req: NextRequest) {
 
     const updatedFields = applyValidationResults(bankResult, vpaResult)
 
-    const [finalRow] = await db
-      .update(kyc)
-      .set({ ...updatedFields, updatedAt: new Date() })
-      .where(eq(kyc.userId, userId))
-      .returning()
-
-    // Mirror rejection back to the user record so dashboards reflect it.
-    if (updatedFields.verificationStatus === "rejected") {
-      await db
-        .update(users)
-        .set({ kycStatus: "rejected", updatedAt: new Date() })
-        .where(eq(users.id, userId))
-    }
+    // Atomic: write the Razorpay results + (on rejection) mirror to
+    // users.kycStatus, so the two tables agree on the final outcome.
+    const finalRow = await db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(kyc)
+        .set({ ...updatedFields, updatedAt: new Date() })
+        .where(eq(kyc.userId, userId))
+        .returning()
+      if (updatedFields.verificationStatus === "rejected") {
+        await tx
+          .update(users)
+          .set({ kycStatus: "rejected", updatedAt: new Date() })
+          .where(eq(users.id, userId))
+      }
+      return updated
+    })
 
     return NextResponse.json(finalRow ?? row, { status: existing ? 200 : 201 })
   } catch (error) {

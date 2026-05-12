@@ -5,6 +5,8 @@ import { eq } from "drizzle-orm"
 import { storefrontSchema } from "@/lib/validations/storefront"
 import { uploadToImageKit, deleteFromImageKit, IMAGEKIT_FOLDERS } from "@/lib/imagekit"
 import { invalidatePublicStorefrontBySlug } from "@/lib/data/public-storefront"
+import { getStorefrontByUser } from "@/lib/db/storefront-helpers"
+import { coerceFormData } from "@/lib/api-form-data"
 
 // GET /api/storefront - get the authenticated user's own storefront
 export async function GET(_req: NextRequest) {
@@ -13,12 +15,7 @@ export async function GET(_req: NextRequest) {
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     const userId = session.user.id as string
 
-    const [storefront] = await db
-      .select()
-      .from(storefronts)
-      .where(eq(storefronts.userId, userId))
-      .limit(1)
-
+    const storefront = await getStorefrontByUser(userId)
     if (!storefront) {
       return NextResponse.json({ storefront: null })
     }
@@ -39,14 +36,10 @@ export async function PUT(req: NextRequest) {
 
     const formData = await req.formData()
 
-    const raw: Record<string, unknown> = {}
-    formData.forEach((value, key) => {
-      if (!["profileImage", "coverImage"].includes(key)) {
-        if (value === "true") raw[key] = true
-        else if (value === "false") raw[key] = false
-        else if (value === "null" || value === "") raw[key] = null
-        else raw[key] = value
-      }
+    const raw = coerceFormData(formData, {
+      fileKeys: ["profileImage", "coverImage"],
+      emptyAs: "null",
+      treatStringNullAsNull: true,
     })
 
     const parsed = storefrontSchema.safeParse(raw)
@@ -57,12 +50,7 @@ export async function PUT(req: NextRequest) {
       )
     }
 
-    // Get existing storefront
-    const [existing] = await db
-      .select()
-      .from(storefronts)
-      .where(eq(storefronts.userId, userId))
-      .limit(1)
+    const existing = await getStorefrontByUser(userId)
 
     // Handle profile image
     let profileImageUrl = existing?.profileImageUrl ?? null

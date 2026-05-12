@@ -34,8 +34,6 @@ export const payoutKeys = {
   lists: () => [...payoutKeys.all, "list"] as const,
   list: (filters: { page?: number; limit?: number; status?: string }) =>
     [...payoutKeys.lists(), filters] as const,
-  details: () => [...payoutKeys.all, "detail"] as const,
-  detail: (id: string) => [...payoutKeys.details(), id] as const,
 } as const
 
 export function usePayoutStats() {
@@ -54,13 +52,5 @@ export function usePayouts(filters: { page?: number; limit?: number; status?: st
       if (status) params.set("status", status)
       return getJSON<{ payouts: Payout[]; total: number }>(`/api/payouts/?${params}`)
     },
-  })
-}
-
-export function usePayout(id: string) {
-  return useQuery({
-    queryKey: payoutKeys.detail(id),
-    queryFn: () => getJSON<Payout>(`/api/payouts/${id}`),
-    enabled: Boolean(id),
   })
 }

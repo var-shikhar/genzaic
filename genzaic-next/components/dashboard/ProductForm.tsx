@@ -48,9 +48,7 @@ import { cn } from "@/lib/utils"
 import { getApiErrorMessage } from "@/lib/api-error"
 import { TOAST } from "@/lib/brand/voice"
 
-export interface ProductWithRelations extends Product {
-  categoryId?: string | null
-  hexCode?: string | null
+export type ProductWithRelations = Product & {
   tags?: { id: string; name: string }[]
   gallery?: ExistingGalleryImage[]
 }

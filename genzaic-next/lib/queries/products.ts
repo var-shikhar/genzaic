@@ -1,37 +1,14 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import type { Product as DbProduct } from "@/lib/db/schema"
 import { deleteJSON, getJSON, patchJSON, postForm, putForm } from "@/lib/react-query/fetcher"
 
-export interface Product {
-  id: string
-  storefrontId: string
-  categoryId?: string | null
-  title: string
-  slug?: string | null
-  hexCode?: string | null
-  description?: string | null
-  price: string
-  originalPrice?: string | null
-  fileUrl?: string | null
-  fileId?: string | null
-  coverImageUrl?: string | null
-  coverImageFileId?: string | null
-  deliveryType: "download" | "external_link" | "manual"
-  externalUrl?: string | null
-  sellerContactEmail?: string | null
-  sellerContactPhone?: string | null
-  sellerContactWhatsapp?: string | null
-  subscriptionDuration?: string | null
-  seoTitle?: string | null
-  seoKeywords?: string | null
-  isActive: boolean
-  stock?: number | null
-  downloads: number
-  views: number
-  createdAt: string
-  updatedAt: string
-  // Detail-only fields populated by GET /api/products/[id]:
+/** Client-side product: the DB row plus optional detail-view extras
+ *  (gallery + tags) populated by `GET /api/products/[id]`. Timestamps
+ *  arrive as JSON strings on the wire — the Drizzle inferred type names
+ *  them `Date`, but consumers always wrap with `new Date(...)`. */
+export type Product = DbProduct & {
   gallery?: { id: string; imageUrl: string }[]
   tags?: { id: string; name: string }[]
 }
@@ -192,7 +169,12 @@ export function useToggleProductStatus() {
       ctx?.snapshots.forEach(([key, value]) => qc.setQueryData(key as readonly unknown[], value))
     },
     onSettled: (_data, _err, id) => {
+      // Toggling active status changes which products appear on the dashboard
+      // and which count toward `activeProducts` in stats. Invalidate both
+      // alongside the detail key.
       qc.invalidateQueries({ queryKey: productKeys.detail(id) })
+      qc.invalidateQueries({ queryKey: productKeys.lists() })
+      qc.invalidateQueries({ queryKey: productKeys.stats() })
     },
   })
 }

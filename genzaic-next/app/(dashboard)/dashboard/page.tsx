@@ -7,7 +7,6 @@ import { EditorsHeadline, Dateline, MonoLabel } from "@/components/brand/primiti
 import { OnYourDesk } from "@/components/dashboard/OnYourDesk"
 import { ReaderMail } from "@/components/dashboard/ReaderMail"
 import { WeekStrip } from "@/components/dashboard/WeekStrip"
-import { NewsstandMention } from "@/components/dashboard/NewsstandMention"
 import { formatCurrency } from "@/lib/utils"
 
 export default function EditorsDeskPage() {
@@ -58,8 +57,6 @@ export default function EditorsDeskPage() {
       </div>
 
       <WeekStrip />
-
-      <NewsstandMention />
 
       <MonoLabel className="block text-center pt-4 opacity-50">— end —</MonoLabel>
     </div>

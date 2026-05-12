@@ -1,47 +1,12 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import type { Product } from "@/lib/db/schema"
+import type { Product, Storefront as DbStorefront } from "@/lib/db/schema"
 import { getJSON, patchJSON, putForm } from "@/lib/react-query/fetcher"
 
-export interface Storefront {
-  id: string
-  userId: string
-  storeUrl?: string | null
-  storeName?: string | null
-  description?: string | null
-  profileImageUrl?: string | null
-  coverImageUrl?: string | null
-  tagline?: string | null
-  themeId: string
-  primaryColor: string
-  fontFamily: string
-  isPublished: boolean
-  platformFeeMode: "seller" | "buyer"
-  upiId?: string | null
-  contactEmail?: string | null
-  contactPhone?: string | null
-  contactWhatsapp?: string | null
-  socialInstagram?: string | null
-  socialTwitter?: string | null
-  socialYoutube?: string | null
-  socialWebsite?: string | null
-  seoTitle?: string | null
-  seoDescription?: string | null
-  seoKeywords?: string | null
-  // Imprint (Editorial OS)
-  imprintSlug?: string | null
-  imprintName?: string | null
-  imprintTagline?: string | null
-  imprintEditorsNote?: string | null
-  imprintCoverPreset?: "ink" | "sunlit" | "stamp" | "studio" | "archive" | "riso"
-  imprintTypePairing?: "house" | "press" | "studio" | "plain"
-  imprintAccent?: "iris" | "sage" | "ink_blue" | "plum" | "ochre" | "slate"
-  createdAt: string
-  updatedAt: string
-}
+export type Storefront = DbStorefront
 
-export interface PublicStorefront extends Storefront {
+export type PublicStorefront = Storefront & {
   products: Product[]
   seller?: {
     id: string
@@ -56,8 +21,6 @@ export const storefrontKeys = {
   all: ["storefront"] as const,
   current: () => [...storefrontKeys.all, "current"] as const,
   public: (slug: string) => [...storefrontKeys.all, "public", slug] as const,
-  slugCheck: (slug: string) => [...storefrontKeys.all, "slug-check", slug] as const,
-  stats: () => [...storefrontKeys.all, "stats"] as const,
 } as const
 
 export function useStorefront() {
@@ -100,23 +63,3 @@ export function useTogglePublish() {
   })
 }
 
-export function useCheckSlug() {
-  const qc = useQueryClient()
-  return {
-    check: (slug: string) =>
-      qc.fetchQuery({
-        queryKey: storefrontKeys.slugCheck(slug),
-        queryFn: () => getJSON<{ available: boolean }>(`/api/storefront/check-slug/${slug}`),
-      }),
-  }
-}
-
-export function useStorefrontStats() {
-  return useQuery({
-    queryKey: storefrontKeys.stats(),
-    queryFn: () =>
-      getJSON<{ totalViews: number; totalRevenue: string; totalOrders: number }>(
-        "/api/storefront/stats",
-      ),
-  })
-}

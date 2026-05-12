@@ -7,7 +7,9 @@ import {
   timestamp,
   index,
   uniqueIndex,
+  check,
 } from "drizzle-orm/pg-core"
+import { sql } from "drizzle-orm"
 import {
   platformFeeModeEnum,
   coverPresetEnum,
@@ -77,5 +79,11 @@ export const storefronts = pgTable(
     index("storefronts_is_published_idx").on(t.isPublished),
     index("storefronts_created_at_idx").on(t.createdAt),
     uniqueIndex("storefronts_imprint_slug_idx").on(t.imprintSlug),
+    // Mirrors the Zod regex in lib/validations/storefront.ts so a direct DB
+    // insert can't bypass the slug format rule.
+    check(
+      "storefronts_imprint_slug_format",
+      sql`${t.imprintSlug} IS NULL OR ${t.imprintSlug} ~ '^[a-z0-9][a-z0-9-]*$'`,
+    ),
   ],
 )

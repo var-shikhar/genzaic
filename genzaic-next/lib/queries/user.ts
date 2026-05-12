@@ -1,6 +1,6 @@
 "use client"
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import { useOptimisticMutation } from "@/lib/react-query/use-optimistic-mutation"
 import { getJSON, putForm, putJSON } from "@/lib/react-query/fetcher"
 
@@ -26,7 +26,6 @@ export interface UserProfile {
 export const userKeys = {
   all: ["user"] as const,
   profile: () => [...userKeys.all, "profile"] as const,
-  storeUrlCheck: (slug: string) => [...userKeys.all, "store-url", slug] as const,
 } as const
 
 export function useProfile() {
@@ -48,15 +47,4 @@ export function useChangePassword() {
     mutationFn: (input: { currentPassword: string; newPassword: string }) =>
       putJSON<typeof input, { message: string }>("/api/user/password", input),
   })
-}
-
-export function useCheckStoreUrl() {
-  const qc = useQueryClient()
-  return {
-    check: (storeUrl: string) =>
-      qc.fetchQuery({
-        queryKey: userKeys.storeUrlCheck(storeUrl),
-        queryFn: () => getJSON<{ available: boolean }>(`/api/user/check-store-url/${storeUrl}`),
-      }),
-  }
 }

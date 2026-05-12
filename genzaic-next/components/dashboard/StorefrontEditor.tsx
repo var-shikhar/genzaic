@@ -421,7 +421,7 @@ export function StorefrontEditor() {
               </div>
 
               {/* Logo */}
-              <div className="grid grid-cols-[120px_1fr] gap-4 items-start pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-4 items-start pt-2">
                 <div>
                   <Label className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
                     Logo
