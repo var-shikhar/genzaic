@@ -56,7 +56,7 @@ export default function AboutPage() {
             </span>
           </h1>
           <p className="text-lg text-muted-foreground leading-relaxed">
-            GenZaic is India's premier digital product marketplace built
+            GenZaic is India&apos;s premier digital product marketplace built
             specifically for the next generation of creators. We believe every
             creator deserves a fair shot at building a sustainable digital
             business.
@@ -72,7 +72,7 @@ export default function AboutPage() {
               Our Mission
             </h2>
             <p className="text-muted-foreground text-lg leading-relaxed mb-6">
-              We're on a mission to empower Indian creators to monetize their
+              We&apos;re on a mission to empower Indian creators to monetize their
               knowledge, skills, and creativity through a platform that truly
               understands the Indian market — from UPI payments to GST
               compliance.

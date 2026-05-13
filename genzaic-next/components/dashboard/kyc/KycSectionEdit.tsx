@@ -86,7 +86,6 @@ function KycSectionEditInner({
   const onSubmit = async (values: KycInput) => {
     const fd = new FormData()
     Object.entries(values).forEach(([key, value]) => {
-      if (key === "confirmAccountNumber") return
       if (value !== undefined && value !== null && value !== "") {
         fd.append(key, String(value))
       }

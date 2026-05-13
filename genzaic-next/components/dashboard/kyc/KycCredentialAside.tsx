@@ -127,7 +127,7 @@ export function KycCredentialAside({
           — Live preview —
         </p>
         <h3 className="font-display text-lg leading-tight">
-          What we're <em className="text-primary not-italic">building</em>.
+          What we&apos;re <em className="text-primary not-italic">building</em>.
         </h3>
         <p className="text-xs text-muted-foreground leading-relaxed">
           A signed credential bundle that unlocks payouts above ₹10k. We never

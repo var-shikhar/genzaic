@@ -132,7 +132,6 @@ function KycWizardInner({ existing }: KycWizardProps) {
 
     const fd = new FormData()
     Object.entries(values).forEach(([key, value]) => {
-      if (key === "confirmAccountNumber") return
       if (value !== undefined && value !== null && value !== "") {
         fd.append(key, String(value))
       }
