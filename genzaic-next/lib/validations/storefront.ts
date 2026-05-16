@@ -51,7 +51,48 @@ export const storefrontSchema = z.object({
   imprintCoverPreset: imprintCoverPresetSchema.optional(),
   imprintTypePairing: imprintTypePairingSchema.optional(),
   imprintAccent: imprintAccentSchema.optional(),
+
+  // Showcase (nullable so clients can clear it by sending null)
+  showcase: z.lazy(() => showcaseSchema).nullable().optional(),
 })
+
+// ─── Showcase ────────────────────────────────────────────────────────────────
+
+export const showcasePlatformSchema = z.enum(["youtube", "instagram"])
+export const showcaseKindSchema = z.enum([
+  "video",
+  "short",
+  "reel",
+  "post",
+  "tv",
+])
+
+export const showcaseItemSchema = z.object({
+  url: z.string().url(),
+  normalizedUrl: z.string().url(),
+  embedUrl: z.string().url(),
+  platform: showcasePlatformSchema,
+  kind: showcaseKindSchema,
+  externalId: z.string().min(1).max(64),
+  caption: z.string().max(80).optional(),
+})
+
+export const showcaseSchema = z
+  .object({
+    title: z.string().min(1).max(60).default("Watch & Follow"),
+    subtitle: z
+      .string()
+      .max(140)
+      .default("Get to know the studio behind the products"),
+    featured: showcaseItemSchema.nullable(),
+    items: z.array(showcaseItemSchema).max(4).default([]),
+  })
+  .refine((s) => s.featured !== null || s.items.length === 0, {
+    message: "Featured slot is required when any 'more' items are set",
+  })
+
+export type ShowcaseItemInput = z.infer<typeof showcaseItemSchema>
+export type ShowcaseInput = z.infer<typeof showcaseSchema>
 
 export const checkSlugSchema = z.object({
   slug: z

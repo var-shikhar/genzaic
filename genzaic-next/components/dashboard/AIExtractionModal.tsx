@@ -78,7 +78,6 @@ export function AIExtractionModal({ open, onClose, onExtract }: AIExtractionModa
             <Button
               onClick={handleExtract}
               disabled={isLoading || !text.trim()}
-              shape="pill"
               className="gap-2"
             >
               {isLoading ? (

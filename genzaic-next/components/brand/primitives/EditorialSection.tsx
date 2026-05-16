@@ -34,15 +34,31 @@ export function EditorialSection({
   return (
     <section
       className={cn(
-        "grid grid-cols-1 sm:grid-cols-[80px_1fr] gap-4 sm:gap-6 py-8 border-b border-border",
+        "grid grid-cols-1 sm:grid-cols-[80px_1fr] gap-6 sm:gap-6 py-10 sm:py-8 border-b border-border",
         className,
       )}
     >
       <div className="text-center sm:text-left">
-        <div className="font-display text-5xl font-semibold tracking-[-0.04em] leading-none">
-          {renderedNumber}
+        <div className="relative inline-flex items-center justify-center">
+          {/* Mobile-only halftone-dot backdrop — printerly editorial feel,
+              dots radiate from center and fade at the edges via an
+              elliptical mask. Wider-than-tall so the halo doesn't bleed
+              into the section label sitting beneath the number. */}
+          <span
+            aria-hidden
+            className={cn(
+              "sm:hidden pointer-events-none absolute -inset-[52px] rounded-full",
+              "[background-image:radial-gradient(circle,hsl(var(--primary)/0.55)_1px,transparent_1.4px)]",
+              "[background-size:7px_7px]",
+              "[mask-image:radial-gradient(ellipse_72%_50%_at_center,black_36%,transparent_88%)]",
+              "[-webkit-mask-image:radial-gradient(ellipse_72%_50%_at_center,black_36%,transparent_88%)]",
+            )}
+          />
+          <div className="relative font-display text-5xl font-semibold tracking-[-0.04em] leading-none">
+            {renderedNumber}
+          </div>
         </div>
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground mt-2 sm:mt-3.5">
+        <div className="relative z-[1] font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground mt-6 sm:mt-3.5">
           {label}
         </div>
       </div>

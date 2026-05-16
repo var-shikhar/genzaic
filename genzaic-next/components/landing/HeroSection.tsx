@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Spotlight } from "@/components/ui/spotlight"
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect"
+import { useLandingCta } from "@/hooks/use-landing-cta"
 
 const heroBenefits = [
   "Zero setup fees",
@@ -21,6 +22,7 @@ const heroBenefits = [
 
 export default function HeroSection() {
   const heroRef = useRef<HTMLDivElement>(null)
+  const cta = useLandingCta()
   const { scrollYProgress } = useScroll({
     target: heroRef,
     offset: ["start start", "end start"],
@@ -116,8 +118,8 @@ export default function HeroSection() {
               asChild
               className="gradient-primary hover:opacity-90 text-sm sm:text-base px-6 sm:px-8 h-11 sm:h-12 w-full sm:w-auto shadow-lg shadow-purple-500/30 group"
             >
-              <Link href="/signup">
-                Start Selling Free
+              <Link href={cta.href}>
+                {cta.label}
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>

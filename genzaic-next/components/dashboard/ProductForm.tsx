@@ -201,34 +201,32 @@ export function ProductForm({ product }: ProductFormProps) {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
           {/* Title block */}
           <div className="pb-4 border-b border-border">
-            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground flex space-x-4 items-center">
-              {/* Back link */}
-              <button
-                type="button"
-                onClick={() => router.push("/dashboard/products")}
-                className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 transition-colors"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                Back to products
-              </button>
-
+            {/* Back link sits on its own row on mobile so the meta line below
+                can show full identifiers without truncating. */}
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard/products")}
+              className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 transition-colors"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back to products
+            </button>
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 mt-2">
               {product.hexCode && (
                 <>
-                  <span className="text-primary">#{product.hexCode}</span>{" "}
-                  ·{" "}
+                  <span className="text-primary">#{product.hexCode}</span>
+                  <span aria-hidden>·</span>
                 </>
               )}
-              {dateline}
+              <span>{dateline}</span>
+              <span aria-hidden>·</span>
               {isActive ? (
-                <>
-                  {" "}
-                  · <span className="text-primary">Live</span>
-                </>
+                <span className="text-primary">Live</span>
               ) : (
-                <> · Draft</>
+                <span>Draft</span>
               )}
             </div>
-            <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-[-0.035em] leading-[1.05] mt-1.5">
+            <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-[-0.035em] leading-[1.05] mt-2">
               {liveTitle?.trim() || (
                 <span className="text-muted-foreground italic">
                   Untitled product
@@ -281,7 +279,6 @@ export function ProductForm({ product }: ProductFormProps) {
                 <Button
                   type="button"
                   variant="paper"
-                  shape="pill"
                   size="sm"
                   onClick={() => setAiModalOpen(true)}
                   className="gap-2"
@@ -291,7 +288,6 @@ export function ProductForm({ product }: ProductFormProps) {
                 </Button>
                 <Button
                   type="submit"
-                  shape="pill"
                   size="sm"
                   disabled={isPending}
                 >

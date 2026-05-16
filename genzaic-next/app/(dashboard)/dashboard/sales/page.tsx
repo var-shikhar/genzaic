@@ -1,19 +1,20 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, useRef, useCallback } from "react"
 import Image from "next/image"
+import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { format } from "date-fns"
 import {
   Search, Download,
-  Eye, FileText, X, Package, Mail, Phone,
+  Eye, FileText, X, Package, Mail, Phone, User,
   CheckCircle2, XCircle, AlertCircle, ArrowUpDown, Filter, Calendar,
 } from "lucide-react"
 import { EditorsHeadline, EyebrowLabel, MonoLabel } from "@/components/brand/primitives"
 import { Pinstripe } from "@/components/brand/motifs"
 import { toast } from "sonner"
 import {
-  useSalesStats, useOrders, useRecentOrders, useDownloadLogs,
+  useSalesStats, useOrders, useRecentOrders, useDownloadLogs, useOrder,
   type SalesOrder,
 } from "@/lib/queries/sales"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -43,6 +44,10 @@ const statusIcons: Record<string, React.ElementType> = {
 }
 
 export default function SalesPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const urlOrderId = searchParams.get("orderId")
+
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [sortBy, setSortBy] = useState("newest")
@@ -52,6 +57,36 @@ export default function SalesPage() {
   const { data: ordersData, isLoading: ordersLoading } = useOrders({})
   const { data: recentOrders, isLoading: recentLoading } = useRecentOrders()
   const { data: downloadLogs, isLoading: logsLoading } = useDownloadLogs({})
+  // Fall back to a single-order fetch when the deep-linked order isn't on
+  // page 1 of the paginated list (rare but possible).
+  const { data: deepLinkedOrder } = useOrder(urlOrderId ?? "")
+
+  // Apply the ?orderId= deep link once on mount. Prefer the order from the
+  // already-loaded list to avoid a redundant fetch; fall back to the
+  // single-order endpoint when the list doesn't include it.
+  const deepLinkAppliedRef = useRef(false)
+  useEffect(() => {
+    if (deepLinkAppliedRef.current || !urlOrderId) return
+    const fromList = ordersData?.orders.find((o) => o.id === urlOrderId)
+    if (fromList) {
+      setSelectedOrder(fromList)
+      deepLinkAppliedRef.current = true
+      return
+    }
+    if (deepLinkedOrder && deepLinkedOrder.id === urlOrderId) {
+      setSelectedOrder(deepLinkedOrder)
+      deepLinkAppliedRef.current = true
+    }
+  }, [urlOrderId, ordersData, deepLinkedOrder])
+
+  // Close the order detail sheet AND strip the ?orderId= param so the
+  // deep-link doesn't re-trigger on the next render / back-nav.
+  const closeOrderSheet = useCallback(() => {
+    setSelectedOrder(null)
+    if (urlOrderId) {
+      router.replace("/dashboard/sales", { scroll: false })
+    }
+  }, [urlOrderId, router])
 
   const handleExportCSV = () => {
     const rows = ordersData?.orders ?? []
@@ -122,7 +157,7 @@ export default function SalesPage() {
             Every sale a line entry, every reader noted.
           </p>
         </div>
-        <Button variant="paper" shape="pill" onClick={handleExportCSV} disabled={ordersLoading || !ordersData?.orders.length} className="relative">
+        <Button variant="paper" onClick={handleExportCSV} disabled={ordersLoading || !ordersData?.orders.length} className="relative">
           <Download className="w-4 h-4" />
           Export CSV
         </Button>
@@ -253,7 +288,18 @@ export default function SalesPage() {
                               <Button variant="ghost" size="icon" onClick={() => setSelectedOrder(order)}>
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => toast.success(`Invoice for ${order.id.slice(0, 8)} downloaded!`)}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Download invoice"
+                                onClick={() =>
+                                  window.open(
+                                    `/api/checkout/order/${order.id}/invoice`,
+                                    "_blank",
+                                    "noopener,noreferrer",
+                                  )
+                                }
+                              >
                                 <Download className="w-4 h-4" />
                               </Button>
                             </div>
@@ -334,30 +380,57 @@ export default function SalesPage() {
               {logsLoading ? (
                 <div className="p-6 space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12" />)}</div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Product</TableHead>
-                      <TableHead>Buyer</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Downloaded At</TableHead>
-                      <TableHead>IP Address</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Mobile: stacked cards (the 5-column table cannot fit a phone). */}
+                  <ul className="md:hidden divide-y divide-border">
                     {(downloadLogs?.logs ?? []).map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell className="font-medium">{log.productTitle}</TableCell>
-                        <TableCell>{log.buyerName}</TableCell>
-                        <TableCell className="text-muted-foreground">{log.buyerEmail}</TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {format(new Date(log.downloadedAt), "dd MMM yyyy, hh:mm a")}
-                        </TableCell>
-                        <TableCell className="font-mono text-sm text-muted-foreground">{log.ipAddress || "N/A"}</TableCell>
-                      </TableRow>
+                      <li key={log.id} className="p-4 space-y-2">
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="font-medium text-sm leading-tight break-words flex-1 min-w-0">
+                            {log.productTitle}
+                          </p>
+                          <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground shrink-0">
+                            {format(new Date(log.downloadedAt), "dd MMM")}
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground space-y-0.5">
+                          <p className="truncate"><span className="text-foreground">{log.buyerName}</span> · {log.buyerEmail}</p>
+                          <p className="font-mono">
+                            {format(new Date(log.downloadedAt), "hh:mm a")} · {log.ipAddress || "N/A"}
+                          </p>
+                        </div>
+                      </li>
                     ))}
-                  </TableBody>
-                </Table>
+                  </ul>
+
+                  {/* Desktop: full table. */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Product</TableHead>
+                          <TableHead>Buyer</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Downloaded At</TableHead>
+                          <TableHead>IP Address</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(downloadLogs?.logs ?? []).map((log) => (
+                          <TableRow key={log.id}>
+                            <TableCell className="font-medium">{log.productTitle}</TableCell>
+                            <TableCell>{log.buyerName}</TableCell>
+                            <TableCell className="text-muted-foreground">{log.buyerEmail}</TableCell>
+                            <TableCell className="text-muted-foreground text-sm">
+                              {format(new Date(log.downloadedAt), "dd MMM yyyy, hh:mm a")}
+                            </TableCell>
+                            <TableCell className="font-mono text-sm text-muted-foreground">{log.ipAddress || "N/A"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               )}
               {!logsLoading && !(downloadLogs?.logs ?? []).length && (
                 <div className="py-12 text-center">
@@ -378,19 +451,23 @@ export default function SalesPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setSelectedOrder(null)}
               className="fixed inset-0 bg-black/50 z-50"
             />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-lg md:w-full bg-card rounded-2xl shadow-xl z-50 overflow-hidden"
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={closeOrderSheet}
             >
-              <div className="p-6">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-lg max-h-[90vh] overflow-hidden bg-card rounded-2xl shadow-xl"
+              >
+                <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold">Order Details</h2>
-                  <Button variant="ghost" size="icon" onClick={() => setSelectedOrder(null)}>
+                  <Button variant="ghost" size="icon" onClick={closeOrderSheet}>
                     <X className="w-5 h-5" />
                   </Button>
                 </div>
@@ -442,7 +519,7 @@ export default function SalesPage() {
                       <h3 className="font-semibold mb-3">Buyer Information</h3>
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground w-14">Name:</span>
+                          <User className="w-4 h-4 text-muted-foreground" />
                           <span>{selectedOrder.buyerName}</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -496,8 +573,13 @@ export default function SalesPage() {
                 <div className="mt-6 flex gap-3">
                   <Button
                     className="flex-1"
-                    shape="pill"
-                    onClick={() => { toast.success("— Invoice filed."); setSelectedOrder(null) }}
+                    onClick={() =>
+                      window.open(
+                        `/api/checkout/order/${selectedOrder.id}/invoice`,
+                        "_blank",
+                        "noopener,noreferrer",
+                      )
+                    }
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     Download Invoice
@@ -505,7 +587,8 @@ export default function SalesPage() {
                   <Button variant="outline" onClick={() => setSelectedOrder(null)}>Close</Button>
                 </div>
               </div>
-            </motion.div>
+              </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>

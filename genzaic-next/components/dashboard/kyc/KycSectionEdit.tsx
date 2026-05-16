@@ -141,7 +141,6 @@ function KycSectionEditInner({
           <Button
             type="button"
             variant="outline"
-            shape="pill"
             onClick={onCancel}
             disabled={isSubmitting}
             className="gap-2"
@@ -151,7 +150,6 @@ function KycSectionEditInner({
           </Button>
           <Button
             type="submit"
-            shape="pill"
             disabled={isSubmitting}
             className="gap-2"
           >

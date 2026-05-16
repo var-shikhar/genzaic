@@ -64,7 +64,7 @@ export default function MyPurchasesPage() {
                   <div className="flex items-center gap-2 shrink-0">
                     {order.deliveryType === "download" && order.downloadLink && (
                       <Button asChild size="sm" className="gradient-primary text-white gap-1">
-                        <Link href={`/download/${order.id}`}>
+                        <Link href={`/my-purchases/${order.id}`}>
                           <Download className="h-3.5 w-3.5" /> Download
                         </Link>
                       </Button>

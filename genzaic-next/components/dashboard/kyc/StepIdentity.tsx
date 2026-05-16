@@ -47,7 +47,7 @@ export function StepIdentity() {
         {/* Two-column on ≥sm: number input fills the left column, the
             document drop sits in a fixed-width right column so it never
             balloons across half the page. Stacks on mobile. */}
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_200px] gap-5 sm:gap-6 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_350px] gap-5 sm:gap-6 items-start">
           <div>
             <Label className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
               PAN number
@@ -62,9 +62,7 @@ export function StepIdentity() {
                   placeholder="ABCDE1234F"
                   maxLength={10}
                   value={field.value ?? ""}
-                  onChange={(e) =>
-                    field.onChange(e.target.value.toUpperCase())
-                  }
+                  onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                   aria-invalid={!!formState.errors.panNumber}
                 />
               )}
@@ -85,6 +83,7 @@ export function StepIdentity() {
               fileName={panFile?.name ?? null}
               isPdf={panFile ? panIsPdf : false}
               onPick={(f) => stageFile("pan", f)}
+              hasAspect={false}
               helpText={
                 panExistingUrl && !panFile
                   ? "Previous upload — re-upload to replace"
@@ -101,7 +100,7 @@ export function StepIdentity() {
         label="Identity — Aadhaar"
         deck="Required for identity verification. Shown only as last 4 digits anywhere outside this form."
       >
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_200px] gap-5 sm:gap-6 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_350px] gap-5 sm:gap-6 items-start">
           <div>
             <Label className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
               Aadhaar number
@@ -141,7 +140,9 @@ export function StepIdentity() {
                         input.value.slice(end)
                       ).slice(0, 12)
                       input.value = next
-                      aadhaarReg.onChange({ target: input } as unknown as React.ChangeEvent<HTMLInputElement>)
+                      aadhaarReg.onChange({
+                        target: input,
+                      } as unknown as React.ChangeEvent<HTMLInputElement>)
                     }
                   }}
                   aria-invalid={!!formState.errors.aadhaarNumber}
@@ -164,6 +165,7 @@ export function StepIdentity() {
               fileName={aadhaarFile?.name ?? null}
               isPdf={aadhaarFile ? aadhaarIsPdf : false}
               onPick={(f) => stageFile("aadhaar", f)}
+              hasAspect={false}
               helpText={
                 aadhaarExistingUrl && !aadhaarFile
                   ? "Previous upload — re-upload to replace"

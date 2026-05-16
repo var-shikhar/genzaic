@@ -196,7 +196,7 @@ export default function SettingsPage() {
                 <FormLabel>Email</FormLabel>
                 <Input value={user?.email ?? ""} disabled className="bg-muted" />
               </div>
-              <Button type="submit" shape="pill" disabled={isUpdating}>
+              <Button type="submit" disabled={isUpdating}>
                 {isUpdating ? "Saving..." : "Save Changes"}
               </Button>
             </form>
@@ -340,7 +340,7 @@ export default function SettingsPage() {
             </Label>
           </RadioGroup>
 
-          <Button onClick={handleSavePlatformFee} disabled={isSavingFee} shape="pill">
+          <Button onClick={handleSavePlatformFee} disabled={isSavingFee}>
             {isSavingFee ? "Saving..." : "Save Fee Settings"}
           </Button>
         </CardContent>

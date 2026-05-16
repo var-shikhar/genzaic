@@ -12,11 +12,9 @@ import {
   useStorefront,
   useUpdateStorefront,
   useCheckSlug,
-  useStorefrontStats,
 } from "@/lib/queries/storefront"
 import { useProducts } from "@/lib/queries/products"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
-import { formatCurrency } from "@/lib/utils"
 import { GenzaicLoader } from "@/components/ui/genzaic-loader"
 import { PublishStatusBadge } from "@/components/dashboard/PublishStatusBadge"
 import { PublishToShareDialog } from "@/components/dashboard/PublishToShareDialog"
@@ -25,6 +23,9 @@ import {
   imprintTypePairingSchema,
   imprintAccentSchema,
 } from "@/lib/validations/storefront"
+import { ShowcaseFields } from "@/components/dashboard/storefront/ShowcaseFields"
+import type { StorefrontShowcase } from "@/lib/showcase/types"
+import { parseShowcaseUrl } from "@/lib/showcase/parse-url"
 import {
   StorefrontPreview,
   type PreviewProduct,
@@ -177,15 +178,26 @@ export function StorefrontEditor() {
   })
 
   // Logo + cover image local state (Files staged for upload, plus blob previews).
+  // The "removed" flags track an intent to delete a previously-saved image; they
+  // gate display locally and are sent to the API on save so the persisted row +
+  // the ImageKit file can be nulled out.
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [logoRemoved, setLogoRemoved] = useState(false)
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
+  const [coverRemoved, setCoverRemoved] = useState(false)
   const blobUrls = useRef<string[]>([])
 
   // Publish-first modal state — opens when the seller clicks "View store"
   // while the storefront is still in draft.
   const [publishDialogOpen, setPublishDialogOpen] = useState(false)
+
+  // Showcase state lives outside react-hook-form because it's a nested
+  // structure that we serialize as JSON in the FormData submit.
+  const [showcase, setShowcase] = useState<StorefrontShowcase | null>(
+    sf?.showcase ?? null,
+  )
 
   // Cleanup blob URLs on unmount.
   useEffect(() => {
@@ -210,6 +222,7 @@ export function StorefrontEditor() {
           ? sf.primaryColor
           : accentToHex[(sf.imprintAccent as StoreAccent) ?? "iris"],
     })
+    setShowcase(sf.showcase ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sf])
 
@@ -256,14 +269,18 @@ export function StorefrontEditor() {
     }
   }, [debouncedSlug, persistedSlug, checkSlug])
 
-  // ─── Storefront stats ─────────────────────────────────────────────────────
-  const { data: stats } = useStorefrontStats()
-
   // Resolved preview color: custom primaryColor wins over swatch enum.
   const resolvedColor =
     watch.primaryColor && HEX_RE.test(watch.primaryColor)
       ? watch.primaryColor
       : accentToHex[(watch.imprintAccent as StoreAccent) ?? "iris"]
+
+  // What to actually show for each image: staged blob > (intent to remove ?
+  // nothing : persisted URL).
+  const logoDisplayed =
+    logoPreview ?? (logoRemoved ? null : (sf?.profileImageUrl ?? null))
+  const coverDisplayed =
+    coverPreview ?? (coverRemoved ? null : (sf?.coverImageUrl ?? null))
 
   // Derive the live preview shape from current form state + staged image files.
   const previewStore: PreviewStorefront = useMemo(
@@ -271,8 +288,8 @@ export function StorefrontEditor() {
       storeName: watch.imprintName || defaultStoreName,
       tagline: watch.imprintTagline ?? "",
       description: watch.imprintEditorsNote ?? sf?.description ?? "",
-      profileImageUrl: logoPreview ?? sf?.profileImageUrl ?? null,
-      coverImageUrl: coverPreview ?? sf?.coverImageUrl ?? null,
+      profileImageUrl: logoDisplayed,
+      coverImageUrl: coverDisplayed,
       themeId: presetToThemeId(
         (watch.imprintCoverPreset as CoverPreset) ?? "ink",
       ),
@@ -284,28 +301,43 @@ export function StorefrontEditor() {
       socialWebsite: sf?.socialWebsite ?? null,
       seller: null,
     }),
-    [watch, sf, logoPreview, coverPreview, resolvedColor, defaultStoreName],
+    [watch, sf, logoDisplayed, coverDisplayed, resolvedColor, defaultStoreName],
   )
 
   const stageImage = (kind: "logo" | "cover", file: File | null) => {
     if (!file) {
+      // X clicked. If there's a freshly staged file, just discard it. Otherwise
+      // mark the saved image for deletion at save time so the API can drop the
+      // ImageKit asset + null out the DB columns.
       if (kind === "logo") {
-        setLogoFile(null)
-        setLogoPreview(null)
+        if (logoFile) {
+          setLogoFile(null)
+          setLogoPreview(null)
+        } else if (sf?.profileImageUrl) {
+          setLogoRemoved(true)
+        }
       } else {
-        setCoverFile(null)
-        setCoverPreview(null)
+        if (coverFile) {
+          setCoverFile(null)
+          setCoverPreview(null)
+        } else if (sf?.coverImageUrl) {
+          setCoverRemoved(true)
+        }
       }
       return
     }
+    // Staging a new file overrides any pending removal — the user clearly
+    // wants this picture, not a blank slot.
     const url = URL.createObjectURL(file)
     blobUrls.current.push(url)
     if (kind === "logo") {
       setLogoFile(file)
       setLogoPreview(url)
+      setLogoRemoved(false)
     } else {
       setCoverFile(file)
       setCoverPreview(url)
+      setCoverRemoved(false)
     }
   }
 
@@ -329,17 +361,51 @@ export function StorefrontEditor() {
     if (values.primaryColor) fd.append("primaryColor", values.primaryColor)
     if (logoFile) fd.append("profileImage", logoFile)
     if (coverFile) fd.append("coverImage", coverFile)
+    // Removal intent. Only honored by the API when no replacement file was
+    // uploaded in the same submit (upload wins).
+    if (logoRemoved && !logoFile) fd.append("removeProfileImage", "true")
+    if (coverRemoved && !coverFile) fd.append("removeCoverImage", "true")
+
+    // Showcase: reject save if the featured slot has content but doesn't parse,
+    // or if any FILLED item URL doesn't parse. Empty rows (the seller hit
+    // "Add another" but hasn't typed anything yet) are silently dropped so the
+    // save doesn't fail just because of an in-progress row.
+    if (showcase) {
+      if (showcase.featured && !parseShowcaseUrl(showcase.featured.url)) {
+        toast.error("— Featured showcase link couldn't be read.")
+        return
+      }
+      const filledItems = showcase.items.filter((it) => it.url.trim() !== "")
+      const badItem = filledItems.find((it) => !parseShowcaseUrl(it.url))
+      if (badItem) {
+        toast.error("— One of the carousel links couldn't be read.")
+        return
+      }
+      const cleaned: StorefrontShowcase = { ...showcase, items: filledItems }
+      fd.append("showcase", JSON.stringify(cleaned))
+    } else {
+      fd.append("showcase", "null")
+    }
 
     try {
       await update.mutateAsync(fd)
       toast.success("— Store updated.")
-      // Clear staged files now that they've been uploaded.
+      // Clear staged files + remove flags now that they've been persisted.
       setLogoFile(null)
       setCoverFile(null)
       setLogoPreview(null)
       setCoverPreview(null)
-    } catch {
-      toast.error("— Couldn't save. Trying again should help.")
+      setLogoRemoved(false)
+      setCoverRemoved(false)
+    } catch (err) {
+      // Surface the real reason when the API explains itself (e.g. "Validation
+      // failed", "Featured showcase URL could not be parsed"). Falls back to a
+      // generic line for unknown failures.
+      const msg =
+        err instanceof Error && err.message
+          ? err.message
+          : "Couldn't save. Trying again should help."
+      toast.error(`— ${msg}`)
     }
   }
 
@@ -366,61 +432,43 @@ export function StorefrontEditor() {
             Edit on the left — see the live preview update on the right.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center sm:justify-between justify-end gap-3">
           <PublishStatusBadge published={sf.isPublished} />
 
-          {liveSlug && (
+          <>
+            {liveSlug && (
+              <Button
+                type="button"
+                variant="paper"
+                className="gap-2"
+                onClick={() => {
+                  // If the store is still a draft, intercept and show the
+                  // publish-first modal so the seller doesn't get dumped on a
+                  // 404 page (or worse, link a tester to one).
+                  if (!sf.isPublished) {
+                    setPublishDialogOpen(true)
+                    return
+                  }
+                  window.open(
+                    `/store/${liveSlug}`,
+                    "_blank",
+                    "noopener,noreferrer",
+                  )
+                }}
+              >
+                <ExternalLink className="h-4 w-4" />
+                View store
+              </Button>
+            )}
             <Button
-              type="button"
-              variant="paper"
-              shape="pill"
-              className="gap-2"
-              onClick={() => {
-                // If the store is still a draft, intercept and show the
-                // publish-first modal so the seller doesn't get dumped on a
-                // 404 page (or worse, link a tester to one).
-                if (!sf.isPublished) {
-                  setPublishDialogOpen(true)
-                  return
-                }
-                window.open(
-                  `/store/${liveSlug}`,
-                  "_blank",
-                  "noopener,noreferrer",
-                )
-              }}
+              type="submit"
+              disabled={update.isPending || slugStatus === "taken"}
             >
-              <ExternalLink className="h-4 w-4" />
-              View store
+              {update.isPending ? "Saving…" : "Save store"}
             </Button>
-          )}
-          <Button
-            type="submit"
-            shape="pill"
-            disabled={update.isPending || slugStatus === "taken"}
-          >
-            {update.isPending ? "Saving…" : "Save store"}
-          </Button>
+          </>
         </div>
       </header>
-
-      {/* Stats strip — lifetime views / revenue / orders for this storefront. */}
-      <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-6 pb-2">
-        {[
-          { label: "Views", value: stats ? stats.totalViews.toLocaleString("en-IN") : "—" },
-          { label: "Revenue", value: stats ? formatCurrency(stats.totalRevenue) : "—" },
-          { label: "Orders", value: stats ? stats.totalOrders.toLocaleString("en-IN") : "—" },
-        ].map((tile) => (
-          <div key={tile.label}>
-            <div className="font-display text-2xl sm:text-3xl font-semibold tracking-[-0.02em] num-tabular">
-              {tile.value}
-            </div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground mt-1">
-              {tile.label}
-            </div>
-          </div>
-        ))}
-      </div>
 
       {/* Two-pane body: 40 / 60 split. Default grid stretch lets the right
           cell match the left's height — that's what gives the inner sticky
@@ -468,22 +516,25 @@ export function StorefrontEditor() {
                     — {form.formState.errors.imprintSlug.message}
                   </p>
                 )}
-                {!form.formState.errors.imprintSlug && slugStatus !== "idle" && (
-                  <p
-                    className={cn(
-                      "font-mono text-[10px] uppercase tracking-[0.12em] mt-1",
-                      slugStatus === "checking" && "text-muted-foreground",
-                      slugStatus === "available" && "text-emerald-600 dark:text-emerald-400",
-                      slugStatus === "taken" && "text-flicker",
-                      slugStatus === "invalid" && "text-flicker",
-                    )}
-                  >
-                    {slugStatus === "checking" && "— Checking…"}
-                    {slugStatus === "available" && "— Available"}
-                    {slugStatus === "taken" && "— Taken, try another"}
-                    {slugStatus === "invalid" && "— Lowercase letters, numbers, hyphens only"}
-                  </p>
-                )}
+                {!form.formState.errors.imprintSlug &&
+                  slugStatus !== "idle" && (
+                    <p
+                      className={cn(
+                        "font-mono text-[10px] uppercase tracking-[0.12em] mt-1",
+                        slugStatus === "checking" && "text-muted-foreground",
+                        slugStatus === "available" &&
+                          "text-emerald-600 dark:text-emerald-400",
+                        slugStatus === "taken" && "text-flicker",
+                        slugStatus === "invalid" && "text-flicker",
+                      )}
+                    >
+                      {slugStatus === "checking" && "— Checking…"}
+                      {slugStatus === "available" && "— Available"}
+                      {slugStatus === "taken" && "— Taken, try another"}
+                      {slugStatus === "invalid" &&
+                        "— Lowercase letters, numbers, hyphens only"}
+                    </p>
+                  )}
               </div>
               <div>
                 <Label className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
@@ -516,7 +567,7 @@ export function StorefrontEditor() {
                     Logo
                   </Label>
                   <ImageDrop
-                    preview={logoPreview ?? sf?.profileImageUrl ?? null}
+                    preview={logoDisplayed}
                     onPick={(f) => stageImage("logo", f)}
                     aspect="aspect-square"
                     rounded="rounded-full"
@@ -528,7 +579,7 @@ export function StorefrontEditor() {
                     Cover image
                   </Label>
                   <ImageDrop
-                    preview={coverPreview ?? sf?.coverImageUrl ?? null}
+                    preview={coverDisplayed}
                     onPick={(f) => stageImage("cover", f)}
                     aspect="aspect-[16/6]"
                     rounded="rounded-md"
@@ -743,6 +794,16 @@ export function StorefrontEditor() {
               )}
             />
           </EditorialSection>
+
+          {/* 05 — Showcase */}
+          <EditorialSection
+            number="05"
+            accentDigit="5"
+            label="The Showcase"
+            deck="Show one featured clip and up to 4 more posts or reels."
+          >
+            <ShowcaseFields value={showcase} onChange={setShowcase} />
+          </EditorialSection>
         </div>
 
         {/*
@@ -821,27 +882,30 @@ function ImageDrop({
   return (
     <div className="mt-1.5">
       {preview ? (
-        <div
-          className={cn(
-            "relative overflow-hidden border border-foreground/15",
-            aspect,
-            rounded,
-          )}
-        >
-          <Image
-            src={preview}
-            alt=""
-            fill
-            sizes="240px"
-            className="object-cover"
-          />
+        // Outer wrapper has NO overflow:hidden so the X badge can sit just
+        // outside the image corner without being clipped by `rounded-full`.
+        <div className={cn("relative", aspect)}>
+          <div
+            className={cn(
+              "relative h-full w-full overflow-hidden border border-foreground/15",
+              rounded,
+            )}
+          >
+            <Image
+              src={preview}
+              alt=""
+              fill
+              sizes="240px"
+              className="object-cover"
+            />
+          </div>
           <button
             type="button"
             onClick={() => onPick(null)}
-            className="absolute top-1 right-1 p-1 bg-foreground/70 rounded-full hover:bg-foreground"
-            aria-label="Remove"
+            className="absolute -top-2 -right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-background shadow-md ring-2 ring-background transition-colors hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label="Remove image"
           >
-            <X className="h-3 w-3 text-background" />
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
       ) : (

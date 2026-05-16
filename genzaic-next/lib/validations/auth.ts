@@ -49,6 +49,14 @@ export const resetPasswordSchema = z
     path: ["confirmPassword"],
   })
 
+// Server-side schema: confirmPassword is a UX-only check that lives on the
+// form. The API doesn't see it and shouldn't require it — sending it would
+// just make every legit reset look like a malformed request.
+export const resetPasswordApiSchema = z.object({
+  token: z.string().min(1),
+  password: strongPasswordSchema,
+})
+
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Current password is required"),

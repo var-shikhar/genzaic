@@ -14,7 +14,7 @@ export * from "./relations"
 import { users, sessions } from "./users"
 import { storefronts } from "./storefronts"
 import { categories, tags, products, productVariants, productImages, productTags } from "./catalog"
-import { carts, cartItems, coupons, orders, orderItems, payments, couponUsages } from "./commerce"
+import { carts, cartItems, coupons, orders, orderItems, payments, couponUsages, orderAccessTokens } from "./commerce"
 import { reviews, follows, wishlists } from "./social"
 import { notifications, notificationPreferences } from "./notifications"
 import { kyc } from "./kyc"
@@ -44,6 +44,8 @@ export type OrderItem = typeof orderItems.$inferSelect
 export type NewOrderItem = typeof orderItems.$inferInsert
 export type Payment = typeof payments.$inferSelect
 export type CouponUsage = typeof couponUsages.$inferSelect
+export type OrderAccessToken = typeof orderAccessTokens.$inferSelect
+export type NewOrderAccessToken = typeof orderAccessTokens.$inferInsert
 export type Review = typeof reviews.$inferSelect
 export type NewReview = typeof reviews.$inferInsert
 export type Follow = typeof follows.$inferSelect

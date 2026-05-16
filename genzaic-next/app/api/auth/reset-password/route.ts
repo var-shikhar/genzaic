@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server"
 import { db, users } from "@/lib/db"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
-import { resetPasswordSchema } from "@/lib/validations/auth"
+import { resetPasswordApiSchema } from "@/lib/validations/auth"
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const parsed = resetPasswordSchema.safeParse(body)
+    const parsed = resetPasswordApiSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Validation failed", issues: parsed.error.flatten().fieldErrors },
@@ -33,10 +33,17 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 12)
 
+    // Consuming a valid reset token proves the user controls the inbox the
+    // token was delivered to — same equivalence every magic-link flow uses.
+    // Mark them as email-verified here so guest checkouts (which auto-create
+    // a buyer with emailVerified=false + this same token) can actually log
+    // in afterward; without this, the credentials provider throws
+    // EMAIL_NOT_VERIFIED even though the buyer just set a password.
     await db
       .update(users)
       .set({
         passwordHash,
+        emailVerified: true,
         passwordResetToken: null,
         passwordResetExpiresAt: null,
         updatedAt: new Date(),

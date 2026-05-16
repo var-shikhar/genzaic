@@ -177,7 +177,6 @@ export function QuickAddProductModal({
               <Button
                 type="button"
                 variant="paper"
-                shape="pill"
                 className="flex-1"
                 onClick={handleClose}
               >
@@ -185,7 +184,6 @@ export function QuickAddProductModal({
               </Button>
               <Button
                 type="submit"
-                shape="pill"
                 className="flex-1"
                 disabled={isPending}
               >

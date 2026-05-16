@@ -25,27 +25,18 @@ interface VerificationProgressBarProps {
  *   ●  Details Submitted
  *   │     12 May, 2:30pm
  *   │
- *   ●  Validation Process Starts
- *   │     Bank & UPI checks complete
+ *   ●  Under Review
+ *   │     Our team is reviewing (5–10 business days)
  *   │
- *   ○  Any Issues or Revalidation
- *   │     Clear — nothing to fix
- *   │
- *   ○  Approved or Rejected
- *         Awaiting admin review
+ *   ○  Decision
+ *         We'll email you when there's an update
  *
- * Each stage's state derives from the kyc record:
+ * Each stage's state derives from kyc.verificationStatus:
  *
- *   1. Submitted   - always "done" once a row exists.
- *   2. Validation  - "current" while either Razorpay call is still
- *                    pending; "done" once both have a final result
- *                    (regardless of pass/fail — the *process* is done).
- *   3. Issues      - "upcoming" until validation completes;
- *                    "failed" when bank or UPI returned failed;
- *                    "done" when both passed (no issues found).
- *   4. Approved    - "done" on verified; "failed" on rejected;
- *                    "current" when validation done + status still pending;
- *                    "upcoming" otherwise.
+ *   1. Submitted - always "done" once a row exists.
+ *   2. Review    - "current" while pending; "done" once verified or rejected.
+ *   3. Decision  - "done" on verified; "failed" on rejected; "upcoming" while
+ *                  pending.
  */
 export function VerificationProgressBar({
   kyc,
@@ -168,14 +159,9 @@ function ConnectorLine({
 
 function deriveStages(kyc: KycData): Stage[] {
   const status = kyc.verificationStatus
-  const bankSettled =
-    kyc.pennyDropStatus === "success" || kyc.pennyDropStatus === "failed"
-  const vpaSettled = kyc.vpaStatus === "success" || kyc.vpaStatus === "failed"
-  // Razorpay "error" (network / unconfigured) leaves vpa in a not-yet-known
-  // state — we treat it as still in-progress so admin can re-trigger.
-  const validationComplete = bankSettled && vpaSettled
-  const hasIssues =
-    kyc.pennyDropStatus === "failed" || kyc.vpaStatus === "failed"
+  const isPending = status === "pending"
+  const isVerified = status === "verified"
+  const isRejected = status === "rejected"
 
   return [
     {
@@ -186,49 +172,24 @@ function deriveStages(kyc: KycData): Stage[] {
       state: "done",
     },
     {
-      id: "validation",
+      id: "review",
       number: "02",
-      label: "Validation Process Starts",
-      note: validationComplete
-        ? "Bank & UPI checks complete"
-        : "Checking bank & UPI now",
-      state: validationComplete ? "done" : "current",
+      label: "Under Review",
+      note: isPending
+        ? "Our team is reviewing (5–10 business days)"
+        : "Review complete",
+      state: isPending ? "current" : "done",
     },
     {
-      id: "issues",
+      id: "decision",
       number: "03",
-      label: "Any Issues or Revalidation",
-      note: !validationComplete
-        ? "Waits for validation"
-        : hasIssues
-          ? "Issues found — update the details below"
-          : "Clear — nothing to fix",
-      state: !validationComplete
-        ? "upcoming"
-        : hasIssues
-          ? "failed"
-          : "done",
-    },
-    {
-      id: "final",
-      number: "04",
-      label: "Approved or Rejected",
-      note:
-        status === "verified"
-          ? "Approved — payouts unlocked"
-          : status === "rejected"
-            ? "Rejected — see reason above"
-            : !validationComplete
-              ? "Waits for validation"
-              : "Awaiting admin review · email when done",
-      state:
-        status === "verified"
-          ? "done"
-          : status === "rejected"
-            ? "failed"
-            : !validationComplete
-              ? "upcoming"
-              : "current",
+      label: "Decision",
+      note: isVerified
+        ? "Approved — payouts unlocked"
+        : isRejected
+          ? "Rejected — see reason above"
+          : "We'll email you when there's an update",
+      state: isVerified ? "done" : isRejected ? "failed" : "upcoming",
     },
   ]
 }

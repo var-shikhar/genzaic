@@ -43,6 +43,20 @@
       "when": 1778610085262,
       "tag": "0005_lying_strong_guy",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778933300090,
+      "tag": "0006_bizarre_redwing",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1779192000000,
+      "tag": "0007_order_access_tokens",
+      "breakpoints": true
     }
   ]
 }

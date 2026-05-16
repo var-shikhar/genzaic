@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
-import { Menu, X } from "lucide-react"
+import { LayoutDashboard, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useLandingCta } from "@/hooks/use-landing-cta"
 
 const navLinks = [
   { label: "Features", id: "features" },
@@ -16,6 +17,7 @@ const navLinks = [
 export default function LandingNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const cta = useLandingCta()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -62,23 +64,38 @@ export default function LandingNav() {
           ))}
         </div>
         <div className="hidden sm:flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            asChild
-            className={
-              scrolled ? "" : "text-white hover:text-white hover:bg-white/10"
-            }
-          >
-            <Link href="/login">Login</Link>
-          </Button>
-          <Button
-            size="sm"
-            asChild
-            className="gradient-primary hover:opacity-90 shadow-md shadow-primary/20"
-          >
-            <Link href="/signup?role=seller">Start Selling</Link>
-          </Button>
+          {cta.isAuthenticated ? (
+            <Button
+              size="sm"
+              asChild
+              className="gradient-primary hover:opacity-90 shadow-md shadow-primary/20 group"
+            >
+              <Link href={cta.href}>
+                <LayoutDashboard className="w-4 h-4 mr-1.5" />
+                {cta.navLabel}
+              </Link>
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                asChild
+                className={
+                  scrolled ? "" : "text-white hover:text-white hover:bg-white/10"
+                }
+              >
+                <Link href="/login">Login</Link>
+              </Button>
+              <Button
+                size="sm"
+                asChild
+                className="gradient-primary hover:opacity-90 shadow-md shadow-primary/20"
+              >
+                <Link href="/signup?role=seller">Start Selling</Link>
+              </Button>
+            </>
+          )}
         </div>
         <button
           className={`sm:hidden p-2 -mr-2 transition-colors duration-300 ${scrolled ? "text-muted-foreground" : "text-white"}`}
@@ -111,21 +128,36 @@ export default function LandingNav() {
                 </a>
               ))}
               <div className="pt-3 border-t border-border/30 flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  asChild
-                  className="flex-1"
-                >
-                  <Link href="/login">Login</Link>
-                </Button>
-                <Button
-                  size="sm"
-                  asChild
-                  className="flex-1 gradient-primary hover:opacity-90"
-                >
-                  <Link href="/signup?role=seller">Start Selling</Link>
-                </Button>
+                {cta.isAuthenticated ? (
+                  <Button
+                    size="sm"
+                    asChild
+                    className="flex-1 gradient-primary hover:opacity-90"
+                  >
+                    <Link href={cta.href}>
+                      <LayoutDashboard className="w-4 h-4 mr-1.5" />
+                      {cta.navLabel}
+                    </Link>
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                      className="flex-1"
+                    >
+                      <Link href="/login">Login</Link>
+                    </Button>
+                    <Button
+                      size="sm"
+                      asChild
+                      className="flex-1 gradient-primary hover:opacity-90"
+                    >
+                      <Link href="/signup?role=seller">Start Selling</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>

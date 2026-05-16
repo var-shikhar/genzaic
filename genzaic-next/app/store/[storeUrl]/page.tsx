@@ -12,6 +12,8 @@ import {
 } from "lucide-react"
 import { getPublicStorefront } from "@/lib/data/public-storefront"
 import PublicProductBrowser from "@/components/store/PublicProductBrowser"
+import { ShowcaseSection } from "@/components/store/showcase/ShowcaseSection"
+import type { StorefrontShowcase } from "@/lib/showcase/types"
 import {
   themeFor,
   presetToThemeId,
@@ -105,7 +107,11 @@ export default async function PublicStorefrontPage({ params }: PageProps) {
 
             <div className="flex-1 text-center sm:text-left pb-4">
               <h1
-                className={cn("text-2xl sm:text-3xl", t.fontWeightHeading, t.heroText)}
+                className={cn(
+                  "text-2xl sm:text-3xl",
+                  t.fontWeightHeading,
+                  t.heroText,
+                )}
                 style={{ fontFamily: "var(--store-heading)" }}
               >
                 {storefront.storeName}
@@ -116,7 +122,12 @@ export default async function PublicStorefrontPage({ params }: PageProps) {
                   `Digital products by ${storefront.storeName}`}
               </p>
 
-              <div className={cn("flex items-center justify-center sm:justify-start gap-6 mt-3 text-sm", t.subText)}>
+              <div
+                className={cn(
+                  "flex items-center justify-center sm:justify-start gap-6 mt-3 text-sm",
+                  t.subText,
+                )}
+              >
                 {(storefront.seller?.totalSales ?? 0) > 0 && (
                   <div className="flex items-center gap-1">
                     <ShoppingCart className="w-4 h-4" />
@@ -196,6 +207,85 @@ export default async function PublicStorefrontPage({ params }: PageProps) {
             products={products}
           />
         </div>
+      </div>
+
+      {/* Editorial section intro for the showcase. The divider rules and the
+          showcase title/subtitle are intentionally one unit — visually
+          announces "new section ahead" + tells the visitor what's coming, in
+          a single beat. Renders only when there's actually a featured slot. */}
+      {storefront.showcase &&
+        (storefront.showcase as StorefrontShowcase).featured && (
+          <div className={t.pageBg}>
+            <div
+              className={cn(
+                "mx-auto max-w-6xl px-4 sm:px-6 pt-12 pb-8 sm:pt-16 sm:pb-10",
+                t.subText,
+              )}
+            >
+              {/* Tiny eyebrow above the title — sets the register. */}
+              <p className="text-center font-mono text-[10px] uppercase tracking-[0.25em] opacity-70">
+                Genzaic · presents
+              </p>
+
+              {/* Rule + title + rule. The rules use `bg-current` against the
+                  parent subText shade, so it color-adapts to every theme. */}
+              <div className="mt-4 flex items-center gap-4 sm:gap-6">
+                <span
+                  aria-hidden
+                  className="h-px flex-1 bg-current opacity-20"
+                />
+                <h2
+                  className={cn(
+                    "text-center text-2xl sm:text-3xl md:text-4xl whitespace-nowrap",
+                    t.fontWeightHeading,
+                    t.heroText,
+                  )}
+                  style={{ fontFamily: "var(--store-heading)" }}
+                >
+                  {(storefront.showcase as StorefrontShowcase).title}
+                </h2>
+                <span
+                  aria-hidden
+                  className="h-px flex-1 bg-current opacity-20"
+                />
+              </div>
+
+              {(storefront.showcase as StorefrontShowcase).subtitle && (
+                <p className="mx-auto mt-3 max-w-xl text-center text-sm italic sm:text-base">
+                  {(storefront.showcase as StorefrontShowcase).subtitle}
+                </p>
+              )}
+
+              {/* Scroll-cue ornament — a stacked pair of dots that gently
+                  signals "more below". Decorative; no animation so it doesn't
+                  distract from the embeds. */}
+              <div className="mt-6 flex items-center justify-center gap-1.5">
+                <span
+                  aria-hidden
+                  className="h-1 w-1 rounded-full bg-current opacity-60"
+                />
+                <span
+                  aria-hidden
+                  className="h-1 w-1 rounded-full bg-current opacity-40"
+                />
+                <span
+                  aria-hidden
+                  className="h-1 w-1 rounded-full bg-current opacity-20"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+      {/* Watch & Follow — creator's video showcase. Sits AFTER products so
+          shoppers see the catalogue first; the section's own bg is
+          transparent so the parent `t.pageBg` carries the theme through. The
+          title + subtitle live in the divider above, not inside the section. */}
+      <div className={t.pageBg}>
+        <ShowcaseSection
+          showcase={(storefront.showcase as StorefrontShowcase | null) ?? null}
+          subTextClassName={t.subText}
+        />
       </div>
 
       {/* Footer */}

@@ -8,6 +8,7 @@ import {
   index,
   uniqueIndex,
   check,
+  jsonb,
 } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import {
@@ -17,6 +18,7 @@ import {
   imprintAccentEnum,
 } from "./enums"
 import { users } from "./users"
+import type { StorefrontShowcase } from "@/lib/showcase/types"
 
 // ─── Storefronts ──────────────────────────────────────────────────────────────
 export const storefronts = pgTable(
@@ -72,6 +74,7 @@ export const storefronts = pgTable(
     imprintAccent: imprintAccentEnum("imprint_accent")
       .notNull()
       .default("iris"),
+    showcase: jsonb("showcase").$type<StorefrontShowcase | null>(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

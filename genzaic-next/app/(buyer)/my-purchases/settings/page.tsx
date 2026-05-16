@@ -49,8 +49,11 @@ export default function BuyerSettingsPage() {
   }
 
   const handleBecomeSeller = () => {
+    // Plan-selection is the proper entry point — it elevates the user to
+    // seller via `POST /api/onboarding/plan` and only then unlocks `/onboarding`
+    // and `/dashboard` (which middleware gates on `isSeller`).
     toast.success("Redirecting to seller onboarding...")
-    router.push("/onboarding")
+    router.push("/plan-selection")
   }
 
   if (isLoading) {

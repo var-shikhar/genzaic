@@ -16,20 +16,36 @@ export async function GET(_req: NextRequest) {
       .where(eq(users.id, userId))
       .limit(1)
 
-    const [earningsResult, completedPayoutsResult, pendingPayoutsResult, kycRecord] = await Promise.all([
-      // Total earnings from completed orders (use subtotal instead of old amount)
+    const [
+      allOrdersResult,
+      completedOrdersResult,
+      completedPayoutsResult,
+      pendingPayoutsResult,
+      kycRecord,
+    ] = await Promise.all([
+      // Lifetime revenue + order count across ALL orders (any status). The
+      // dashboard's "X sold" widget reads from the same denominator, so
+      // earnings here line up with what the seller sees on the home page.
       db
-        .select({ totalEarnings: sum(orders.subtotal) })
+        .select({ revenue: sum(orders.subtotal), orderCount: count() })
+        .from(orders)
+        .where(eq(orders.sellerId, userId)),
+
+      // Revenue from COMPLETED orders only — the slice that's actually
+      // eligible to enter the payout queue. Surfaced so the seller can see
+      // why pending-payout might be zero even when totalEarnings isn't.
+      db
+        .select({ revenue: sum(orders.subtotal), orderCount: count() })
         .from(orders)
         .where(and(eq(orders.sellerId, userId), eq(orders.status, "completed"))),
 
-      // Total completed payouts
+      // Total completed payouts (already in the seller's bank)
       db
         .select({ totalAmount: sum(payouts.amount), totalCount: count() })
         .from(payouts)
         .where(and(eq(payouts.userId, userId), eq(payouts.status, "completed"))),
 
-      // Pending + processing payouts
+      // Pending + processing payouts (queued, not yet in seller's bank)
       db
         .select({ totalAmount: sum(payouts.amount), totalCount: count() })
         .from(payouts)
@@ -47,10 +63,20 @@ export async function GET(_req: NextRequest) {
     const kycData = kycRecord[0]
     const kycVerified = kycData?.verificationStatus === "verified"
 
+    const totalEarnings = Number(allOrdersResult[0]?.revenue ?? 0)
+    const lifetimeOrders = Number(allOrdersResult[0]?.orderCount ?? 0)
+    const eligibleRevenue = Number(completedOrdersResult[0]?.revenue ?? 0)
+    const completedOrders = Number(completedOrdersResult[0]?.orderCount ?? 0)
+    const completedPayouts = Number(completedPayoutsResult[0]?.totalAmount ?? 0)
+    const pendingPayouts = Number(pendingPayoutsResult[0]?.totalAmount ?? 0)
+
     return NextResponse.json({
-      totalEarnings: Number(earningsResult[0]?.totalEarnings ?? 0),
-      completedPayouts: Number(completedPayoutsResult[0]?.totalAmount ?? 0),
-      pendingPayouts: Number(pendingPayoutsResult[0]?.totalAmount ?? 0),
+      totalEarnings,
+      lifetimeOrders,
+      eligibleRevenue,
+      completedOrders,
+      completedPayouts,
+      pendingPayouts,
       kycStatus: user?.kycStatus ?? "not_submitted",
       kycVerified,
       bankAccount:

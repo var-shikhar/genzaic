@@ -221,6 +221,35 @@ export const orderItems = pgTable(
   ],
 )
 
+// ─── Order Access Tokens ─────────────────────────────────────────────────────
+// Short-lived bearer tokens that grant view + download access to a single
+// order without requiring authentication. Used to:
+//   1. Hand the guest buyer a `/order/[id]?t=...` URL right after checkout
+//      so they can download immediately.
+//   2. Hand the same URL out via the order-confirmation email so they can
+//      come back to it later from their inbox (a fresh token is minted on
+//      each email click, see the resend endpoint).
+// The token is the *only* secret — knowing the orderId is not enough.
+// Tokens are single-use within their lifetime (we record `usedAt` for audit
+// but allow re-render within the validity window so a page refresh works).
+export const orderAccessTokens = pgTable(
+  "order_access_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    token: varchar("token", { length: 128 }).notNull().unique(),
+    expiresAt: timestamp("expires_at").notNull(),
+    usedAt: timestamp("used_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("order_access_tokens_order_id_idx").on(t.orderId),
+    index("order_access_tokens_expires_at_idx").on(t.expiresAt),
+  ],
+)
+
 // ─── Coupon Usages ────────────────────────────────────────────────────────────
 export const couponUsages = pgTable(
   "coupon_usages",

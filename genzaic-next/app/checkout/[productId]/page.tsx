@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import Image from "next/image"
-import { ShoppingCart, Package, Loader2, IndianRupee } from "lucide-react"
+import { ShoppingCart, Package, Loader2 } from "lucide-react"
 import { checkoutSchema, type CheckoutInput } from "@/lib/validations/checkout"
 import { useCheckoutProduct, useCreateOrder } from "@/lib/queries/checkout"
 import { getApiErrorMessage } from "@/lib/api-error"
@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { formatCurrency, calculateGST, calculatePlatformFee } from "@/lib/utils"
+import { ikThumb } from "@/lib/image"
 
 export default function CheckoutPage() {
   const { productId } = useParams<{ productId: string }>()
@@ -35,6 +36,7 @@ export default function CheckoutPage() {
 
   const form = useForm<CheckoutInput>({
     resolver: zodResolver(checkoutSchema),
+    mode: "onChange",
     defaultValues: {
       productId: productId,
       buyerName: user?.name ?? "",
@@ -43,6 +45,13 @@ export default function CheckoutPage() {
       buyerGstin: "",
     },
   })
+
+  // Re-evaluate validity once defaults are populated so the Pay button
+  // becomes enabled immediately for logged-in users (whose name/email
+  // come from the session and are already valid).
+  useEffect(() => {
+    void form.trigger()
+  }, [form, user?.name, user?.email])
 
   const onSubmit = async (values: CheckoutInput) => {
     try {
@@ -54,11 +63,11 @@ export default function CheckoutPage() {
         buyerGstin: values.buyerGstin || undefined,
       })
       toast.success("Order placed successfully!")
-      if (order.deliveryType === "download") {
-        router.push(`/download/${order.id}`)
-      } else {
-        router.push(`/my-purchases/${order.id}`)
-      }
+      // Hand the buyer a short-lived access token in the URL so the
+      // confirmation page can show the download. They'll also get a
+      // longer-lived link in their email for later.
+      const tokenParam = order.accessToken ? `?t=${order.accessToken}` : ""
+      router.push(`/order/${order.id}${tokenParam}`)
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Checkout failed"))
     }
@@ -125,8 +134,13 @@ export default function CheckoutPage() {
                     </FormItem>
                   )} />
 
-                  <Button type="submit" size="lg" className="w-full gradient-primary text-white mt-6" disabled={isCreating}>
-                    {isCreating ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <IndianRupee className="mr-2 h-5 w-5" />}
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full gradient-primary text-white mt-6"
+                    disabled={isCreating || !form.formState.isValid}
+                  >
+                    {isCreating && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                     {isCreating ? "Processing..." : `Pay ${formatCurrency(total)}`}
                   </Button>
                   <p className="text-xs text-center text-muted-foreground">
@@ -144,7 +158,13 @@ export default function CheckoutPage() {
                 <div className="flex gap-3">
                   {product.thumbnailUrl ? (
                     <div className="relative w-20 h-20 rounded-lg overflow-hidden shrink-0">
-                      <Image src={product.thumbnailUrl} alt={product.title} fill className="object-cover" />
+                      <Image
+                        src={ikThumb(product.thumbnailUrl, 160)}
+                        alt={product.title}
+                        fill
+                        sizes="80px"
+                        className="object-cover"
+                      />
                     </div>
                   ) : (
                     <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center shrink-0">

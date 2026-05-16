@@ -86,7 +86,7 @@ export default function PayoutsPage() {
                 {stats.kycStatus === "rejected" &&
                   "Your KYC verification was rejected. Please review the rejection reason and resubmit your documents to start receiving payouts."}
               </p>
-              <Button asChild size="sm" shape="pill" className="gap-2">
+              <Button asChild size="sm" className="gap-2">
                 <Link href="/dashboard/kyc">
                   {stats.kycStatus === "not_submitted" && "Complete KYC Verification"}
                   {stats.kycStatus === "pending" && "View KYC Status"}
@@ -99,24 +99,37 @@ export default function PayoutsPage() {
         </motion.div>
       )}
 
-      {/* Stats */}
+      {/* Stats — each card has a clarifying subtitle so the seller can tell
+          where the number comes from (and that it's real, not a placeholder). */}
       <div className="grid gap-4 sm:grid-cols-3">
         {[
           {
             title: "Total Earnings",
             value: formatCurrency(stats?.totalEarnings ?? 0),
+            subtitle: stats
+              ? `From ${stats.lifetimeOrders} ${stats.lifetimeOrders === 1 ? "order" : "orders"} · all statuses`
+              : "—",
             icon: TrendingUp,
-            colorClass: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400",
+            colorClass:
+              "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400",
           },
           {
-            title: "Pending Payout",
-            value: formatCurrency(stats?.pendingPayouts ?? 0),
+            title: "Eligible for Payout",
+            value: formatCurrency(stats?.eligibleRevenue ?? 0),
+            subtitle: stats
+              ? `From ${stats.completedOrders} completed ${stats.completedOrders === 1 ? "order" : "orders"}`
+              : "—",
             icon: Clock,
-            colorClass: "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400",
+            colorClass:
+              "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400",
           },
           {
-            title: "Completed Payouts",
+            title: "Paid Out",
             value: formatCurrency(stats?.completedPayouts ?? 0),
+            subtitle:
+              (stats?.pendingPayouts ?? 0) > 0
+                ? `${formatCurrency(stats?.pendingPayouts ?? 0)} in queue`
+                : "Sent to your bank account",
             icon: CheckCircle,
             colorClass: "bg-primary/10 text-primary",
           },
@@ -129,12 +142,15 @@ export default function PayoutsPage() {
             className="bg-card rounded-2xl border border-border p-6"
           >
             <div className="flex items-start justify-between mb-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.colorClass}`}>
+              <div
+                className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.colorClass}`}
+              >
                 <stat.icon className="w-6 h-6" />
               </div>
             </div>
             <p className="text-2xl font-bold">{stat.value}</p>
-            <p className="text-sm text-muted-foreground">{stat.title}</p>
+            <p className="text-sm font-medium">{stat.title}</p>
+            <p className="text-xs text-muted-foreground mt-1">{stat.subtitle}</p>
           </motion.div>
         ))}
       </div>

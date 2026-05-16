@@ -1,6 +1,9 @@
-import { auth } from "@/lib/auth"
+import NextAuth from "next-auth"
+import { authConfig } from "@/lib/auth/config"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+
+const { auth } = NextAuth(authConfig)
 
 const publicRoutes = [
   "/",
@@ -19,11 +22,20 @@ const publicPrefixes = [
   "/store",
   "/checkout",
   "/download",
+  "/order",
   "/api/auth",
   "/api/storefront/public",
   "/api/checkout/product",
+  "/api/checkout/create-order",
+  "/api/checkout/order",
+  "/api/checkout/record-download",
 ]
-const sellerRoutes = ["/dashboard", "/onboarding", "/plan-selection"]
+// `/plan-selection` is intentionally NOT in this list — it's the entry point
+// for a buyer who wants to upgrade to a seller account. The plan-selection
+// API (`POST /api/onboarding/plan`) is what actually flips `isSeller: true`
+// + `role: "seller"`, so the user must be allowed to land there as a buyer.
+// After plan pick, normal seller-only gating resumes for /dashboard etc.
+const sellerRoutes = ["/dashboard", "/onboarding"]
 
 // Routes where we need to *also* check auth (to redirect logged-in users
 // away from the auth pages). Everything else in publicRoutes/publicPrefixes

@@ -1,11 +1,23 @@
 import Link from "next/link"
-import { auth, signOut } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { Sparkles, LogOut, ShoppingBag, Settings } from "lucide-react"
+import { Sparkles, ShoppingBag } from "lucide-react"
+import { BuyerProfileMenu } from "@/components/layout/BuyerProfileMenu"
 
 export default async function BuyerLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
   if (!session?.user) redirect("/login")
+
+  // The session.user shape has been extended in lib/auth/config.ts to carry
+  // `isSeller` + `role` (see ExtendedUser). The dropdown uses these to show a
+  // "Seller dashboard" shortcut when applicable.
+  const user = session.user as {
+    name?: string | null
+    email?: string | null
+    image?: string | null
+    isSeller?: boolean
+    role?: string
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -17,21 +29,15 @@ export default async function BuyerLayout({ children }: { children: React.ReactN
             </div>
             <span className="font-bold text-lg sm:text-xl">GenZaic</span>
           </Link>
-          <nav className="flex items-center gap-2 sm:gap-4">
-            <Link href="/my-purchases" className="flex items-center gap-1.5 text-xs sm:text-sm font-medium hover:text-primary transition-colors">
+          <nav className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/my-purchases"
+              className="flex items-center gap-1.5 text-xs sm:text-sm font-medium hover:text-primary transition-colors"
+            >
               <ShoppingBag className="h-4 w-4 sm:hidden" />
               <span className="hidden sm:inline">My Purchases</span>
             </Link>
-            <Link href="/my-purchases/settings" className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors">
-              <Settings className="h-4 w-4 sm:hidden" />
-              <span className="hidden sm:inline">Settings</span>
-            </Link>
-            <form action={async () => { "use server"; await signOut({ redirectTo: "/login" }) }}>
-              <button type="submit" className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors">
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Sign Out</span>
-              </button>
-            </form>
+            <BuyerProfileMenu user={user} />
           </nav>
         </div>
       </header>

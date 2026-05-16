@@ -3,13 +3,10 @@
 import { Pencil, RefreshCcw } from "lucide-react"
 import type { KycData } from "@/lib/queries/kyc"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import {
-  EditorsHeadline,
-  EyebrowLabel,
-} from "@/components/brand/primitives"
+import { EditorsHeadline, EyebrowLabel } from "@/components/brand/primitives"
 import { PostalRing } from "@/components/brand/motifs"
 import { VerificationProgressBar } from "./VerificationProgressBar"
+import { KycReviewAside } from "./KycReviewAside"
 import type { EditSection } from "./KycSectionEdit"
 
 interface KycStatusViewProps {
@@ -34,84 +31,106 @@ export function KycStatusView({ kyc, onEditSection }: KycStatusViewProps) {
   const bankFailed = kyc.pennyDropStatus === "failed"
   const vpaFailed = kyc.vpaStatus === "failed"
 
+  // Only the pending state gets the right-hand aside. Verified renders the
+  // postal-ring stamp in the header; rejected uses the full width for the
+  // "Fix & resubmit" callouts.
+  const showAside = status === "pending"
+
   return (
-    <div className="space-y-8 max-w-3xl">
-      <header className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-6 items-end pb-6 border-b border-primary/30">
-        <div className="space-y-2">
-          <EyebrowLabel>Verification</EyebrowLabel>
-          <EditorsHeadline
-            accentWord={
-              status === "verified"
-                ? "Verified."
-                : status === "rejected"
-                  ? "verify."
-                  : "review."
-            }
-            size="xl"
-          >
-            {status === "verified" && "You're Verified."}
-            {status === "rejected" && "We couldn't verify."}
-            {status === "pending" && "Pending review."}
-          </EditorsHeadline>
-          <p className="font-display italic text-base text-muted-foreground">
-            {status === "verified" &&
-              "Your identity is on file. Payouts above ₹10k are unlocked."}
-            {status === "rejected" &&
-              "Something didn't check out. Update the relevant section below — we'll re-run verification right away."}
-            {status === "pending" &&
-              "We're checking your bank and UPI now — this usually takes a minute. Once auto-checks finish and our team has reviewed your documents (1–2 business days), we'll email you with the result. Feel free to close this page."}
-          </p>
-        </div>
-        {status === "verified" && (
-          <PostalRing variant="iris" rotate={-8}>
-            Verified<br />
-            {new Date().getFullYear()}
-          </PostalRing>
+    <div
+      className={
+        showAside
+          ? "grid grid-cols-1 lg:grid-cols-[1fr_340px] lg:gap-6 xl:gap-8"
+          : "space-y-8 max-w-3xl"
+      }
+    >
+      <div className="space-y-8 min-w-0 max-w-full">
+        <header className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-6 items-end pb-6 border-b border-primary/30">
+          <div className="space-y-2">
+            <EyebrowLabel>Verification</EyebrowLabel>
+            <EditorsHeadline
+              accentWord={
+                status === "verified"
+                  ? "Verified."
+                  : status === "rejected"
+                    ? "verify."
+                    : "review."
+              }
+              size="xl"
+            >
+              {status === "verified" && "You're Verified."}
+              {status === "rejected" && "We couldn't verify."}
+              {status === "pending" && "Pending review."}
+            </EditorsHeadline>
+            <p className="font-display italic text-base text-muted-foreground">
+              {status === "verified" &&
+                "Your identity is on file. Payouts above ₹10k are unlocked."}
+              {status === "rejected" &&
+                "Something didn't check out. Update the relevant section below — we'll re-run verification right away."}
+              {status === "pending" &&
+                "Your details have been submitted. Our team typically reviews KYC submissions within 5–10 business days. We'll email you as soon as there's an update — feel free to close this page."}
+            </p>
+          </div>
+          {status === "verified" && (
+            <PostalRing variant="iris" rotate={-8}>
+              Verified
+              <br />
+              {new Date().getFullYear()}
+            </PostalRing>
+          )}
+        </header>
+
+        {/* Horizontal 4-stage process bar */}
+        <VerificationProgressBar kyc={kyc} />
+
+        {/* Rejection alert */}
+        {status === "rejected" && kyc.rejectionReason && (
+          <Alert variant="destructive">
+            <AlertTitle>Reason</AlertTitle>
+            <AlertDescription>{kyc.rejectionReason}</AlertDescription>
+          </Alert>
         )}
-      </header>
 
-      {/* Horizontal 4-stage process bar */}
-      <VerificationProgressBar kyc={kyc} />
-
-      {/* Rejection alert */}
-      {status === "rejected" && kyc.rejectionReason && (
-        <Alert variant="destructive">
-          <AlertTitle>Reason</AlertTitle>
-          <AlertDescription>{kyc.rejectionReason}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Targeted edit options on rejection. The seller picks the section
+        {/* Targeted edit options on rejection. The seller picks the section
           that's failing — we don't force them through the full 3-step
           wizard again. */}
-      {status === "rejected" && (
-        <div className="space-y-3">
-          <h3 className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            Fix &amp; resubmit
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <EditCallout
-              title="Identity"
-              detail="PAN or Aadhaar number / document"
-              suggested={false}
-              onClick={() => onEditSection("identity")}
-            />
-            <EditCallout
-              title="Payment"
-              detail={
-                bankFailed && vpaFailed
-                  ? "Bank account & UPI both failed verification"
-                  : bankFailed
-                    ? "Bank account couldn't be verified"
-                    : vpaFailed
-                      ? "UPI handle couldn't be verified"
-                      : "UPI handle / bank account"
-              }
-              suggested={bankFailed || vpaFailed}
-              onClick={() => onEditSection("payment")}
-            />
+        {status === "rejected" && (
+          <div className="space-y-3">
+            <h3 className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              Fix &amp; resubmit
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <EditCallout
+                title="Identity"
+                detail="PAN or Aadhaar number / document"
+                suggested={false}
+                onClick={() => onEditSection("identity")}
+              />
+              <EditCallout
+                title="Payment"
+                detail={
+                  bankFailed && vpaFailed
+                    ? "Bank account & UPI both failed verification"
+                    : bankFailed
+                      ? "Bank account couldn't be verified"
+                      : vpaFailed
+                        ? "UPI handle couldn't be verified"
+                        : "UPI handle / bank account"
+                }
+                suggested={bankFailed || vpaFailed}
+                onClick={() => onEditSection("payment")}
+              />
+            </div>
           </div>
-        </div>
+        )}
+      </div>
+
+      {showAside && (
+        <aside className="hidden lg:block">
+          <div className="sticky top-8">
+            <KycReviewAside />
+          </div>
+        </aside>
       )}
     </div>
   )

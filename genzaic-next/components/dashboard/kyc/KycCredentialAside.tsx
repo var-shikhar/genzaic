@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useFormContext, useWatch } from "react-hook-form"
-import {
-  AnimatePresence,
-  motion,
-  useReducedMotion,
-} from "framer-motion"
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import {
   ShieldCheck,
   BadgeCheck,
@@ -22,12 +18,7 @@ import {
 import { cn } from "@/lib/utils"
 import type { KycInput } from "@/lib/validations/kyc"
 import type { WizardStep } from "./WizardProgress"
-import {
-  PanCardArt,
-  AadhaarCardArt,
-  BankCardArt,
-  UpiArt,
-} from "./KycCardArt"
+import { PanCardArt, AadhaarCardArt, BankCardArt, UpiArt } from "./KycCardArt"
 
 interface KycCredentialAsideProps {
   currentStep: WizardStep
@@ -109,7 +100,7 @@ export function KycCredentialAside({
   const holder = (values.accountHolderName || "").trim()
 
   return (
-    <div className="relative space-y-6">
+    <div className="relative space-y-4">
       {/* Faint editorial grid backdrop — clipped to the panel rounded card. */}
       <span
         aria-hidden="true"
@@ -135,27 +126,82 @@ export function KycCredentialAside({
         </p>
       </header>
 
-      <div aria-hidden="true" className="relative space-y-4">
-        <DriftCard config={PAN_DRIFT} status={identityStatus}>
-          <PanCard status={identityStatus} pan={pan} holder={holder} />
-        </DriftCard>
+      {/*
+        Cards rendered per wizard step:
+          - identity → PAN + Aadhaar only
+          - payment  → Bank + UPI only
+          - review   → all four (full recap before submit)
+      */}
+      <div aria-hidden="true" className="relative space-y-3">
+        <AnimatePresence mode="popLayout" initial={false}>
+          {(currentStep === "identity" || currentStep === "review") && (
+            <motion.div
+              key="pan"
+              layout
+              style={{ marginBottom: "2rem" }}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.28, ease: "easeOut" }}
+            >
+              <DriftCard config={PAN_DRIFT} status={identityStatus}>
+                <PanCard status={identityStatus} pan={pan} holder={holder} />
+              </DriftCard>
+            </motion.div>
+          )}
 
-        <DriftCard config={AADHAAR_DRIFT} status={identityStatus}>
-          <AadhaarCard status={identityStatus} aadhaar={aadhaar} />
-        </DriftCard>
+          {(currentStep === "identity" || currentStep === "review") && (
+            <motion.div
+              key="aadhaar"
+              layout
+              style={{ marginBottom: "2rem" }}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.28, ease: "easeOut", delay: 0.04 }}
+            >
+              <DriftCard config={AADHAAR_DRIFT} status={identityStatus}>
+                <AadhaarCard status={identityStatus} aadhaar={aadhaar} />
+              </DriftCard>
+            </motion.div>
+          )}
 
-        <DriftCard config={BANK_DRIFT} status={paymentStatus}>
-          <BankCard
-            status={paymentStatus}
-            account={account}
-            ifsc={ifsc}
-            bank={bank}
-          />
-        </DriftCard>
+          {(currentStep === "payment" || currentStep === "review") && (
+            <motion.div
+              key="bank"
+              layout
+              style={{ marginBottom: "2rem" }}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.28, ease: "easeOut" }}
+            >
+              <DriftCard config={BANK_DRIFT} status={paymentStatus}>
+                <BankCard
+                  status={paymentStatus}
+                  account={account}
+                  ifsc={ifsc}
+                  bank={bank}
+                />
+              </DriftCard>
+            </motion.div>
+          )}
 
-        <DriftCard config={UPI_DRIFT} status={paymentStatus}>
-          <UpiChip status={paymentStatus} upi={upi} />
-        </DriftCard>
+          {(currentStep === "payment" || currentStep === "review") && (
+            <motion.div
+              key="upi"
+              layout
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.28, ease: "easeOut", delay: 0.04 }}
+            >
+              <DriftCard config={UPI_DRIFT} status={paymentStatus}>
+                <UpiChip status={paymentStatus} upi={upi} />
+              </DriftCard>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <TrustStrip />
@@ -290,7 +336,7 @@ function PanCard({
     <div
       className={cn(
         // Real PAN card — pale blue/cyan body with a warm red watermark.
-        "relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-sky-300/30 via-sky-100/40 to-cyan-200/30 dark:from-sky-700/35 dark:via-sky-900/30 dark:to-cyan-800/30 border border-sky-300/60 dark:border-sky-600/40",
+        "relative overflow-hidden rounded-xl p-5 bg-gradient-to-br from-sky-300/30 via-sky-100/40 to-cyan-200/30 dark:from-sky-700/35 dark:via-sky-900/30 dark:to-cyan-800/30 border border-sky-300/60 dark:border-sky-600/40",
         statusRing(status),
       )}
     >
@@ -337,7 +383,7 @@ function AadhaarCard({
       className={cn(
         // Real Aadhaar — saffron header → cream body → muted green base
         // (Indian-flag palette, UIDAI-style).
-        "relative overflow-hidden rounded-xl p-4 bg-gradient-to-b from-orange-400/30 via-amber-50/60 to-emerald-500/15 dark:from-orange-500/30 dark:via-amber-900/20 dark:to-emerald-700/25 border border-orange-300/60 dark:border-orange-500/30",
+        "relative overflow-hidden rounded-xl p-5 bg-gradient-to-b from-orange-400/30 via-amber-50/60 to-emerald-500/15 dark:from-orange-500/30 dark:via-amber-900/20 dark:to-emerald-700/25 border border-orange-300/60 dark:border-orange-500/30",
         statusRing(status),
       )}
     >
@@ -387,7 +433,7 @@ function BankCard({
       className={cn(
         // Premium black card — always dark, with a faint gold inner sheen
         // suggested by a top-right radial. Borders and accents are warm gold.
-        "relative overflow-hidden rounded-xl p-4 border border-amber-400/20",
+        "relative overflow-hidden rounded-xl p-5 border border-amber-400/20",
         "bg-[radial-gradient(120%_140%_at_85%_-10%,rgba(251,191,36,0.18),transparent_55%),linear-gradient(135deg,#0a0a0a_0%,#1a1a1a_55%,#0a0a0a_100%)]",
         statusRing(status),
       )}
@@ -445,7 +491,7 @@ function UpiChip({ status, upi }: { status: Status; upi: string }) {
       className={cn(
         // Premium dark UPI card — black body with the NPCI palette suggested
         // by an orange→emerald diagonal sheen (saffron + green).
-        "relative overflow-hidden rounded-xl p-4 border border-orange-400/20",
+        "relative overflow-hidden rounded-xl p-5 border border-orange-400/20",
         "bg-[radial-gradient(110%_130%_at_-10%_-10%,rgba(249,115,22,0.18),transparent_55%),radial-gradient(110%_130%_at_110%_110%,rgba(16,185,129,0.14),transparent_55%),linear-gradient(135deg,#0a0a0a_0%,#171717_55%,#0a0a0a_100%)]",
         statusRing(status),
       )}
@@ -573,10 +619,16 @@ function StatusPill({
       <span
         className={cn(
           "h-1 w-1 rounded-full",
-          tone === "default" && status === "active" && "bg-primary animate-pulse",
+          tone === "default" &&
+            status === "active" &&
+            "bg-primary animate-pulse",
           tone === "default" && status === "verified" && "bg-emerald-500",
-          tone === "default" && status === "upcoming" && "bg-muted-foreground/50",
-          tone === "premium" && status === "active" && "bg-amber-300 animate-pulse",
+          tone === "default" &&
+            status === "upcoming" &&
+            "bg-muted-foreground/50",
+          tone === "premium" &&
+            status === "active" &&
+            "bg-amber-300 animate-pulse",
           tone === "premium" && status === "verified" && "bg-emerald-300",
           tone === "premium" && status === "upcoming" && "bg-zinc-500",
         )}
@@ -614,9 +666,7 @@ function Watermark({
 function QrDots() {
   // 5×5 stylized QR-ish grid. Deterministic mask of "lit" cells so it reads
   // as a code but isn't an actual QR.
-  const lit = new Set([
-    0, 1, 2, 4, 5, 9, 10, 12, 14, 15, 19, 20, 21, 23, 24,
-  ])
+  const lit = new Set([0, 1, 2, 4, 5, 9, 10, 12, 14, 15, 19, 20, 21, 23, 24])
   return (
     <div className="grid grid-cols-5 gap-[2px] w-12 h-12 shrink-0 rounded-md border border-border bg-background/60 p-1">
       {Array.from({ length: 25 }).map((_, i) => (
@@ -666,7 +716,7 @@ function TrustStrip() {
   const Icon = chip.icon
 
   return (
-    <footer className="relative pt-3 border-t border-border/60">
+    <footer className="relative pt-2 border-t border-border/60">
       <div className="relative h-5 overflow-hidden">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div

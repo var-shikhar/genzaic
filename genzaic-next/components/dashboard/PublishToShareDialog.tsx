@@ -77,7 +77,6 @@ export function PublishToShareDialog({
           <Button
             type="button"
             variant="outline"
-            shape="pill"
             onClick={() => onOpenChange(false)}
             disabled={isPublishing}
           >
@@ -85,7 +84,6 @@ export function PublishToShareDialog({
           </Button>
           <Button
             type="button"
-            shape="pill"
             onClick={handlePublish}
             disabled={isPublishing || !slug}
             className="gap-2"

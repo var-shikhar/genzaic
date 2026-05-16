@@ -21,6 +21,7 @@ import { InkWash } from "@/components/brand/motifs"
 import { PublishRitual } from "@/components/brand/PublishRitual"
 import { TOAST, EMPTY } from "@/lib/brand/voice"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 type Filter = "all" | "live" | "drafts"
@@ -41,11 +42,15 @@ export default function CatalogPage() {
 
   // Hydrate view preference once on mount (avoids SSR/CSR mismatch).
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? window.localStorage.getItem(VIEW_KEY) : null
+    const stored =
+      typeof window !== "undefined"
+        ? window.localStorage.getItem(VIEW_KEY)
+        : null
     if (stored === "grid" || stored === "list") setView(stored)
   }, [])
   useEffect(() => {
-    if (typeof window !== "undefined") window.localStorage.setItem(VIEW_KEY, view)
+    if (typeof window !== "undefined")
+      window.localStorage.setItem(VIEW_KEY, view)
   }, [view])
 
   // Trigger publish ritual when arriving from edit-page first-publish.
@@ -171,7 +176,9 @@ export default function CatalogPage() {
             aria-label="List view"
             className={cn(
               "p-1.5 rounded-full transition-colors",
-              view === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+              view === "list"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             <ListIcon className="h-3.5 w-3.5" />
@@ -183,18 +190,20 @@ export default function CatalogPage() {
             aria-label="Grid view"
             className={cn(
               "p-1.5 rounded-full transition-colors",
-              view === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+              view === "grid"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             <LayoutGrid className="h-3.5 w-3.5" />
           </button>
         </div>
-        <button
+        <Button
           onClick={() => setAddOpen(true)}
-          className="font-body text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-full hover:bg-foreground/90 transition-colors"
+          // className="font-body text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-full hover:bg-foreground/90 transition-colors"
         >
           + Add new product
-        </button>
+        </Button>
       </div>
 
       {isLoading ? (

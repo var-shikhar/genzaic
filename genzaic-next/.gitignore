@@ -8,3 +8,5 @@ logs/
 .superpowers/
 docs/
 .claude/*
+scripts
+docs

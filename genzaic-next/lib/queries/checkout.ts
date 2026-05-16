@@ -23,6 +23,7 @@ export interface CheckoutProduct {
 
 export interface Order {
   id: string
+  orderNumber?: string
   productTitle: string
   productThumbnail?: string | null
   buyerName: string
@@ -35,6 +36,10 @@ export interface Order {
   downloadCount: number
   maxDownloads: number
   createdAt: string
+  /** Short-lived access token returned from create-order. */
+  accessToken?: string
+  /** True if create-order auto-created a buyer account. */
+  createdNewBuyer?: boolean
 }
 
 export const checkoutKeys = {

@@ -18,6 +18,7 @@ import {
   Bell,
   PanelLeftClose,
   PanelLeftOpen,
+  ShoppingBag,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -30,7 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Tooltip,
@@ -228,18 +229,24 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0 bg-primary/10">
-              <div className="p-5 border-b">
-                <Link
-                  href="/dashboard"
-                  className="flex items-center"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <Wordmark size="md" />
-                </Link>
-              </div>
-              <div className="p-4">
-                <SidebarNav onItemClick={() => setMobileOpen(false)} />
+            {/* Solid background on mobile so the sheet doesn't bleed the dim
+                backdrop through a translucent tint. The `bg-primary/10` overlay
+                preserves the brand wash that the desktop aside uses. */}
+            <SheetContent side="left" className="w-64 p-0 bg-background">
+              <SheetTitle className="sr-only">Navigation menu</SheetTitle>
+              <div className="h-full bg-primary/10">
+                <div className="p-5 border-b">
+                  <Link
+                    href="/dashboard"
+                    className="flex items-center"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <Wordmark size="md" />
+                  </Link>
+                </div>
+                <div className="p-4">
+                  <SidebarNav onItemClick={() => setMobileOpen(false)} />
+                </div>
               </div>
             </SheetContent>
           </Sheet>
@@ -280,6 +287,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/my-purchases">
+                    <ShoppingBag className="mr-2 h-4 w-4" />
+                    My purchases
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/settings">
                     <Settings className="mr-2 h-4 w-4" />

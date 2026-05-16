@@ -25,6 +25,7 @@ interface KycDocumentDropProps {
    *  narrow input next to it. */
   aspect?: string
   className?: string
+  hasAspect?: boolean
 }
 
 const ACCEPT_ATTR = KYC_FILE_LIMITS.acceptedMimes.join(",")
@@ -45,6 +46,7 @@ export function KycDocumentDrop({
   helpText,
   aspect = "aspect-[4/3]",
   className,
+  hasAspect = true,
 }: KycDocumentDropProps) {
   const inputId = React.useId()
 
@@ -53,8 +55,8 @@ export function KycDocumentDrop({
       {preview ? (
         <div
           className={cn(
-            "relative overflow-hidden border border-foreground/15 rounded-lg bg-muted/30",
-            aspect,
+            "relative overflow-hidden border border-foreground/15 rounded-lg bg-muted/30 h-40",
+            hasAspect && aspect,
           )}
         >
           {isPdf ? (
@@ -75,7 +77,7 @@ export function KycDocumentDrop({
               alt={fileName ?? "Uploaded document"}
               fill
               sizes="320px"
-              className="object-cover"
+              className="object-contain"
             />
           )}
           <button
@@ -91,10 +93,10 @@ export function KycDocumentDrop({
         <label
           htmlFor={inputId}
           className={cn(
-            "flex flex-col items-center justify-center gap-2 px-4 py-6",
+            "flex flex-col items-center justify-center gap-2 px-4 py-8",
             "border-2 border-dashed border-border rounded-lg",
             "cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors",
-            aspect,
+            hasAspect && aspect,
           )}
         >
           <Upload className="w-5 h-5 text-muted-foreground" />

@@ -167,13 +167,48 @@ export async function sendKycAdminDecisionEmail(
   })
 }
 
-export async function sendOrderConfirmationEmail(
-  buyerEmail: string,
-  buyerName: string,
-  productTitle: string,
-  orderId: string,
-  downloadLink: string
-) {
+/**
+ * Order-confirmation email.
+ *
+ * Two CTAs:
+ *  1. Primary — "Access your purchase" → the order page with a fresh,
+ *     time-limited access token. Always present.
+ *  2. Secondary — "Set up your password" → only included when we
+ *     auto-created a buyer account for this email at checkout. Lets the
+ *     buyer claim the account so they can log in later and see all their
+ *     purchases under My Purchases.
+ */
+export async function sendOrderConfirmationEmail(params: {
+  buyerEmail: string
+  buyerName: string
+  productTitle: string
+  orderNumber: string
+  accessUrl: string
+  /** Only set for newly-auto-created buyer accounts. */
+  passwordSetupUrl?: string
+}) {
+  const {
+    buyerEmail,
+    buyerName,
+    productTitle,
+    orderNumber,
+    accessUrl,
+    passwordSetupUrl,
+  } = params
+
+  const setupBlock = passwordSetupUrl
+    ? `
+        <div style="border-top: 1px solid #e5e7eb; margin-top: 32px; padding-top: 24px;">
+          <h3 style="color: #1f2937; font-size: 16px; margin: 0 0 8px;">Want to track future purchases?</h3>
+          <p style="color: #6b7280; margin: 0 0 16px;">We've reserved an account for you under <strong>${buyerEmail}</strong>. Set up a password and you'll be able to see all your purchases under My Purchases.</p>
+          <div style="text-align: center;">
+            <a href="${passwordSetupUrl}" style="display: inline-block; background: #ffffff; color: #6366f1; border: 1px solid #c7d2fe; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Set up your password</a>
+          </div>
+          <p style="color: #9ca3af; font-size: 12px; margin-top: 12px; text-align: center;">This link is valid for 24 hours.</p>
+        </div>
+      `
+    : ""
+
   return resend.emails.send({
     from: FROM,
     to: buyerEmail,
@@ -186,11 +221,13 @@ export async function sendOrderConfirmationEmail(
         <h2 style="color: #1f2937;">Thank you, ${buyerName}!</h2>
         <p style="color: #6b7280;">Your purchase of <strong>${productTitle}</strong> was successful.</p>
         <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
-          <p style="margin: 0; color: #374151;"><strong>Order ID:</strong> ${orderId}</p>
+          <p style="margin: 0; color: #374151;"><strong>Order #</strong> ${orderNumber}</p>
         </div>
         <div style="text-align: center; margin: 32px 0;">
-          <a href="${downloadLink}" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">Access Your Purchase</a>
+          <a href="${accessUrl}" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">Access your purchase</a>
         </div>
+        <p style="color: #9ca3af; font-size: 12px; text-align: center;">This link is valid for 24 hours. If it expires, log in to see your purchase under My Purchases.</p>
+        ${setupBlock}
       </div>
     `,
   })

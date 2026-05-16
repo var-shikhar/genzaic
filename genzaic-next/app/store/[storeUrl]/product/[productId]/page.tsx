@@ -10,19 +10,18 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { formatCurrency } from "@/lib/utils"
-import { env } from "@/lib/env"
+import { getPublicStorefrontProduct } from "@/lib/data/public-storefront"
+import { BuyButton } from "@/components/storefront/BuyButton"
+
+// PERF: Cache the rendered HTML for 60 seconds. Anonymous traffic gets served
+// from the Next.js cache without invoking the function. The data loader has
+// its own in-memory cache shared with the API route so cold renders only hit
+// Postgres once per (slug, productId) per cache window.
+export const revalidate = 60
 
 async function getProduct(storeUrl: string, productId: string) {
-  try {
-    const res = await fetch(
-      `${env.NEXT_PUBLIC_APP_URL}/api/storefront/public/${storeUrl}/products/${productId}`,
-      { next: { revalidate: 60 } }
-    )
-    if (!res.ok) return null
-    return res.json()
-  } catch {
-    return null
-  }
+  const result = await getPublicStorefrontProduct(storeUrl, productId)
+  return result.kind === "ok" ? result.payload : null
 }
 
 export async function generateMetadata({
@@ -229,12 +228,16 @@ export default async function ProductDetailPage({
                     </span>
                   )}
                 </div>
-                <Button asChild size="lg" className="w-full h-12 gap-2 gradient-primary text-white">
-                  <Link href={`/checkout/${product.id}`}>
-                    <ShoppingCart className="w-5 h-5" />
-                    Buy Now
-                  </Link>
-                </Button>
+                {seller?.id ? (
+                  <BuyButton productId={product.id} sellerId={seller.id} />
+                ) : (
+                  <Button asChild size="lg" className="w-full h-12 gap-2 gradient-primary text-white">
+                    <Link href={`/checkout/${product.id}`}>
+                      <ShoppingCart className="w-5 h-5" />
+                      Buy Now
+                    </Link>
+                  </Button>
+                )}
               </CardContent>
             </Card>
 

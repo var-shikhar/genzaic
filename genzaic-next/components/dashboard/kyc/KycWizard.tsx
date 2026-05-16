@@ -142,7 +142,7 @@ function KycWizardInner({ existing }: KycWizardProps) {
     try {
       await submitKyc.mutateAsync(fd)
       toast.success(
-        "— KYC submitted. Verification runs in the background — we'll email you when it's done.",
+        "— KYC submitted. Our team will review your details and email you within 5–10 business days.",
       )
       // Page-level branching (KycPanel) re-renders into the status view
       // because verificationStatus is now `pending` or `rejected`.
@@ -155,10 +155,10 @@ function KycWizardInner({ existing }: KycWizardProps) {
 
   return (
     <FormProvider {...form}>
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] lg:gap-10 xl:gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] lg:gap-6 xl:gap-8">
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-8 max-w-3xl min-w-0"
+          className="space-y-8 max-w-full min-w-0"
         >
           {/* Header */}
           <header className="space-y-3">
@@ -210,7 +210,6 @@ function KycWizardInner({ existing }: KycWizardProps) {
             <Button
               type="button"
               variant="outline"
-              shape="pill"
               onClick={retreat}
               disabled={step === "identity" || isSubmitting}
             >
@@ -220,14 +219,13 @@ function KycWizardInner({ existing }: KycWizardProps) {
             {step !== "review" ? (
               <Button
                 type="button"
-                shape="pill"
-                onClick={advance}
+                  onClick={advance}
                 disabled={isSubmitting}
               >
                 Next
               </Button>
             ) : (
-              <Button type="submit" shape="pill" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Saving…" : "Submit for verification"}
               </Button>
             )}

@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
-import { db, products, storefronts, orders, orderItems } from "@/lib/db"
+import { randomBytes } from "crypto"
+import { db, products, storefronts, orders, orderItems, users } from "@/lib/db"
 import { eq, and } from "drizzle-orm"
 import { checkoutSchema } from "@/lib/validations/checkout"
 import { auth } from "@/lib/auth"
 import { enforceRateLimit } from "@/lib/rate-limit"
 import { cache, cacheKeys } from "@/lib/cache"
 import { PLATFORM_FEE_PERCENT, GST_RATE } from "@/lib/config"
+import { issueOrderAccessToken } from "@/lib/order-access"
+import { sendOrderConfirmationEmail } from "@/lib/email"
+import { env } from "@/lib/env"
 
 // POST /api/checkout/create-order
 export async function POST(req: NextRequest) {
@@ -70,9 +74,65 @@ export async function POST(req: NextRequest) {
       totalAmount = parseFloat((baseAmount + gstAmount).toFixed(2))
     }
 
-    // Check if buyer is a logged-in user
+    // Resolve the buyer account.
+    //
+    // Three cases:
+    //  (a) Logged-in user — use their session id.
+    //  (b) Guest, but their email already maps to a user (seller or prior
+    //      buyer) — link the order to that existing user. Do NOT create
+    //      a duplicate account.
+    //  (c) Brand-new email — create a buyer account so all future
+    //      purchases on this email aggregate under one user, and so we
+    //      can email them a "set up your password" link to claim it.
     const session = await auth()
-    const buyerId = session?.user?.id ?? null
+    let buyerId: string | null = session?.user?.id ?? null
+    let createdNewBuyer = false
+    let passwordSetupToken: string | null = null
+
+    if (!buyerId) {
+      const [existing] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, buyerEmail))
+        .limit(1)
+
+      if (existing) {
+        buyerId = existing.id
+      } else {
+        // Auto-create a buyer-only account. No password set yet —
+        // the confirmation email will hand them a 24-hour token to
+        // claim the account via the existing reset-password flow.
+        passwordSetupToken = randomBytes(32).toString("hex")
+        const passwordSetupExpiresAt = new Date(
+          Date.now() + 24 * 60 * 60 * 1000,
+        )
+        const [newUser] = await db
+          .insert(users)
+          .values({
+            email: buyerEmail,
+            name: buyerName,
+            role: "buyer",
+            isSeller: false,
+            emailVerified: false,
+            passwordResetToken: passwordSetupToken,
+            passwordResetExpiresAt: passwordSetupExpiresAt,
+          })
+          .returning({ id: users.id })
+
+        buyerId = newUser.id
+        createdNewBuyer = true
+      }
+    }
+
+    // Block self-purchase. Sellers buying their own products would inflate
+    // sales counts, distort revenue stats, and (in buyer-fee mode) cost
+    // them the platform fee for no reason.
+    if (buyerId && buyerId === storefront.userId) {
+      return NextResponse.json(
+        { error: "You can't purchase your own product." },
+        { status: 400 }
+      )
+    }
 
     // Use the actual product file URL as the download link
     const downloadLink = product.deliveryType === "download" ? product.fileUrl : null
@@ -133,6 +193,35 @@ export async function POST(req: NextRequest) {
     cache.delete(cacheKeys.salesStats(storefront.userId))
     cache.delete(cacheKeys.recentOrders(storefront.userId))
 
+    // Mint two access tokens:
+    //  - `checkout` (10 min): handed back in the response so the frontend
+    //    can redirect the buyer straight to `/order/[id]?t=...`. Short-
+    //    lived because they're standing on the success screen *right now*.
+    //  - `email` (24 h): embedded in the confirmation email so they can
+    //    come back later from their inbox. We send the email
+    //    fire-and-forget so a Resend hiccup doesn't fail the order.
+    const checkoutToken = await issueOrderAccessToken(order.id, "checkout")
+    const emailToken = await issueOrderAccessToken(order.id, "email")
+
+    const accessUrl = `${env.NEXT_PUBLIC_APP_URL}/order/${order.id}?t=${emailToken.token}`
+    const passwordSetupUrl = passwordSetupToken
+      ? `${env.NEXT_PUBLIC_APP_URL}/reset-password?token=${passwordSetupToken}`
+      : undefined
+
+    sendOrderConfirmationEmail({
+      buyerEmail,
+      buyerName,
+      productTitle: product.title,
+      orderNumber: order.orderNumber,
+      accessUrl,
+      passwordSetupUrl,
+    }).catch((err) => {
+      console.error(
+        `Failed to send order confirmation email for order ${order.id}:`,
+        err,
+      )
+    })
+
     // Return a response shape that matches the frontend expectations
     return NextResponse.json(
       {
@@ -142,6 +231,8 @@ export async function POST(req: NextRequest) {
         status: order.status,
         deliveryType: item.deliveryType,
         items: [item],
+        accessToken: checkoutToken.token,
+        createdNewBuyer,
       },
       { status: 201 }
     )
