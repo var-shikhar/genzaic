@@ -1,15 +1,16 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse, after } from "next/server"
 import { db, users } from "@/lib/db"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { signupApiSchema } from "@/lib/validations/auth"
 import { generateOTP } from "@/lib/utils"
 import { sendVerificationEmail } from "@/lib/email"
+import { sendEmailWithRetry } from "@/lib/email/send-with-retry"
 import { enforceRateLimit } from "@/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
   // 5 signups per IP per 5 minutes — protects against bcrypt-CPU + email-send abuse.
-  const limited = enforceRateLimit(req, "signup", { max: 5, windowSec: 300 })
+  const limited = await enforceRateLimit(req, "signup", { max: 5, windowSec: 300 })
   if (limited) return limited
 
   try {
@@ -45,7 +46,17 @@ export async function POST(req: NextRequest) {
       emailVerificationExpiresAt: expiresAt,
     })
 
-    await sendVerificationEmail(email, name, otp)
+    // Fire-and-forget the verification email with retry. Response is returned
+    // immediately; Next.js `after()` runs the send once streaming completes,
+    // so a slow Resend call never delays signup.
+    after(() =>
+      sendEmailWithRetry(() => sendVerificationEmail(email, name, otp), {
+        label: "verification",
+        to: email,
+      }).catch(() => {
+        /* terminal failure already logged inside helper */
+      }),
+    )
 
     return NextResponse.json({ message: "Account created. Check your email for the OTP.", email }, { status: 201 })
   } catch (error) {

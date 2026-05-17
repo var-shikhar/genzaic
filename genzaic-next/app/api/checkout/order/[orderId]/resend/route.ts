@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse, after } from "next/server"
 import { eq } from "drizzle-orm"
 import { db, orders, orderItems } from "@/lib/db"
 import { issueOrderAccessToken } from "@/lib/order-access"
 import { sendOrderConfirmationEmail } from "@/lib/email"
+import { sendEmailWithRetry } from "@/lib/email/send-with-retry"
 import { enforceRateLimit } from "@/lib/rate-limit"
 import { env } from "@/lib/env"
 
@@ -18,7 +19,7 @@ type RouteContext = { params: Promise<{ orderId: string }> }
 //
 // Rate-limited aggressively to prevent abuse as an email-spam vector.
 export async function POST(req: NextRequest, { params }: RouteContext) {
-  const limited = enforceRateLimit(req, "order-resend", {
+  const limited = await enforceRateLimit(req, "order-resend", {
     max: 3,
     windowSec: 600,
   })
@@ -51,16 +52,22 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     const { token } = await issueOrderAccessToken(order.id, "email")
     const accessUrl = `${env.NEXT_PUBLIC_APP_URL}/order/${order.id}?t=${token}`
 
-    await sendOrderConfirmationEmail({
-      buyerEmail: order.buyerEmail,
-      buyerName: order.buyerName,
-      productTitle: item.productTitle,
-      orderNumber: order.orderNumber,
-      accessUrl,
-      // No password-setup link on resend — that's a one-time thing from
-      // the original create-order. If the buyer wants to claim their
-      // account, they go through forgot-password instead.
-    })
+    after(() =>
+      sendEmailWithRetry(
+        () =>
+          sendOrderConfirmationEmail({
+            buyerEmail: order.buyerEmail,
+            buyerName: order.buyerName,
+            productTitle: item.productTitle,
+            orderNumber: order.orderNumber,
+            accessUrl,
+            // No password-setup link on resend — that's a one-time thing
+            // from the original create-order. If the buyer wants to claim
+            // their account they go through forgot-password instead.
+          }),
+        { label: "order-resend", to: order.buyerEmail },
+      ).catch(() => {}),
+    )
 
     return NextResponse.json({ ok: true })
   } catch (error) {

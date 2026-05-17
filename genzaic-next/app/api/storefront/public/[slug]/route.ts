@@ -17,7 +17,7 @@ type RouteContext = { params: Promise<{ slug: string }> }
 // instance hop entirely for repeat visitors within the window.
 export async function GET(req: NextRequest, { params }: RouteContext) {
   // 60 reads per IP per minute. Anonymous endpoint, most exposed surface.
-  const limited = enforceRateLimit(req, "public-storefront", { max: 60, windowSec: 60 })
+  const limited = await enforceRateLimit(req, "public-storefront", { max: 60, windowSec: 60 })
   if (limited) return limited
 
   try {

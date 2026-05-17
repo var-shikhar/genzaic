@@ -2,8 +2,16 @@ import { NextRequest, NextResponse } from "next/server"
 import { db, users, storefronts } from "@/lib/db"
 import { eq, and, gt } from "drizzle-orm"
 import { verifyOTPSchema } from "@/lib/validations/auth"
+import { enforceRateLimit } from "@/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
+  // 10 OTP attempts per IP per minute. OTPs are 6 digits (10^6 space) and
+  // expire in 10 minutes, so a single inbox gets at most ~100 guesses per
+  // OTP — guess probability ~0.01%. Without this an attacker could try
+  // thousands per second.
+  const limited = await enforceRateLimit(req, "verify-email", { max: 10, windowSec: 60 })
+  if (limited) return limited
+
   try {
     const body = await req.json()
     const parsed = verifyOTPSchema.safeParse(body)

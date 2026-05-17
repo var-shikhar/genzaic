@@ -29,7 +29,7 @@ type RouteContext = { params: Promise<{ orderId: string }> }
  * inserts a downloadLogs row, bumps the global product download counter.
  */
 export async function POST(req: NextRequest, { params }: RouteContext) {
-  const limited = enforceRateLimit(req, "order-download", {
+  const limited = await enforceRateLimit(req, "order-download", {
     max: 20,
     windowSec: 60,
   })

@@ -1,64 +1,54 @@
-"use client"
+import { HydrationBoundary, dehydrate, QueryClient } from "@tanstack/react-query"
+import { auth } from "@/lib/auth"
+import {
+  getProductStatsForUser,
+  getSalesStatsForUser,
+  getProductsListForUser,
+} from "@/lib/data/dashboard"
+import { productKeys } from "@/lib/queries/products"
+import { salesKeys } from "@/lib/queries/sales"
+import { DashboardClient } from "./DashboardClient"
 
-import { useSession } from "next-auth/react"
-import { useProductStats, useProducts } from "@/lib/queries/products"
-import { useSalesStats } from "@/lib/queries/sales"
-import { EditorsHeadline, Dateline, MonoLabel } from "@/components/brand/primitives"
-import { OnYourDesk } from "@/components/dashboard/OnYourDesk"
-import { ReaderMail } from "@/components/dashboard/ReaderMail"
-import { WeekStrip } from "@/components/dashboard/WeekStrip"
-import { formatCurrency } from "@/lib/utils"
-
-export default function EditorsDeskPage() {
-  const { data: session } = useSession()
-  const { data: productStats } = useProductStats()
-  const { data: salesStats } = useSalesStats()
-  const { data: productsData } = useProducts({ page: 1, limit: 50 })
-
+// Server Component: prefetches the three dashboard queries in parallel and
+// hands them to the client via HydrationBoundary. The client's `useQuery`
+// hooks read from the seeded cache on first render — no waterfall, no blank
+// stat cards while a TanStack Query fires from the browser.
+export default async function DashboardPage() {
+  const session = await auth()
+  const userId = session?.user?.id as string | undefined
   const firstName = (session?.user?.name ?? "there").split(" ")[0]
-  const draftCount = productsData?.products?.filter((p) => !p.isActive).length ?? 0
-  const totalProducts = productStats?.totalProducts ?? 0
+
+  const qc = new QueryClient()
+
+  if (userId) {
+    // Three independent reads — run in parallel. Errors are non-fatal: if a
+    // prefetch fails we fall back to client-side fetching, the dashboard just
+    // briefly shows zeros instead of seeded values.
+    await Promise.all([
+      qc
+        .prefetchQuery({
+          queryKey: productKeys.stats(),
+          queryFn: () => getProductStatsForUser(userId),
+        })
+        .catch(() => {}),
+      qc
+        .prefetchQuery({
+          queryKey: salesKeys.stats(),
+          queryFn: () => getSalesStatsForUser(userId),
+        })
+        .catch(() => {}),
+      qc
+        .prefetchQuery({
+          queryKey: productKeys.list({ page: 1, limit: 50 }),
+          queryFn: () => getProductsListForUser(userId, { page: 1, limit: 50 }),
+        })
+        .catch(() => {}),
+    ])
+  }
 
   return (
-    <div className="space-y-10">
-      <header className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-8 items-end pb-6 border-b border-primary/30">
-        <div>
-          <Dateline date={new Date()} prefix={`${totalProducts} products on the shelf`} />
-          <EditorsHeadline accentWord="back," size="xl" className="mt-3">
-            {`Welcome back, ${firstName}.`}
-          </EditorsHeadline>
-          <p className="font-display italic text-base text-muted-foreground mt-2">
-            {draftCount > 0
-              ? `${draftCount} ${draftCount === 1 ? "piece is" : "pieces are"} waiting for your eye.`
-              : "A clear desk. Quiet shelves."}
-          </p>
-        </div>
-        <div className="text-right">
-          <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted-foreground space-y-3">
-            <div>
-              <div className="font-display text-2xl font-semibold tracking-[-0.02em] text-foreground num-tabular">
-                {formatCurrency(salesStats?.monthlyRevenue ?? 0)}
-              </div>
-              this month
-            </div>
-            <div>
-              <div className="font-display text-2xl font-semibold tracking-[-0.02em] text-foreground num-tabular">
-                {totalProducts} / {salesStats?.totalOrders ?? 0}
-              </div>
-              filed / sold
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-10">
-        <OnYourDesk />
-        <ReaderMail />
-      </div>
-
-      <WeekStrip />
-
-      <MonoLabel className="block text-center pt-4 opacity-50">— end —</MonoLabel>
-    </div>
+    <HydrationBoundary state={dehydrate(qc)}>
+      <DashboardClient firstName={firstName} />
+    </HydrationBoundary>
   )
 }

@@ -42,6 +42,14 @@ const envSchema = z.object({
   // ─── App ─────────────────────────────────────────────────────────────────
   NEXT_PUBLIC_APP_URL: z.string().url(),
 
+  // ─── Rate limiting (Upstash Redis — optional) ─────────────────────────
+  // When both are set, lib/rate-limit uses a distributed Upstash sliding
+  // window. When either is missing, falls back to the per-instance
+  // in-memory limiter (fine for local dev / single-instance deployments,
+  // but ineffective under serverless fan-out — wire Upstash in production).
+  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
+
   // ─── Runtime ─────────────────────────────────────────────────────────────
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
   NODE_ENV: z

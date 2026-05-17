@@ -1,10 +1,17 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse, after } from "next/server"
 import { db, users } from "@/lib/db"
 import { eq } from "drizzle-orm"
 import { generateOTP } from "@/lib/utils"
 import { sendVerificationEmail } from "@/lib/email"
+import { sendEmailWithRetry } from "@/lib/email/send-with-retry"
+import { enforceRateLimit } from "@/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
+  // 3 resends per IP per 10 minutes — prevents using this as an email-spam
+  // vector while still letting a stuck user genuinely re-request.
+  const limited = await enforceRateLimit(req, "resend-otp", { max: 3, windowSec: 600 })
+  if (limited) return limited
+
   try {
     const { email } = await req.json()
     if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 })
@@ -22,7 +29,12 @@ export async function POST(req: NextRequest) {
       updatedAt: new Date(),
     }).where(eq(users.id, user.id))
 
-    await sendVerificationEmail(email, user.name, otp)
+    after(() =>
+      sendEmailWithRetry(() => sendVerificationEmail(email, user.name, otp), {
+        label: "verification-resend",
+        to: email,
+      }).catch(() => {}),
+    )
 
     return NextResponse.json({ message: "OTP sent successfully" })
   } catch (error) {

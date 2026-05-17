@@ -180,6 +180,15 @@ export const orders = pgTable(
     index("orders_status_idx").on(t.status),
     index("orders_coupon_id_idx").on(t.couponId),
     index("orders_created_at_idx").on(t.createdAt),
+    // Composite: every seller dashboard query is "this seller's most recent
+    // orders" (sales table, recent orders, weekly strip). With (sellerId,
+    // createdAt DESC) Postgres can serve those in a single index-only range
+    // scan instead of filtering then sorting.
+    index("orders_seller_id_created_at_idx").on(t.sellerId, t.createdAt.desc()),
+    // Composite: stats endpoints filter on sellerId + status (e.g. "this
+    // seller's completed-only count / revenue"). Saves a sort+filter pass
+    // versus two single-column indexes.
+    index("orders_seller_id_status_idx").on(t.sellerId, t.status),
   ],
 )
 
