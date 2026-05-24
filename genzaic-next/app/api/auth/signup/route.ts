@@ -6,6 +6,7 @@ import { signupApiSchema } from "@/lib/validations/auth"
 import { generateOTP } from "@/lib/utils"
 import { sendVerificationEmail } from "@/lib/email"
 import { enforceRateLimit } from "@/lib/rate-limit"
+import { notifyEvent } from "@/lib/notifications/notify"
 
 export async function POST(req: NextRequest) {
   // 5 signups per IP per 5 minutes — protects against bcrypt-CPU + email-send abuse.
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     const otp = generateOTP()
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
 
-    await db.insert(users).values({
+    const [newUser] = await db.insert(users).values({
       name,
       email,
       passwordHash,
@@ -43,9 +44,25 @@ export async function POST(req: NextRequest) {
       emailVerified: false,
       emailVerificationToken: otp,
       emailVerificationExpiresAt: expiresAt,
-    })
+    }).returning({ id: users.id })
 
     await sendVerificationEmail(email, name, otp)
+
+    // Welcome notification — email suppressed because signup already sends the
+    // verification OTP email; we don't want two emails landing back-to-back.
+    try {
+      await notifyEvent({
+        userId: newUser.id,
+        type: "welcome",
+        title: "Welcome to GenZaic 🎉",
+        message:
+          "Glad to have you. Browse the marketplace or start your seller setup any time.",
+        link: "/",
+        suppress: { email: true },
+      })
+    } catch (err) {
+      console.error("[notifications] welcome emit failed:", err)
+    }
 
     return NextResponse.json({ message: "Account created. Check your email for the OTP.", email }, { status: 201 })
   } catch (error) {

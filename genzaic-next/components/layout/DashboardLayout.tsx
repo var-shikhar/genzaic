@@ -15,7 +15,6 @@ import {
   LogOut,
   Menu,
   ChevronDown,
-  Bell,
   PanelLeftClose,
   PanelLeftOpen,
   ShoppingBag,
@@ -43,6 +42,8 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { getInitials } from "@/lib/utils"
 import { Wordmark } from "@/components/brand/primitives"
 import { RouteLoadingOverlay } from "@/components/layout/RouteLoadingOverlay"
+import { NotificationBell } from "@/components/notifications/NotificationBell"
+import { PushOptInBanner } from "@/components/notifications/PushOptInBanner"
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -255,9 +256,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-            </Button>
+            <NotificationBell />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -311,6 +310,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </DropdownMenu>
           </div>
         </header>
+
+        <PushOptInBanner />
 
         {/* Main content. No overflow-auto here: the parent flex uses
             min-h-screen (not a fixed height), so overflow-auto would create

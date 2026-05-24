@@ -87,6 +87,14 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "welcome",
   "system",
 ])
+export const notificationOutboxChannelEnum = pgEnum(
+  "notification_outbox_channel",
+  ["push", "email"],
+)
+export const notificationOutboxStatusEnum = pgEnum(
+  "notification_outbox_status",
+  ["pending", "sent", "failed", "skipped"],
+)
 
 // ─── Imprint customization (Editorial OS) ────────────────────────────────────
 export const coverPresetEnum = pgEnum("cover_preset", [

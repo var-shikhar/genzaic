@@ -57,6 +57,13 @@
       "when": 1779192000000,
       "tag": "0007_order_access_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1779621281722,
+      "tag": "0008_talented_photon",
+      "breakpoints": true
     }
   ]
 }

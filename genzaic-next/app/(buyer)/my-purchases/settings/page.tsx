@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { User, Lock, Bell, Store } from "lucide-react"
+import { User, Lock, Store } from "lucide-react"
 import { toast } from "sonner"
 import { useSession } from "next-auth/react"
 import { useProfile, useUpdateProfile } from "@/lib/queries/user"
@@ -12,10 +12,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
-import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
+import { NotificationPreferences } from "@/components/notifications/NotificationPreferences"
 
 export default function BuyerSettingsPage() {
   const router = useRouter()
@@ -26,8 +25,6 @@ export default function BuyerSettingsPage() {
   const [name, setName] = useState("")
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
-  const [emailNotifications, setEmailNotifications] = useState(true)
-  const [marketingEmails, setMarketingEmails] = useState(false)
 
   // Sync name from profile on load
   if (profile && name === "" && profile.name) {
@@ -149,36 +146,7 @@ export default function BuyerSettingsPage() {
 
         {/* Notifications */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="w-5 h-5" />
-                Notifications
-              </CardTitle>
-              <CardDescription>Manage how you receive notifications</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Email Notifications</p>
-                  <p className="text-sm text-muted-foreground">
-                    Receive emails about your purchases and downloads
-                  </p>
-                </div>
-                <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Marketing Emails</p>
-                  <p className="text-sm text-muted-foreground">
-                    Receive updates about new products and offers
-                  </p>
-                </div>
-                <Switch checked={marketingEmails} onCheckedChange={setMarketingEmails} />
-              </div>
-            </CardContent>
-          </Card>
+          <NotificationPreferences />
         </motion.div>
 
         {/* Become a Seller */}

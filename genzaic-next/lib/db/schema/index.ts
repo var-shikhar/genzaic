@@ -16,7 +16,7 @@ import { storefronts } from "./storefronts"
 import { categories, tags, products, productVariants, productImages, productTags } from "./catalog"
 import { carts, cartItems, coupons, orders, orderItems, payments, couponUsages, orderAccessTokens } from "./commerce"
 import { reviews, follows, wishlists } from "./social"
-import { notifications, notificationPreferences } from "./notifications"
+import { notifications, notificationPreferences, userDevices, notificationOutbox } from "./notifications"
 import { kyc } from "./kyc"
 import { payouts, downloadLogs } from "./payouts"
 
@@ -52,6 +52,10 @@ export type Follow = typeof follows.$inferSelect
 export type Wishlist = typeof wishlists.$inferSelect
 export type Notification = typeof notifications.$inferSelect
 export type NotificationPreference = typeof notificationPreferences.$inferSelect
+export type UserDevice = typeof userDevices.$inferSelect
+export type NewUserDevice = typeof userDevices.$inferInsert
+export type NotificationOutbox = typeof notificationOutbox.$inferSelect
+export type NewNotificationOutbox = typeof notificationOutbox.$inferInsert
 export type Kyc = typeof kyc.$inferSelect
 export type NewKyc = typeof kyc.$inferInsert
 export type Payout = typeof payouts.$inferSelect

@@ -19,7 +19,7 @@ import {
   couponUsages,
 } from "./commerce"
 import { reviews, follows, wishlists } from "./social"
-import { notifications, notificationPreferences } from "./notifications"
+import { notifications, notificationPreferences, userDevices, notificationOutbox } from "./notifications"
 import { kyc } from "./kyc"
 import { payouts, downloadLogs } from "./payouts"
 
@@ -45,6 +45,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   wishlists: many(wishlists),
   notifications: many(notifications),
   notificationPreferences: many(notificationPreferences),
+  devices: many(userDevices),
   sellerCoupons: many(coupons),
 
   // follows (bidirectional)
@@ -259,11 +260,12 @@ export const wishlistsRelations = relations(wishlists, ({ one }) => ({
 // NOTIFICATIONS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export const notificationsRelations = relations(notifications, ({ one }) => ({
+export const notificationsRelations = relations(notifications, ({ one, many }) => ({
   user: one(users, {
     fields: [notifications.userId],
     references: [users.id],
   }),
+  outboxRows: many(notificationOutbox),
 }))
 
 export const notificationPreferencesRelations = relations(
@@ -272,6 +274,20 @@ export const notificationPreferencesRelations = relations(
     user: one(users, {
       fields: [notificationPreferences.userId],
       references: [users.id],
+    }),
+  }),
+)
+
+export const userDevicesRelations = relations(userDevices, ({ one }) => ({
+  user: one(users, { fields: [userDevices.userId], references: [users.id] }),
+}))
+
+export const notificationOutboxRelations = relations(
+  notificationOutbox,
+  ({ one }) => ({
+    notification: one(notifications, {
+      fields: [notificationOutbox.notificationId],
+      references: [notifications.id],
     }),
   }),
 )

@@ -37,5 +37,16 @@ export const markAllReadSchema = z.object({
   beforeDate: z.coerce.date().optional(),
 })
 
+export const registerDeviceSchema = z.object({
+  fcmToken: z.string().min(1, "fcmToken is required"),
+  userAgent: z.string().max(500).optional(),
+})
+
+export const unregisterDeviceSchema = z.object({
+  fcmToken: z.string().min(1),
+})
+
 export type UpdateNotificationPreferenceInput = z.infer<typeof updateNotificationPreferenceSchema>
 export type MarkNotificationsReadInput = z.infer<typeof markNotificationsReadSchema>
+export type MarkAllReadInput = z.infer<typeof markAllReadSchema>
+export type RegisterDeviceInput = z.infer<typeof registerDeviceSchema>

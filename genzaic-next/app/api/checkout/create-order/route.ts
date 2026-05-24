@@ -10,6 +10,7 @@ import { PLATFORM_FEE_PERCENT, GST_RATE } from "@/lib/config"
 import { issueOrderAccessToken } from "@/lib/order-access"
 import { sendOrderConfirmationEmail } from "@/lib/email"
 import { env } from "@/lib/env"
+import { notifyEvent } from "@/lib/notifications/notify"
 
 // POST /api/checkout/create-order
 export async function POST(req: NextRequest) {
@@ -221,6 +222,36 @@ export async function POST(req: NextRequest) {
         err,
       )
     })
+
+    // Notify seller (new order) and buyer (purchase ready). Buyer email is
+    // suppressed because the order-confirmation email above already covered it.
+    try {
+      await notifyEvent({
+        userId: storefront.userId,
+        type: "order_placed",
+        title: "New order received",
+        message: `Order #${order.orderNumber} for ${product.title}`,
+        link: `/dashboard/sales/${order.id}`,
+        metadata: { orderId: order.id, productId, amount: totalAmount },
+      })
+    } catch (err) {
+      console.error("[notifications] order_placed emit failed:", err)
+    }
+    if (buyerId) {
+      try {
+        await notifyEvent({
+          userId: buyerId,
+          type: "order_completed",
+          title: "Your purchase is ready",
+          message: `${product.title} — order #${order.orderNumber}`,
+          link: `/order/${order.id}`,
+          suppress: { email: true },
+          metadata: { orderId: order.id },
+        })
+      } catch (err) {
+        console.error("[notifications] order_completed emit failed:", err)
+      }
+    }
 
     // Return a response shape that matches the frontend expectations
     return NextResponse.json(

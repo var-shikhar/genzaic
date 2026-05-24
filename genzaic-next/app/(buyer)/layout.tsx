@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { Sparkles, ShoppingBag } from "lucide-react"
 import { BuyerProfileMenu } from "@/components/layout/BuyerProfileMenu"
+import { NotificationBell } from "@/components/notifications/NotificationBell"
+import { PushOptInBanner } from "@/components/notifications/PushOptInBanner"
 
 export default async function BuyerLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
@@ -37,10 +39,12 @@ export default async function BuyerLayout({ children }: { children: React.ReactN
               <ShoppingBag className="h-4 w-4 sm:hidden" />
               <span className="hidden sm:inline">My Purchases</span>
             </Link>
+            <NotificationBell />
             <BuyerProfileMenu user={user} />
           </nav>
         </div>
       </header>
+      <PushOptInBanner />
       <main className="container mx-auto px-4 py-4 sm:py-8">{children}</main>
     </div>
   )

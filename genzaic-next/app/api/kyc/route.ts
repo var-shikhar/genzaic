@@ -8,6 +8,7 @@ import {
   deleteFromImageKit,
   IMAGEKIT_FOLDERS,
 } from "@/lib/imagekit"
+import { notifyEvent } from "@/lib/notifications/notify"
 
 // GET /api/kyc — return the seller's KYC row (or null).
 export async function GET(_req: NextRequest) {
@@ -218,6 +219,19 @@ export async function POST(req: NextRequest) {
     // No auto-validation runs on submit. The row sits in pending state
     // until a future cron / admin tool flips verificationStatus. The seller
     // gets an email when that decision is made (separate path).
+    try {
+      await notifyEvent({
+        userId,
+        type: "kyc_submitted",
+        title: "KYC submitted",
+        message:
+          "We received your details and started verification. We'll let you know in 1–2 business days.",
+        link: "/dashboard/kyc",
+      })
+    } catch (err) {
+      console.error("[notifications] kyc_submitted emit failed:", err)
+    }
+
     return NextResponse.json(row, { status: existing ? 200 : 201 })
   } catch (error) {
     console.error("POST /api/kyc error:", error)
