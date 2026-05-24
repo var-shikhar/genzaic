@@ -45,8 +45,43 @@ async function _getPublicStorefront(slug: string) {
     cacheKeys.publicStorefront(slug),
     () =>
       retryOnce("public-storefront", async () => {
+        // Explicit column list: never expose internal fields like upiId,
+        // platformFeeMode, profileImageFileId, coverImageFileId, or
+        // imprintSlug to anonymous visitors. Also omits SEO-only fields
+        // that the listing view never reads.
         const [storefront] = await db
-          .select()
+          .select({
+            id: storefronts.id,
+            userId: storefronts.userId,
+            storeUrl: storefronts.storeUrl,
+            storeName: storefronts.storeName,
+            description: storefronts.description,
+            profileImageUrl: storefronts.profileImageUrl,
+            coverImageUrl: storefronts.coverImageUrl,
+            tagline: storefronts.tagline,
+            bio: storefronts.bio,
+            themeId: storefronts.themeId,
+            primaryColor: storefronts.primaryColor,
+            fontFamily: storefronts.fontFamily,
+            isPublished: storefronts.isPublished,
+            contactEmail: storefronts.contactEmail,
+            contactPhone: storefronts.contactPhone,
+            contactWhatsapp: storefronts.contactWhatsapp,
+            socialInstagram: storefronts.socialInstagram,
+            socialTwitter: storefronts.socialTwitter,
+            socialYoutube: storefronts.socialYoutube,
+            socialWebsite: storefronts.socialWebsite,
+            seoTitle: storefronts.seoTitle,
+            seoDescription: storefronts.seoDescription,
+            seoKeywords: storefronts.seoKeywords,
+            imprintName: storefronts.imprintName,
+            imprintTagline: storefronts.imprintTagline,
+            imprintEditorsNote: storefronts.imprintEditorsNote,
+            imprintCoverPreset: storefronts.imprintCoverPreset,
+            imprintTypePairing: storefronts.imprintTypePairing,
+            imprintAccent: storefronts.imprintAccent,
+            showcase: storefronts.showcase,
+          })
           .from(storefronts)
           .where(eq(storefronts.storeUrl, slug))
           .limit(1)
@@ -71,8 +106,31 @@ async function _getPublicStorefront(slug: string) {
             .from(users)
             .where(eq(users.id, storefront.userId))
             .limit(1),
+          // Card-view fields only: never expose fileUrl / fileId (private
+          // download asset) or sellerContact* (seller's delivery channels)
+          // on the listing endpoint.
           db
-            .select()
+            .select({
+              id: products.id,
+              storefrontId: products.storefrontId,
+              categoryId: products.categoryId,
+              slug: products.slug,
+              hexCode: products.hexCode,
+              title: products.title,
+              description: products.description,
+              price: products.price,
+              originalPrice: products.originalPrice,
+              coverImageUrl: products.coverImageUrl,
+              deliveryType: products.deliveryType,
+              subscriptionDuration: products.subscriptionDuration,
+              isActive: products.isActive,
+              stock: products.stock,
+              downloads: products.downloads,
+              views: products.views,
+              avgRating: products.avgRating,
+              totalReviews: products.totalReviews,
+              createdAt: products.createdAt,
+            })
             .from(products)
             .where(and(eq(products.storefrontId, storefront.id), eq(products.isActive, true)))
             .orderBy(desc(products.createdAt))

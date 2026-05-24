@@ -18,9 +18,25 @@ export function useOnboardingStatus() {
 
 export function useSelectPlan() {
   const qc = useQueryClient()
+  const { update } = useSession()
   return useMutation({
-    mutationFn: (input: { plan: string }) => postJSON<typeof input, unknown>("/api/onboarding/plan", input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: onboardingKeys.status() }),
+    mutationFn: (input: { plan: string }) =>
+      postJSON<typeof input, { planType?: string; isSeller?: boolean; role?: string }>(
+        "/api/onboarding/plan",
+        input,
+      ),
+    onSuccess: async (data) => {
+      // Plan selection flips role -> "seller" and isSeller -> true server-side.
+      // Without rotating the JWT here, middleware.ts keeps seeing the old
+      // buyer claims and bounces the user away from seller-only routes until
+      // their token naturally refreshes (lib/auth/config.ts, 7-day maxAge).
+      await update({
+        planType: data.planType,
+        isSeller: data.isSeller,
+        role: data.role,
+      })
+      qc.invalidateQueries({ queryKey: onboardingKeys.status() })
+    },
   })
 }
 

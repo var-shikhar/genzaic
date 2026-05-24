@@ -18,7 +18,7 @@ type RouteContext = { params: Promise<{ slug: string; productId: string }> }
 //   `invalidatePublicStorefrontBySlug` which wipes this prefix too.
 // - `Cache-Control: s-maxage=60, stale-while-revalidate=300` for edge caching.
 export async function GET(req: NextRequest, { params }: RouteContext) {
-  const limited = enforceRateLimit(req, "public-product", { max: 60, windowSec: 60 })
+  const limited = await enforceRateLimit(req, "public-product", { max: 60, windowSec: 60 })
   if (limited) return limited
 
   try {

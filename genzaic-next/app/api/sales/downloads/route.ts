@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { db, orders, orderItems, downloadLogs } from "@/lib/db"
-import { eq, desc, count, inArray } from "drizzle-orm"
+import { getDownloadLogsForUser } from "@/lib/data/sales"
 
-// GET /api/sales/downloads - download logs for all of the seller's orders
+// GET /api/sales/downloads — thin wrapper around the shared helper.
 export async function GET(req: NextRequest) {
   try {
     const session = await auth()
@@ -11,61 +10,12 @@ export async function GET(req: NextRequest) {
     const userId = session.user.id as string
 
     const { searchParams } = new URL(req.url)
-    const page = Math.max(1, Number(searchParams.get("page") ?? "1"))
-    const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit") ?? "10")))
-    const offset = (page - 1) * limit
-
-    // Get all order IDs for this seller
-    const sellerOrders = await db
-      .select({ id: orders.id })
-      .from(orders)
-      .where(eq(orders.sellerId, userId))
-
-    if (sellerOrders.length === 0) {
-      return NextResponse.json({ logs: [], total: 0, page, limit })
-    }
-
-    const orderIds = sellerOrders.map((o) => o.id)
-
-    // Get all order item IDs for these orders
-    const sellerOrderItems = await db
-      .select({ id: orderItems.id })
-      .from(orderItems)
-      .where(inArray(orderItems.orderId, orderIds))
-
-    if (sellerOrderItems.length === 0) {
-      return NextResponse.json({ logs: [], total: 0, page, limit })
-    }
-
-    const itemIds = sellerOrderItems.map((oi) => oi.id)
-
-    const whereClause = inArray(downloadLogs.orderItemId, itemIds)
-
-    const [totalResult, logs] = await Promise.all([
-      db.select({ count: count() }).from(downloadLogs).where(whereClause),
-      db
-        .select({
-          id: downloadLogs.id,
-          orderItemId: downloadLogs.orderItemId,
-          productTitle: downloadLogs.productTitle,
-          buyerName: downloadLogs.buyerName,
-          buyerEmail: downloadLogs.buyerEmail,
-          ipAddress: downloadLogs.ipAddress,
-          downloadedAt: downloadLogs.downloadedAt,
-        })
-        .from(downloadLogs)
-        .where(whereClause)
-        .orderBy(desc(downloadLogs.downloadedAt))
-        .limit(limit)
-        .offset(offset),
-    ])
-
-    return NextResponse.json({
-      logs,
-      total: Number(totalResult[0]?.count ?? 0),
-      page,
-      limit,
+    const result = await getDownloadLogsForUser(userId, {
+      page: Number(searchParams.get("page") ?? "1"),
+      limit: Number(searchParams.get("limit") ?? "10"),
     })
+
+    return NextResponse.json(result)
   } catch (error) {
     console.error("GET /api/sales/downloads error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

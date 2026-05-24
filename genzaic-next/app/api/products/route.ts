@@ -8,6 +8,7 @@ import { cache, cacheKeys } from "@/lib/cache"
 import { invalidatePublicStorefrontBySlug } from "@/lib/data/public-storefront"
 import { getStorefrontByUser } from "@/lib/db/storefront-helpers"
 import { coerceFormData } from "@/lib/api-form-data"
+import { enforceRateLimit } from "@/lib/rate-limit"
 import {
   parseStringArray,
   parseFileArray,
@@ -52,10 +53,35 @@ export async function GET(req: NextRequest) {
 
     const whereClause = and(...conditions)
 
+    // List view doesn't need fileUrl/fileId (private download asset),
+    // seoTitle/seoKeywords (only used on the detail page), or
+    // sellerContact* / subscriptionDuration (delivery-detail fields).
+    // Trimming them drops typical payload by ~30% and avoids leaking the
+    // private download URL via the list endpoint.
     const [totalResult, rows] = await Promise.all([
       db.select({ count: count() }).from(products).where(whereClause),
       db
-        .select()
+        .select({
+          id: products.id,
+          storefrontId: products.storefrontId,
+          categoryId: products.categoryId,
+          slug: products.slug,
+          hexCode: products.hexCode,
+          title: products.title,
+          description: products.description,
+          price: products.price,
+          originalPrice: products.originalPrice,
+          coverImageUrl: products.coverImageUrl,
+          deliveryType: products.deliveryType,
+          isActive: products.isActive,
+          stock: products.stock,
+          downloads: products.downloads,
+          views: products.views,
+          avgRating: products.avgRating,
+          totalReviews: products.totalReviews,
+          createdAt: products.createdAt,
+          updatedAt: products.updatedAt,
+        })
         .from(products)
         .where(whereClause)
         .orderBy(desc(products.createdAt))
@@ -77,6 +103,12 @@ export async function GET(req: NextRequest) {
 
 // POST /api/products - create product with optional thumbnail via ImageKit
 export async function POST(req: NextRequest) {
+  // 30 product creations per IP per minute. Generous for a real seller
+  // adding a batch, restrictive enough to prevent a runaway script from
+  // flooding the DB + cache invalidations + ImageKit uploads.
+  const limited = await enforceRateLimit(req, "products-create", { max: 30, windowSec: 60 })
+  if (limited) return limited
+
   try {
     const session = await auth()
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -116,27 +148,38 @@ export async function POST(req: NextRequest) {
         .returning()
     }
 
-    // Handle thumbnail upload
-    let coverImageUrl: string | undefined
-    let coverImageFileId: string | undefined
+    // Thumbnail + product file uploads run in parallel — they're independent
+    // ImageKit calls. Each ~150ms; serializing wastes a full round-trip.
     const thumbnail = formData.get("thumbnail") as File | null
-    if (thumbnail && thumbnail.size > 0) {
-      const buffer = Buffer.from(await thumbnail.arrayBuffer())
-      const result = await uploadToImageKit(buffer, thumbnail.name, IMAGEKIT_FOLDERS.THUMBNAILS)
-      coverImageUrl = result.url
-      coverImageFileId = result.fileId
-    }
-
-    // Handle product file upload (for downloadable products)
-    let fileUrl: string | undefined
-    let fileId: string | undefined
     const productFile = formData.get("productFile") as File | null
-    if (productFile && productFile.size > 0) {
-      const buffer = Buffer.from(await productFile.arrayBuffer())
-      const result = await uploadToImageKit(buffer, productFile.name, IMAGEKIT_FOLDERS.PRODUCTS)
-      fileUrl = result.url
-      fileId = result.fileId
-    }
+
+    const thumbnailUploadPromise =
+      thumbnail && thumbnail.size > 0
+        ? thumbnail
+            .arrayBuffer()
+            .then((ab) =>
+              uploadToImageKit(Buffer.from(ab), thumbnail.name, IMAGEKIT_FOLDERS.THUMBNAILS),
+            )
+        : Promise.resolve(null)
+
+    const productFileUploadPromise =
+      productFile && productFile.size > 0
+        ? productFile
+            .arrayBuffer()
+            .then((ab) =>
+              uploadToImageKit(Buffer.from(ab), productFile.name, IMAGEKIT_FOLDERS.PRODUCTS),
+            )
+        : Promise.resolve(null)
+
+    const [thumbResult, fileResult] = await Promise.all([
+      thumbnailUploadPromise,
+      productFileUploadPromise,
+    ])
+
+    const coverImageUrl = thumbResult?.url
+    const coverImageFileId = thumbResult?.fileId
+    const fileUrl = fileResult?.url
+    const fileId = fileResult?.fileId
 
     const { title, description, price, originalPrice, categoryId, deliveryType, externalUrl,
       sellerContactEmail, sellerContactPhone, sellerContactWhatsapp,

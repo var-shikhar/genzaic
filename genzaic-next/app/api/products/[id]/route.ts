@@ -109,33 +109,57 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
       )
     }
 
-    // Handle thumbnail upload/replacement
-    let coverImageUrl = existing.coverImageUrl
-    let coverImageFileId = existing.coverImageFileId
+    // Replace thumbnail and product file in parallel. Within each asset, the
+    // delete-old and upload-new calls also run concurrently — they target
+    // different ImageKit IDs so there's no ordering constraint, and the
+    // delete being slow (or failing — see fire-and-forget catch) never blocks
+    // the new upload. Cuts a 4-step serial chain (~400ms) into one wait.
     const thumbnail = formData.get("thumbnail") as File | null
-    if (thumbnail && thumbnail.size > 0) {
-      if (existing.coverImageFileId) {
-        await deleteFromImageKit(existing.coverImageFileId).catch(() => {})
-      }
-      const buffer = Buffer.from(await thumbnail.arrayBuffer())
-      const result = await uploadToImageKit(buffer, thumbnail.name, IMAGEKIT_FOLDERS.THUMBNAILS)
-      coverImageUrl = result.url
-      coverImageFileId = result.fileId
-    }
-
-    // Handle product file upload/replacement
-    let fileUrl = existing.fileUrl
-    let fileId = existing.fileId
     const productFile = formData.get("productFile") as File | null
-    if (productFile && productFile.size > 0) {
-      if (existing.fileId) {
-        await deleteFromImageKit(existing.fileId).catch(() => {})
-      }
-      const buffer = Buffer.from(await productFile.arrayBuffer())
-      const result = await uploadToImageKit(buffer, productFile.name, IMAGEKIT_FOLDERS.PRODUCTS)
-      fileUrl = result.url
-      fileId = result.fileId
-    }
+
+    const thumbnailReplacePromise: Promise<{ url: string; fileId: string } | null> =
+      thumbnail && thumbnail.size > 0
+        ? (async () => {
+            const [, uploaded] = await Promise.all([
+              existing.coverImageFileId
+                ? deleteFromImageKit(existing.coverImageFileId).catch(() => {})
+                : Promise.resolve(),
+              thumbnail
+                .arrayBuffer()
+                .then((ab) =>
+                  uploadToImageKit(Buffer.from(ab), thumbnail.name, IMAGEKIT_FOLDERS.THUMBNAILS),
+                ),
+            ])
+            return uploaded
+          })()
+        : Promise.resolve(null)
+
+    const productFileReplacePromise: Promise<{ url: string; fileId: string } | null> =
+      productFile && productFile.size > 0
+        ? (async () => {
+            const [, uploaded] = await Promise.all([
+              existing.fileId
+                ? deleteFromImageKit(existing.fileId).catch(() => {})
+                : Promise.resolve(),
+              productFile
+                .arrayBuffer()
+                .then((ab) =>
+                  uploadToImageKit(Buffer.from(ab), productFile.name, IMAGEKIT_FOLDERS.PRODUCTS),
+                ),
+            ])
+            return uploaded
+          })()
+        : Promise.resolve(null)
+
+    const [thumbResult, fileResult] = await Promise.all([
+      thumbnailReplacePromise,
+      productFileReplacePromise,
+    ])
+
+    const coverImageUrl = thumbResult?.url ?? existing.coverImageUrl
+    const coverImageFileId = thumbResult?.fileId ?? existing.coverImageFileId
+    const fileUrl = fileResult?.url ?? existing.fileUrl
+    const fileId = fileResult?.fileId ?? existing.fileId
 
     const updateData: Record<string, unknown> = {
       updatedAt: new Date(),

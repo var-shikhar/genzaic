@@ -92,45 +92,62 @@ export async function PUT(req: NextRequest) {
     const removeProfileImage = formData.get("removeProfileImage") === "true"
     const removeCoverImage = formData.get("removeCoverImage") === "true"
 
-    // Handle profile image
-    let profileImageUrl = existing?.profileImageUrl ?? null
-    let profileImageFileId = existing?.profileImageFileId ?? null
-    const profileImage = formData.get("profileImage") as File | null
-    if (profileImage && profileImage.size > 0) {
-      if (existing?.profileImageFileId) {
-        await deleteFromImageKit(existing.profileImageFileId).catch(() => {})
+    // Both image slots run independently in parallel. Within each slot the
+    // delete-old + upload-new also overlap. Cuts the previous 4-call serial
+    // chain (~500ms typical) into a single ~150ms wait.
+    type ImageResult = { url: string | null; fileId: string | null }
+
+    async function handleImageSlot(
+      newFile: File | null,
+      removeFlag: boolean,
+      existingFileId: string | null | undefined,
+      existingUrl: string | null | undefined,
+      folder: string,
+    ): Promise<ImageResult> {
+      if (newFile && newFile.size > 0) {
+        const [, uploaded] = await Promise.all([
+          existingFileId
+            ? deleteFromImageKit(existingFileId).catch(() => {})
+            : Promise.resolve(),
+          newFile
+            .arrayBuffer()
+            .then((ab) => uploadToImageKit(Buffer.from(ab), newFile.name, folder)),
+        ])
+        return { url: uploaded.url, fileId: uploaded.fileId }
       }
-      const buffer = Buffer.from(await profileImage.arrayBuffer())
-      const result = await uploadToImageKit(buffer, profileImage.name, IMAGEKIT_FOLDERS.STOREFRONT)
-      profileImageUrl = result.url
-      profileImageFileId = result.fileId
-    } else if (removeProfileImage) {
-      if (existing?.profileImageFileId) {
-        await deleteFromImageKit(existing.profileImageFileId).catch(() => {})
+      if (removeFlag) {
+        if (existingFileId) {
+          await deleteFromImageKit(existingFileId).catch(() => {})
+        }
+        return { url: null, fileId: null }
       }
-      profileImageUrl = null
-      profileImageFileId = null
+      return { url: existingUrl ?? null, fileId: existingFileId ?? null }
     }
 
-    // Handle cover image
-    let coverImageUrl = existing?.coverImageUrl ?? null
-    let coverImageFileId = existing?.coverImageFileId ?? null
+    const profileImage = formData.get("profileImage") as File | null
     const coverImage = formData.get("coverImage") as File | null
-    if (coverImage && coverImage.size > 0) {
-      if (existing?.coverImageFileId) {
-        await deleteFromImageKit(existing.coverImageFileId).catch(() => {})
-      }
-      const buffer = Buffer.from(await coverImage.arrayBuffer())
-      const result = await uploadToImageKit(buffer, coverImage.name, IMAGEKIT_FOLDERS.STOREFRONT)
-      coverImageUrl = result.url
-      coverImageFileId = result.fileId
-    } else if (removeCoverImage) {
-      if (existing?.coverImageFileId) {
-        await deleteFromImageKit(existing.coverImageFileId).catch(() => {})
-      }
-      coverImageUrl = null
-      coverImageFileId = null
-    }
+
+    const [profileResult, coverResult] = await Promise.all([
+      handleImageSlot(
+        profileImage,
+        removeProfileImage,
+        existing?.profileImageFileId,
+        existing?.profileImageUrl,
+        IMAGEKIT_FOLDERS.STOREFRONT,
+      ),
+      handleImageSlot(
+        coverImage,
+        removeCoverImage,
+        existing?.coverImageFileId,
+        existing?.coverImageUrl,
+        IMAGEKIT_FOLDERS.STOREFRONT,
+      ),
+    ])
+
+    const profileImageUrl = profileResult.url
+    const profileImageFileId = profileResult.fileId
+    const coverImageUrl = coverResult.url
+    const coverImageFileId = coverResult.fileId
 
     const dataToWrite = {
       ...parsed.data,

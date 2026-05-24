@@ -1,16 +1,17 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse, after } from "next/server"
 import { db, users } from "@/lib/db"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { signupApiSchema } from "@/lib/validations/auth"
 import { generateOTP } from "@/lib/utils"
 import { sendVerificationEmail } from "@/lib/email"
+import { sendEmailWithRetry } from "@/lib/email/send-with-retry"
 import { enforceRateLimit } from "@/lib/rate-limit"
 import { notifyEvent } from "@/lib/notifications/notify"
 
 export async function POST(req: NextRequest) {
   // 5 signups per IP per 5 minutes — protects against bcrypt-CPU + email-send abuse.
-  const limited = enforceRateLimit(req, "signup", { max: 5, windowSec: 300 })
+  const limited = await enforceRateLimit(req, "signup", { max: 5, windowSec: 300 })
   if (limited) return limited
 
   try {
@@ -46,7 +47,17 @@ export async function POST(req: NextRequest) {
       emailVerificationExpiresAt: expiresAt,
     }).returning({ id: users.id })
 
-    await sendVerificationEmail(email, name, otp)
+    // Fire-and-forget the verification email with retry. Response is returned
+    // immediately; Next.js `after()` runs the send once streaming completes,
+    // so a slow Resend call never delays signup.
+    after(() =>
+      sendEmailWithRetry(() => sendVerificationEmail(email, name, otp), {
+        label: "verification",
+        to: email,
+      }).catch(() => {
+        /* terminal failure already logged inside helper */
+      }),
+    )
 
     // Welcome notification — email suppressed because signup already sends the
     // verification OTP email; we don't want two emails landing back-to-back.

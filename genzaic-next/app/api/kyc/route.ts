@@ -197,24 +197,27 @@ export async function POST(req: NextRequest) {
       updatedAt: new Date(),
     }
 
-    // Persist the kyc row, then mirror users.kycStatus. Not wrapped in a
-    // transaction — the neon-http driver doesn't support them. If the
-    // users update fails, we throw; drift between the two tables is
-    // recoverable on the seller's next submit (baseValues resets everything).
-    let row
-    if (existing) {
-      ;[row] = await db
-        .update(kyc)
-        .set(baseValues)
-        .where(eq(kyc.userId, userId))
-        .returning()
-    } else {
-      ;[row] = await db.insert(kyc).values(baseValues).returning()
-    }
-    await db
-      .update(users)
-      .set({ kycStatus: "pending", updatedAt: new Date() })
-      .where(eq(users.id, userId))
+    // Atomic: persist the kyc row AND mirror users.kycStatus so the two can
+    // never drift. Now possible because we're on the Neon WebSocket driver
+    // (the old neon-http driver didn't support transactions; see the
+    // original commit that called this out).
+    const row = await db.transaction(async (tx) => {
+      let saved
+      if (existing) {
+        ;[saved] = await tx
+          .update(kyc)
+          .set(baseValues)
+          .where(eq(kyc.userId, userId))
+          .returning()
+      } else {
+        ;[saved] = await tx.insert(kyc).values(baseValues).returning()
+      }
+      await tx
+        .update(users)
+        .set({ kycStatus: "pending", updatedAt: new Date() })
+        .where(eq(users.id, userId))
+      return saved
+    })
 
     // No auto-validation runs on submit. The row sits in pending state
     // until a future cron / admin tool flips verificationStatus. The seller

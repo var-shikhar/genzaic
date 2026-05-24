@@ -97,6 +97,15 @@ export const products = pgTable(
     index("products_created_at_idx").on(t.createdAt),
     index("products_deleted_at_idx").on(t.deletedAt),
     index("products_price_idx").on(t.price),
+    // Composite: the public storefront pulls "active products for storefront
+    // ORDER BY createdAt DESC LIMIT N" on every visit. With this composite
+    // Postgres does a single index range scan; without it, it has to scan
+    // `products_storefront_id_idx`, filter for is_active, then sort.
+    index("products_storefront_active_created_idx").on(
+      t.storefrontId,
+      t.isActive,
+      t.createdAt.desc(),
+    ),
     check("products_price_check", sql`${t.price} >= 0`),
   ],
 )
