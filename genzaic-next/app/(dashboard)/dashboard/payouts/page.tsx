@@ -1,7 +1,7 @@
 import { HydrationBoundary, dehydrate, QueryClient } from "@tanstack/react-query"
 import { auth } from "@/lib/auth"
 import { getPayoutStatsForUser, getPayoutsForUser } from "@/lib/data/payouts"
-import { payoutKeys } from "@/lib/queries/payouts"
+import { payoutKeys } from "@/lib/queries/payouts-keys"
 import { PayoutsClient } from "./PayoutsClient"
 
 // Server Component: prefetches payout stats + the initial unfiltered payouts
