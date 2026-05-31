@@ -32,8 +32,14 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
     if (result.kind === "not_found") {
       return NextResponse.json({ error: "Storefront not found" }, { status: 404 })
     }
-    if (result.kind === "unpublished") {
-      return NextResponse.json({ error: "This storefront is not published" }, { status: 404 })
+    if (result.kind === "closed") {
+      // The storefront exists but is in the explicit `unpublished` state.
+      // Surface the closed-state payload so a public-API caller can render
+      // the same closed page the SSR route does.
+      return NextResponse.json(
+        { kind: "closed", payload: result.payload },
+        { status: 200 },
+      )
     }
 
     return NextResponse.json(result.payload, {

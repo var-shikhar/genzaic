@@ -11,12 +11,23 @@ if (typeof WebSocket === "undefined") {
   neonConfig.webSocketConstructor = ws
 }
 
-// Single shared Pool. With Neon's serverless driver each Pool maintains one
-// WebSocket connection that's reused across queries — much cheaper than the
-// previous neon-http driver, which paid a fresh TLS handshake per query and
-// could not support transactions at all. On Vercel each warm Lambda gets one
-// Pool that survives across requests for the lifetime of the container.
-const pool = new Pool({ connectionString: env.DATABASE_URL })
+// HMR-safe Pool singleton. Next.js dev re-evaluates this module on every
+// hot reload — without the globalThis guard, each reload spawned a new
+// Pool + WebSocket while old ones dangled, eventually exhausting Neon's
+// per-IP connection cap and surfacing as a 500 on /api/notifications/
+// unread-count (the polling query that fires first after a reload). On
+// Vercel each warm Lambda is a fresh process, so the global cache is a
+// no-op there.
+type GlobalWithPool = typeof globalThis & { __neonPool?: Pool }
+const globalForPool = globalThis as GlobalWithPool
+
+const pool =
+  globalForPool.__neonPool ??
+  new Pool({ connectionString: env.DATABASE_URL })
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPool.__neonPool = pool
+}
 
 export const db = drizzle(pool, { schema })
 

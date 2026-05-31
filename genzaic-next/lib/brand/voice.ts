@@ -50,4 +50,5 @@ export const VALIDATION = {
   externalUrlRequired: "— External URL is required for this delivery type.",
   externalUrlInvalid: "— That URL doesn't look right.",
   contactRequiredManual: "— Add at least one contact method (email, phone, or WhatsApp).",
+  originalPriceTooLow: "— 'Was' should be higher than the current price.",
 } as const

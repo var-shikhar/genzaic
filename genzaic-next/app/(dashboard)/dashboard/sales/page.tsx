@@ -6,7 +6,7 @@ import {
   getRecentOrdersForUser,
   getDownloadLogsForUser,
 } from "@/lib/data/sales"
-import { salesKeys } from "@/lib/queries/sales"
+import { salesKeys } from "@/lib/queries/sales-keys"
 import { SalesClient } from "./SalesClient"
 
 // Server Component: prefetches the four sales-page queries in parallel and

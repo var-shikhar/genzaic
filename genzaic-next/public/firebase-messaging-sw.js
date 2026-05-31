@@ -7,11 +7,11 @@ importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js
 importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js")
 
 firebase.initializeApp({
-  apiKey: "REPLACE_WITH_NEXT_PUBLIC_FIREBASE_API_KEY",
-  authDomain: "REPLACE_WITH_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN",
-  projectId: "REPLACE_WITH_NEXT_PUBLIC_FIREBASE_PROJECT_ID",
-  messagingSenderId: "REPLACE_WITH_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID",
-  appId: "REPLACE_WITH_NEXT_PUBLIC_FIREBASE_APP_ID",
+  apiKey: "AIzaSyBv5Dn18ErpHsQWJJ5mvcSP-UmAt12lNhU",
+  authDomain: "genzaic-a03e7.firebaseapp.com",
+  projectId: "genzaic-a03e7",
+  messagingSenderId: "610379344771",
+  appId: "1:610379344771:web:8c0a6eb8e8f355b796e4b6",
 })
 
 const messaging = firebase.messaging()
@@ -19,7 +19,10 @@ const messaging = firebase.messaging()
 messaging.onBackgroundMessage((payload) => {
   const title = payload.notification?.title || "GenZaic"
   const body = payload.notification?.body || ""
-  const link = payload.data?.link || "/notifications"
+  // Fallback target when a push arrives without an explicit link. /notifications
+  // was retired in favour of the bell-triggered drawer, so route clicks to the
+  // dashboard instead.
+  const link = payload.data?.link || "/dashboard"
   self.registration.showNotification(title, {
     body,
     icon: "/icon-192.png",
@@ -30,7 +33,7 @@ messaging.onBackgroundMessage((payload) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close()
-  const link = event.notification.data?.link || "/"
+  const link = event.notification.data?.link || "/dashboard"
   event.waitUntil(
     clients.matchAll({ type: "window" }).then((wins) => {
       for (const w of wins) {

@@ -1,7 +1,21 @@
 async function readErrorMessage(res: Response): Promise<string> {
   try {
-    const body = (await res.json()) as { error?: string; message?: string }
-    return body?.error ?? body?.message ?? `Request failed: ${res.status}`
+    const body = (await res.json()) as {
+      error?: string
+      message?: string
+      detail?: string
+    }
+    // Prefer `detail` when present — endpoints that return structured 4xx
+    // responses (e.g. the publish gate) put the actionable explanation
+    // there, while `error` carries the generic category. Surfacing detail
+    // first means toasts read like "Add at least 2 active products"
+    // instead of "Publish gate failed".
+    return (
+      body?.detail ??
+      body?.error ??
+      body?.message ??
+      `Request failed: ${res.status}`
+    )
   } catch {
     return `Request failed: ${res.status}`
   }
@@ -35,6 +49,20 @@ export async function putJSON<TIn, TOut>(url: string, body: TIn): Promise<TOut> 
 
 export async function patchJSON<TOut>(url: string): Promise<TOut> {
   const res = await fetch(url, { method: "PATCH" })
+  if (!res.ok) throw new Error(await readErrorMessage(res))
+  return (await res.json()) as TOut
+}
+
+/** PATCH with a JSON body — used when the route accepts edits in the payload. */
+export async function patchJSONBody<TIn, TOut>(
+  url: string,
+  body: TIn,
+): Promise<TOut> {
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
   if (!res.ok) throw new Error(await readErrorMessage(res))
   return (await res.json()) as TOut
 }

@@ -1,0 +1,2 @@
+ALTER TABLE "storefronts" DROP CONSTRAINT "storefronts_imprint_slug_format";--> statement-breakpoint
+ALTER TABLE "storefronts" ADD CONSTRAINT "storefronts_imprint_slug_format" CHECK ("storefronts"."imprint_slug" IS NULL OR "storefronts"."imprint_slug" ~ '^[a-z0-9][a-z0-9_-]*$');

@@ -1,7 +1,14 @@
 "use client"
 
 import { useFormContext } from "react-hook-form"
-import { Upload, X, Link as LinkIcon, FileText } from "lucide-react"
+import {
+  Upload,
+  X,
+  Link as LinkIcon,
+  FileText,
+  RefreshCw,
+  AlertCircle,
+} from "lucide-react"
 import type { ProductInput } from "@/lib/validations/product"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -24,6 +31,17 @@ export interface ProductFileLabel {
   name: string
   sub: string
   state: "staged" | "uploaded"
+}
+
+/**
+ * Strip the random storage-hash suffix that upload pipelines tack on for
+ * uniqueness. The pattern is `_<8-12 alphanumerics>` immediately before the
+ * extension. If no suffix matches, return the name unchanged so user-given
+ * filenames (e.g. `report_v2.pdf`) are not mangled.
+ */
+function displayFileName(name: string): string {
+  const m = name.match(/^(.+)_([A-Za-z0-9]{8,12})(\.[^.]+)$/)
+  return m ? `${m[1]}${m[3]}` : name
 }
 
 interface DeliverySectionProps {
@@ -65,6 +83,11 @@ export function DeliverySection({
 }: DeliverySectionProps) {
   const form = useFormContext<ProductInput>()
   const deliveryType = form.watch("deliveryType")
+  const isActive = form.watch("isActive")
+  // Live-publish requires a file. Show the warning only when the seller
+  // has the active switch on; drafts can stay empty.
+  const showMissingFileWarning =
+    deliveryType === "download" && isActive && !productFileLabel
 
   return (
     <div className="space-y-5 pt-5">
@@ -74,7 +97,7 @@ export function DeliverySection({
         render={({ field }) => (
           <FormItem>
             <FormLabel className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-              Delivery method
+              Delivery method <span className="text-flicker not-italic">*</span>
             </FormLabel>
             <FormControl>
               <DeliveryTypeSelector
@@ -88,67 +111,130 @@ export function DeliverySection({
       />
 
       {deliveryType === "download" && (
-        <div className="space-y-3">
-          <Label className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-            Product file
-          </Label>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <Label className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+              Product file{" "}
+              {isActive && <span className="text-flicker not-italic">*</span>}
+            </Label>
+            {showMissingFileWarning && (
+              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-flicker inline-flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                Required to go live
+              </span>
+            )}
+          </div>
 
-          {productFileLabel && (
-            <ul className="border border-border rounded-md divide-y divide-border">
-              <li className="grid grid-cols-[40px_1fr_auto] items-center gap-3 p-3">
-                <div className="w-10 h-10 rounded-md bg-primary/10 text-primary flex items-center justify-center">
-                  <FileText className="h-4 w-4" />
+          {productFileLabel ? (
+            <div
+              className={cn(
+                "group grid grid-cols-[40px_1fr_auto] items-center gap-3 p-2.5 rounded-md border border-border bg-card",
+                "transition-colors hover:border-foreground/30",
+              )}
+            >
+              <div className="w-10 h-10 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+                <FileText className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <div
+                  className="font-display text-sm font-medium truncate"
+                  title={productFileLabel.name}
+                >
+                  {displayFileName(productFileLabel.name)}
                 </div>
-                <div className="min-w-0">
-                  <div className="font-display text-base font-medium truncate">
-                    {productFileLabel.name}
-                  </div>
-                  <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground mt-0.5">
-                    {productFileLabel.state === "staged"
-                      ? `${productFileLabel.sub} · staged for upload`
-                      : "uploaded"}
-                  </div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                  {productFileLabel.state === "staged" ? (
+                    <>
+                      <span>{productFileLabel.sub}</span>
+                      <span aria-hidden>·</span>
+                      <span className="text-primary">Staged</span>
+                    </>
+                  ) : (
+                    <span className="inline-flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                      Uploaded
+                    </span>
+                  )}
                 </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <label
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md cursor-pointer",
+                    "font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground",
+                    "hover:bg-foreground/5 hover:text-foreground transition-colors",
+                  )}
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  Replace
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      onPickProductFile(file)
+                      onRemoveProductFile(false)
+                      e.target.value = ""
+                    }}
+                  />
+                </label>
                 <button
                   type="button"
                   onClick={() => {
                     if (productFile) onPickProductFile(null)
                     else onRemoveProductFile(true)
                   }}
-                  className="p-2 hover:bg-flicker/10 text-flicker rounded-md"
+                  className="p-1.5 hover:bg-flicker/10 text-muted-foreground hover:text-flicker rounded-md transition-colors"
                   aria-label="Remove file"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                 </button>
-              </li>
-            </ul>
+              </div>
+            </div>
+          ) : (
+            <label
+              className={cn(
+                "flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-md cursor-pointer transition-colors",
+                showMissingFileWarning
+                  ? "border-flicker/50 bg-flicker/5 hover:bg-flicker/10"
+                  : "border-border hover:border-primary hover:bg-primary/5",
+              )}
+            >
+              <Upload
+                className={cn(
+                  "w-5 h-5 mb-1.5",
+                  showMissingFileWarning
+                    ? "text-flicker"
+                    : "text-muted-foreground",
+                )}
+              />
+              <p
+                className={cn(
+                  "font-display italic text-sm",
+                  showMissingFileWarning
+                    ? "text-flicker"
+                    : "text-muted-foreground",
+                )}
+              >
+                Click to upload product file
+              </p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground mt-1">
+                PDF · ZIP · MP4 · etc.
+              </p>
+              <input
+                type="file"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  onPickProductFile(file)
+                  onRemoveProductFile(false)
+                  e.target.value = ""
+                }}
+              />
+            </label>
           )}
-
-          <label
-            className={cn(
-              "flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-border rounded-md cursor-pointer",
-              "hover:border-primary hover:bg-primary/5 transition-colors",
-            )}
-          >
-            <Upload className="w-6 h-6 mb-1.5 text-muted-foreground" />
-            <p className="font-display italic text-sm text-muted-foreground">
-              {productFileLabel ? "Replace file" : "Click to upload product file"}
-            </p>
-            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground mt-1">
-              PDF · ZIP · MP4 · etc.
-            </p>
-            <input
-              type="file"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (!file) return
-                onPickProductFile(file)
-                onRemoveProductFile(false)
-                e.target.value = ""
-              }}
-            />
-          </label>
         </div>
       )}
 
@@ -159,7 +245,8 @@ export function DeliverySection({
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                External URL
+                External URL{" "}
+                {isActive && <span className="text-flicker not-italic">*</span>}
               </FormLabel>
               <FormControl>
                 <div className="relative">

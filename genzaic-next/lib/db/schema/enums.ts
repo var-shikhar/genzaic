@@ -125,3 +125,10 @@ export const imprintAccentEnum = pgEnum("imprint_accent", [
   "ochre",
   "slate",
 ])
+
+// ─── Storefront publish state ─────────────────────────────────────────────────
+export const publishStateEnum = pgEnum("publish_state", [
+  "never_published",
+  "published",
+  "unpublished",
+])

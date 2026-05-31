@@ -5,8 +5,8 @@ import {
   getSalesStatsForUser,
   getProductsListForUser,
 } from "@/lib/data/dashboard"
-import { productKeys } from "@/lib/queries/products"
-import { salesKeys } from "@/lib/queries/sales"
+import { productKeys } from "@/lib/queries/products-keys"
+import { salesKeys } from "@/lib/queries/sales-keys"
 import { DashboardClient } from "./DashboardClient"
 
 // Server Component: prefetches the three dashboard queries in parallel and

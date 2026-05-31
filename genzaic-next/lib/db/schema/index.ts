@@ -2,6 +2,7 @@
 export * from "./enums"
 export * from "./users"
 export * from "./storefronts"
+export * from "./storefront-drafts"
 export * from "./catalog"
 export * from "./commerce"
 export * from "./social"
@@ -13,6 +14,7 @@ export * from "./relations"
 // ─── Type Exports ─────────────────────────────────────────────────────────────
 import { users, sessions } from "./users"
 import { storefronts } from "./storefronts"
+import { storefrontDrafts } from "./storefront-drafts"
 import { categories, tags, products, productVariants, productImages, productTags } from "./catalog"
 import { carts, cartItems, coupons, orders, orderItems, payments, couponUsages, orderAccessTokens } from "./commerce"
 import { reviews, follows, wishlists } from "./social"
@@ -25,6 +27,8 @@ export type NewUser = typeof users.$inferInsert
 export type Session = typeof sessions.$inferSelect
 export type Storefront = typeof storefronts.$inferSelect
 export type NewStorefront = typeof storefronts.$inferInsert
+export type StorefrontDraft = typeof storefrontDrafts.$inferSelect
+export type NewStorefrontDraft = typeof storefrontDrafts.$inferInsert
 export type Category = typeof categories.$inferSelect
 export type NewCategory = typeof categories.$inferInsert
 export type Tag = typeof tags.$inferSelect

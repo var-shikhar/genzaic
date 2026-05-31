@@ -10,10 +10,22 @@ import {
   Users,
   Youtube,
 } from "lucide-react"
+import { auth } from "@/lib/auth"
+import { and, eq, desc } from "drizzle-orm"
+import { db, storefronts, products as productsTable } from "@/lib/db"
 import { getPublicStorefront } from "@/lib/data/public-storefront"
+import { getDraftByIdForUser } from "@/lib/db/storefront-helpers"
 import PublicProductBrowser from "@/components/store/PublicProductBrowser"
+import { ClosedStorePage } from "@/components/store/ClosedStorePage"
+import { DraftPreviewBanner } from "@/components/store/DraftPreviewBanner"
+import {
+  StorefrontPreview,
+  type PreviewProduct,
+  type PreviewStorefront,
+} from "@/components/store/StorefrontPreview"
 import { ShowcaseSection } from "@/components/store/showcase/ShowcaseSection"
 import type { StorefrontShowcase } from "@/lib/showcase/types"
+import type { DraftContent } from "@/lib/validations/storefront"
 import {
   themeFor,
   presetToThemeId,
@@ -37,14 +49,97 @@ export const revalidate = 60
 
 interface PageProps {
   params: Promise<{ storeUrl: string }>
+  searchParams: Promise<{ draft?: string }>
 }
 
-export default async function PublicStorefrontPage({ params }: PageProps) {
+export default async function PublicStorefrontPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { storeUrl } = await params
+  const { draft: draftId } = await searchParams
+
+  // Owner-only draft preview: authenticated owner can preview their own
+  // unpublished draft by appending ?draft=<id>.
+  if (draftId) {
+    const session = await auth()
+    if (!session?.user) notFound()
+    const draft = await getDraftByIdForUser(
+      draftId,
+      session.user.id as string,
+    )
+    if (!draft) notFound()
+    const c = draft.content as DraftContent
+    const [liveRow] = await db
+      .select({ id: storefronts.id })
+      .from(storefronts)
+      .where(eq(storefronts.userId, draft.userId))
+      .limit(1)
+    const liveProducts: PreviewProduct[] = liveRow
+      ? await db
+          .select({
+            id: productsTable.id,
+            title: productsTable.title,
+            price: productsTable.price,
+            originalPrice: productsTable.originalPrice,
+            coverImageUrl: productsTable.coverImageUrl,
+          })
+          .from(productsTable)
+          .where(
+            and(
+              eq(productsTable.storefrontId, liveRow.id),
+              eq(productsTable.isActive, true),
+            ),
+          )
+          .orderBy(desc(productsTable.createdAt))
+          .limit(12)
+      : []
+    const previewStore: PreviewStorefront = {
+      storeName: c.imprintName ?? null,
+      tagline: c.imprintTagline ?? null,
+      description: c.imprintEditorsNote ?? null,
+      profileImageUrl: c.profileImage?.url ?? null,
+      coverImageUrl: c.coverImage?.url ?? null,
+      themeId: presetToThemeId(c.imprintCoverPreset),
+      primaryColor: c.primaryColor ?? "#6E37C7",
+      fontFamily: c.imprintTypePairing,
+      socialInstagram: c.socialInstagram,
+      socialTwitter: c.socialTwitter,
+      socialYoutube: c.socialYoutube,
+      socialWebsite: c.socialWebsite,
+      seller: null,
+    }
+    return (
+      <>
+        <DraftPreviewBanner label={draft.name} />
+        <meta name="robots" content="noindex,nofollow" />
+        <StorefrontPreview
+          storefront={previewStore}
+          products={liveProducts}
+          hideBuyActions
+        />
+      </>
+    )
+  }
 
   const result = await getPublicStorefront(storeUrl)
-  if (result.kind !== "ok") {
+  if (result.kind === "not_found") {
     notFound()
+  }
+  if (result.kind === "closed") {
+    const c = result.payload
+    return (
+      <ClosedStorePage
+        storeName={c.imprintName ?? c.storeName}
+        headline={c.closedHeadline}
+        message={c.closedMessage}
+        showSocials={c.closedShowSocials}
+        socials={c.socials}
+        themeId={presetToThemeId(c.imprintCoverPreset)}
+        primaryColor={c.primaryColor ?? "#073f7c"}
+        typePairing={c.imprintTypePairing}
+      />
+    )
   }
   const storefront = result.payload
   const products = storefront.products

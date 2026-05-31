@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm"
 import { users, sessions } from "./users"
 import { storefronts } from "./storefronts"
+import { storefrontDrafts } from "./storefront-drafts"
 import {
   categories,
   tags,
@@ -47,6 +48,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   notificationPreferences: many(notificationPreferences),
   devices: many(userDevices),
   sellerCoupons: many(coupons),
+  storefrontDrafts: many(storefrontDrafts),
 
   // follows (bidirectional)
   followers: many(follows, { relationName: "following" }),
@@ -65,6 +67,16 @@ export const storefrontsRelations = relations(storefronts, ({ one, many }) => ({
   user: one(users, { fields: [storefronts.userId], references: [users.id] }),
   products: many(products),
 }))
+
+export const storefrontDraftsRelations = relations(
+  storefrontDrafts,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [storefrontDrafts.userId],
+      references: [users.id],
+    }),
+  }),
+)
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CATALOG

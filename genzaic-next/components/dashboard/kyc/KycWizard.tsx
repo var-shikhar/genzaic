@@ -58,6 +58,9 @@ function KycWizardInner({ existing }: KycWizardProps) {
 
   const form = useForm<KycInput>({
     resolver: zodResolver(kycSchema),
+    // Live validation so errors appear/clear as the seller types — and so
+    // we can gate Next/Submit on real validity, not just a click-time check.
+    mode: "onChange",
     defaultValues: useMemo(
       () => ({
         panNumber: existing?.panNumber ?? "",
@@ -74,6 +77,31 @@ function KycWizardInner({ existing }: KycWizardProps) {
       [existing],
     ),
   })
+
+  // ─── Per-step validity (drives Next/Submit disabled state) ────────────────
+  // Subscribed via watch() so the buttons re-render the moment a field
+  // becomes valid or invalid.
+  const watchedValues = form.watch()
+  const errors = form.formState.errors
+
+  const fieldOk = (name: keyof KycInput) => {
+    const v = watchedValues[name]
+    const filled = typeof v === "string" ? v.trim().length > 0 : v != null
+    return filled && !errors[name]
+  }
+  const identityFieldsValid = KYC_STEP_FIELDS.identity.every(fieldOk)
+  const paymentFieldsValid = KYC_STEP_FIELDS.payment.every(fieldOk)
+  const haveBothFiles = Boolean(
+    (panFile || existing?.panFileUrl) &&
+      (aadhaarFile || existing?.aadhaarFileUrl),
+  )
+  const canAdvance =
+    step === "identity"
+      ? identityFieldsValid && haveBothFiles
+      : step === "payment"
+        ? paymentFieldsValid
+        : false
+  const canSubmit = identityFieldsValid && paymentFieldsValid && haveBothFiles
 
   // ─── Step navigation ───────────────────────────────────────────────────────
 
@@ -157,7 +185,12 @@ function KycWizardInner({ existing }: KycWizardProps) {
     <FormProvider {...form}>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] lg:gap-6 xl:gap-8">
         <form
-          onSubmit={form.handleSubmit(onSubmit)}
+          // Block ALL form-level submit events — Enter key in inputs, stray
+          // re-render clicks, anything. Submission only happens when the
+          // Submit button's onClick fires explicitly. This is the fix for
+          // the "review page auto-submits" bug.
+          onSubmit={(e) => e.preventDefault()}
+          noValidate
           className="space-y-8 max-w-full min-w-0"
         >
           {/* Header */}
@@ -219,13 +252,17 @@ function KycWizardInner({ existing }: KycWizardProps) {
             {step !== "review" ? (
               <Button
                 type="button"
-                  onClick={advance}
-                disabled={isSubmitting}
+                onClick={advance}
+                disabled={!canAdvance || isSubmitting}
               >
                 Next
               </Button>
             ) : (
-              <Button type="submit" disabled={isSubmitting}>
+              <Button
+                type="button"
+                onClick={form.handleSubmit(onSubmit)}
+                disabled={!canSubmit || isSubmitting}
+              >
                 {isSubmitting ? "Saving…" : "Submit for verification"}
               </Button>
             )}

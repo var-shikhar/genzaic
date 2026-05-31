@@ -71,6 +71,27 @@
       "when": 1779621281723,
       "tag": "0009_married_hiroim",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1780113087317,
+      "tag": "0010_wild_namorita",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1780117650998,
+      "tag": "0011_unknown_shard",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1780218309208,
+      "tag": "0012_spooky_purple_man",
+      "breakpoints": true
     }
   ]
 }

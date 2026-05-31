@@ -1,5 +1,5 @@
 import "server-only"
-import { and, eq, desc, lt, count } from "drizzle-orm"
+import { and, eq, desc, gte, lt, count } from "drizzle-orm"
 import { db, notifications, type Notification } from "@/lib/db"
 
 export interface NotificationsPage {
@@ -12,6 +12,8 @@ export interface NotificationsListOpts {
   limit?: number
   unread?: boolean
   type?: string
+  /** Window size in days. Filters to notifs created within the last N days. */
+  days?: number
 }
 
 const DEFAULT_LIMIT = 20
@@ -34,6 +36,10 @@ export async function getNotificationsForUser(
   const filters = [eq(notifications.userId, userId)]
   if (opts.unread) filters.push(eq(notifications.isRead, false))
   if (opts.type) filters.push(eq(notifications.type, opts.type as never))
+  if (opts.days && opts.days > 0) {
+    const since = new Date(Date.now() - opts.days * 24 * 60 * 60 * 1000)
+    filters.push(gte(notifications.createdAt, since))
+  }
   if (opts.cursor) {
     const cursorDate = new Date(opts.cursor)
     if (!Number.isNaN(cursorDate.getTime())) {

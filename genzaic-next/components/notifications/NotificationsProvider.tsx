@@ -12,6 +12,8 @@ import {
   useRegisterDevice,
 } from "@/hooks/use-notifications"
 
+const debug = process.env.NODE_ENV !== "production"
+
 export function NotificationsProvider() {
   const { data: session, status } = useSession()
   const qc = useQueryClient()
@@ -26,21 +28,46 @@ export function NotificationsProvider() {
 
     ;(async () => {
       const messaging = await getMessagingClient()
-      if (!messaging || !mounted) return
+      if (!messaging) {
+        if (debug) console.warn("[push] messaging unsupported in this browser")
+        return
+      }
+      if (!mounted) return
 
-      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+      if (typeof Notification === "undefined") {
+        if (debug) console.warn("[push] Notification API missing")
+        return
+      }
+      if (Notification.permission !== "granted") {
+        if (debug) console.info("[push] permission =", Notification.permission, "— skipping token registration")
+        // Still attach the foreground listener below so granting via banner
+        // doesn't require a page reload.
+      } else {
         try {
+          if (debug) console.info("[push] registering service worker…")
           const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js")
+          // Wait for activation before subscribing — see PushOptInBanner for
+          // the longer explanation. getToken() calls pushManager.subscribe()
+          // which requires an active worker.
+          await navigator.serviceWorker.ready
+          if (debug) console.info("[push] sw active, requesting FCM token…")
           const token = await getToken(messaging, {
             vapidKey: VAPID_KEY,
             serviceWorkerRegistration: swReg,
           })
-          if (token && mounted && token !== currentTokenRef.current) {
+          if (!token) {
+            if (debug) console.warn("[push] getToken returned empty — VAPID key wrong, or push service blocked")
+          } else if (mounted && token !== currentTokenRef.current) {
             currentTokenRef.current = token
-            await register({ fcmToken: token, userAgent: navigator.userAgent }).catch(() => {})
+            if (debug) console.info("[push] token acquired, registering with server:", token.slice(0, 16) + "…")
+            await register({ fcmToken: token, userAgent: navigator.userAgent })
+              .then(() => debug && console.info("[push] device registered ✓"))
+              .catch((err) => console.warn("[push] device registration failed:", err))
+          } else if (debug) {
+            console.info("[push] token unchanged, skipping re-register")
           }
         } catch (err) {
-          console.warn("[notifications] token registration failed", err)
+          console.warn("[push] token registration failed", err)
         }
       }
 

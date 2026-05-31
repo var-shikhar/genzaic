@@ -74,11 +74,7 @@ export default function TestimonialsSection() {
           </p>
         </motion.div>
       </div>
-      <InfiniteMovingCards
-        items={testimonials}
-        direction="right"
-        speed="slow"
-      />
+      <InfiniteMovingCards items={testimonials} direction="left" speed="slow" />
     </section>
   )
 }

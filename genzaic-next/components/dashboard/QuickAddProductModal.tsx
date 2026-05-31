@@ -29,7 +29,6 @@ import { useProfile } from "@/lib/queries/user"
 import { getApiErrorMessage } from "@/lib/api-error"
 import { DeliveryTypeSelector } from "./DeliveryTypeSelector"
 import { CategoryPicker } from "./CategoryPicker"
-import { TOAST } from "@/lib/brand/voice"
 
 const quickSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters").max(500),
@@ -83,12 +82,28 @@ export function QuickAddProductModal({
     formData.append("isActive", "false")
     if (values.categoryId) formData.append("categoryId", values.categoryId)
 
+    // Fire the mutation first so `onMutate` runs (optimistic insert into
+    // the products list), THEN close the modal in the same tick. The user
+    // sees the modal disappear and their new product already in the list,
+    // instead of staring at a spinner. The server response only gates the
+    // post-create navigation; on error the optimistic insert rolls back
+    // automatically and we surface the toast.
+    const promise = createProduct(formData)
+    onOpenChange(false)
+    form.reset()
+
     try {
-      const created = await createProduct(formData)
-      toast.success(TOAST.productCreated)
-      handleClose()
+      const created = await promise
+      // The "filed" ritual on the edit page is the celebration — skip the
+      // toast so we don't double up.
+      const params = new URLSearchParams({
+        from: "quick-add",
+        filed: "1",
+        title: values.title,
+      })
+      if (created.hexCode) params.set("hex", created.hexCode)
       router.push(
-        `/dashboard/products/${created.slug ?? created.id}/edit?from=quick-add`,
+        `/dashboard/products/${created.slug ?? created.id}/edit?${params.toString()}`,
       )
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Failed to create product"))
@@ -179,6 +194,7 @@ export function QuickAddProductModal({
                 variant="paper"
                 className="flex-1"
                 onClick={handleClose}
+                disabled={isPending}
               >
                 Cancel
               </Button>

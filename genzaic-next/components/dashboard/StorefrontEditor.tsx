@@ -1,23 +1,33 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import { z } from "zod"
 import Image from "next/image"
-import { Upload, X, ExternalLink } from "lucide-react"
+import { Upload, X } from "lucide-react"
 import {
   useStorefront,
   useUpdateStorefront,
   useCheckSlug,
+  useDraft,
+  useDrafts,
+  useCreateDraft,
+  useUpdateDraft,
+  usePublishDraft,
 } from "@/lib/queries/storefront"
 import { useProducts } from "@/lib/queries/products"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { GenzaicLoader } from "@/components/ui/genzaic-loader"
-import { PublishStatusBadge } from "@/components/dashboard/PublishStatusBadge"
 import { PublishToShareDialog } from "@/components/dashboard/PublishToShareDialog"
+import { HeaderStrip } from "@/components/dashboard/storefront/HeaderStrip"
+import { UnpublishDialog } from "@/components/dashboard/storefront/UnpublishDialog"
+import { ClosedStateModal } from "@/components/dashboard/storefront/ClosedStateModal"
+import { SlugStatusBadge } from "@/components/dashboard/storefront/SlugStatusBadge"
+import type { DraftContent } from "@/lib/validations/storefront"
 import {
   imprintCoverPresetSchema,
   imprintTypePairingSchema,
@@ -48,11 +58,15 @@ const HEX_RE = /^#([0-9A-Fa-f]{6})$/
 
 const editorSchema = z.object({
   imprintName: z.string().max(255).optional(),
+  // Permissive regex for back-compat: legacy slugs may contain digits and
+  // hyphens from before the rules tightened. The editor's live check (see
+  // `SLUG_STRICT_RE` further down) enforces the new strict "lowercase +
+  // underscore only" format for any input the seller can actually type.
   imprintSlug: z
     .string()
     .min(2)
     .max(64)
-    .regex(/^[a-z0-9][a-z0-9-]*$/, "Lowercase letters, numbers, hyphens only")
+    .regex(/^[a-z0-9][a-z0-9_-]*$/, "Lowercase letters and underscores only")
     .optional()
     .or(z.literal("")),
   imprintTagline: z.string().max(80).optional(),
@@ -71,7 +85,7 @@ type EditorInput = z.infer<typeof editorSchema>
 const COVER_PRESETS: Array<{ id: CoverPreset; name: string; desc: string }> = [
   { id: "ink", name: "Ink", desc: "Off-black, Iris bloom." },
   { id: "sunlit", name: "Sunlit", desc: "Warm sunset gradient." },
-  { id: "stamp", name: "Stamp", desc: "Postal seal in the corner." },
+  { id: "stamp", name: "Cobalt", desc: "Deep navy, sky-blue accent." },
   { id: "studio", name: "Studio", desc: "Architectural grid." },
   { id: "archive", name: "Archive", desc: "Library card, paper-2." },
   { id: "riso", name: "Riso", desc: "Halftone pop." },
@@ -136,6 +150,60 @@ export function StorefrontEditor() {
   const { data: session } = useSession()
   const update = useUpdateStorefront()
 
+  // ─── Drafts wiring ─────────────────────────────────────────────────────────
+  // The active draft id is in the URL so deep links + reloads keep state.
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const activeDraftId = searchParams.get("draft")
+  const { data: drafts } = useDrafts()
+  const { data: activeDraft } = useDraft(activeDraftId)
+  const createDraft = useCreateDraft()
+  const updateDraft = useUpdateDraft(activeDraftId ?? "")
+  const publishDraft = usePublishDraft()
+
+  // Brief overlay shown while the editor swaps which draft is loaded so the
+  // seller gets visual confirmation that a switch is happening (form
+  // hydration is fast but the user needs a beat of feedback).
+  const [isSwitchingDraft, setIsSwitchingDraft] = useState(false)
+
+  const setActiveDraft = (id: string | null) => {
+    if (id === activeDraftId) return
+    setIsSwitchingDraft(true)
+    const params = new URLSearchParams(searchParams.toString())
+    if (id) params.set("draft", id)
+    else params.delete("draft")
+    const qs = params.toString()
+    router.replace(qs ? `?${qs}` : "?")
+  }
+
+  // Clear the switching overlay once the new draft's content lands in state.
+  useEffect(() => {
+    if (!isSwitchingDraft) return
+    if (!activeDraftId) {
+      setIsSwitchingDraft(false)
+      return
+    }
+    if (activeDraft?.id === activeDraftId) {
+      // Tiny delay so the overlay actually shows even when the data is
+      // already in cache — sub-100ms flashes feel buggier than no overlay.
+      const t = setTimeout(() => setIsSwitchingDraft(false), 250)
+      return () => clearTimeout(t)
+    }
+  }, [activeDraftId, activeDraft, isSwitchingDraft])
+
+  // Auto-pick the first draft if the seller lands without one and has drafts.
+  // The GET /api/storefront/drafts endpoint guarantees at least one row
+  // (auto-provisioned default), so this effect always finds a target.
+  useEffect(() => {
+    if (!activeDraftId && drafts && drafts.length > 0) {
+      setActiveDraft(drafts[0].id)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDraftId, drafts])
+
+  const [unpublishOpen, setUnpublishOpen] = useState(false)
+  const [closedModalOpen, setClosedModalOpen] = useState(false)
+
   const userFirstName = (session?.user?.name ?? "").split(" ")[0]
   const defaultStoreName = userFirstName
     ? `${userFirstName}'s Store`
@@ -199,6 +267,14 @@ export function StorefrontEditor() {
     sf?.showcase ?? null,
   )
 
+  // Snapshot of the showcase as it was when the form last hydrated. Used
+  // alongside react-hook-form's isDirty + the staged image flags to decide
+  // whether the seller has anything new to save. Reset each time the
+  // active draft (or the no-draft live row) hydrates the form.
+  const initialShowcaseJsonRef = useRef<string>(
+    JSON.stringify(sf?.showcase ?? null),
+  )
+
   // Cleanup blob URLs on unmount.
   useEffect(() => {
     return () => {
@@ -208,6 +284,10 @@ export function StorefrontEditor() {
 
   useEffect(() => {
     if (!sf) return
+    // If a draft is active, the draft's content is the source of truth — wait
+    // for it to load and hydrate from there. The separate effect below covers
+    // the draft hydration.
+    if (activeDraftId) return
     form.reset({
       imprintName: sf.imprintName ?? sf.storeName ?? defaultStoreName,
       imprintSlug: sf.imprintSlug ?? sf.storeUrl ?? "",
@@ -223,8 +303,40 @@ export function StorefrontEditor() {
           : accentToHex[(sf.imprintAccent as StoreAccent) ?? "iris"],
     })
     setShowcase(sf.showcase ?? null)
+    initialShowcaseJsonRef.current = JSON.stringify(sf.showcase ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sf])
+  }, [sf, activeDraftId])
+
+  // Hydrate the form from the active draft whenever it changes.
+  useEffect(() => {
+    if (!activeDraft) return
+    const c = activeDraft.content as DraftContent
+    // Slug fallback chain: draft → live row's imprintSlug → legacy storeUrl
+    // → empty. If the draft itself doesn't carry a slug (legacy drafts, or
+    // ones that lost the field through an empty-form save), seeding from
+    // the live store keeps the field populated so the seller can see what
+    // their public URL will be and the next save persists it back into the
+    // draft. Without this, the form looks empty and Save & Publish trips
+    // the slug_invalid gate.
+    const slugFallback = sf?.imprintSlug ?? sf?.storeUrl ?? ""
+    form.reset({
+      imprintName: c.imprintName ?? defaultStoreName,
+      imprintSlug: c.imprintSlug ?? slugFallback,
+      imprintTagline: c.imprintTagline ?? "",
+      imprintEditorsNote: c.imprintEditorsNote ?? "",
+      imprintCoverPreset: c.imprintCoverPreset as CoverPreset,
+      imprintTypePairing:
+        c.imprintTypePairing as EditorInput["imprintTypePairing"],
+      imprintAccent: c.imprintAccent as StoreAccent,
+      primaryColor:
+        c.primaryColor && HEX_RE.test(c.primaryColor)
+          ? c.primaryColor
+          : accentToHex[c.imprintAccent as StoreAccent],
+    })
+    setShowcase(c.showcase ?? null)
+    initialShowcaseJsonRef.current = JSON.stringify(c.showcase ?? null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDraft, sf])
 
   const watch = form.watch()
 
@@ -236,19 +348,32 @@ export function StorefrontEditor() {
   const [slugStatus, setSlugStatus] = useState<
     "idle" | "checking" | "available" | "taken" | "invalid"
   >("idle")
-  const debouncedSlug = useDebouncedValue((watch.imprintSlug ?? "").trim(), 400)
+  // 600ms debounce + a 3-char minimum keeps the API hit count sane while the
+  // seller is still typing — the original 400ms + 2-char floor produced a
+  // request on almost every keystroke prefix (see dev-server log: roha,
+  // rohan-, etc.). TanStack Query caches per-slug for 60s so repeats are
+  // free; this just stops issuing checks for transient prefixes.
+  const debouncedSlug = useDebouncedValue((watch.imprintSlug ?? "").trim(), 600)
   const persistedSlug = sf?.imprintSlug ?? sf?.storeUrl ?? ""
+
+  // Strict format for NEW slugs: lowercase letters + underscore only. Legacy
+  // slugs (with hyphens or digits) live behind `slugLocked` and bypass this
+  // entirely — the form field is read-only when locked so this regex never
+  // runs against historical data.
+  const SLUG_STRICT_RE = /^[a-z][a-z_]*$/
 
   useEffect(() => {
     if (!debouncedSlug || debouncedSlug === persistedSlug) {
       setSlugStatus("idle")
       return
     }
-    if (
-      debouncedSlug.length < 2 ||
-      debouncedSlug.length > 64 ||
-      !/^[a-z0-9][a-z0-9-]*$/.test(debouncedSlug)
-    ) {
+    if (debouncedSlug.length < 3 || debouncedSlug.length > 64) {
+      // Still typing — keep quiet rather than flashing "invalid" while the
+      // seller hasn't reached the minimum length yet.
+      setSlugStatus(debouncedSlug.length > 64 ? "invalid" : "idle")
+      return
+    }
+    if (!SLUG_STRICT_RE.test(debouncedSlug)) {
       setSlugStatus("invalid")
       return
     }
@@ -341,72 +466,158 @@ export function StorefrontEditor() {
     }
   }
 
-  const onSubmit = async (values: EditorInput) => {
-    const fd = new FormData()
-    fd.append("imprintCoverPreset", values.imprintCoverPreset)
-    fd.append("imprintTypePairing", values.imprintTypePairing)
-    fd.append("imprintAccent", values.imprintAccent)
-    if (values.imprintName) fd.append("imprintName", values.imprintName)
-    if (values.imprintName) fd.append("storeName", values.imprintName) // mirror to legacy
-    if (values.imprintSlug) {
-      fd.append("imprintSlug", values.imprintSlug)
-      fd.append("storeUrl", values.imprintSlug) // mirror to legacy
-    }
-    if (values.imprintTagline !== undefined) {
-      fd.append("imprintTagline", values.imprintTagline)
-      fd.append("tagline", values.imprintTagline) // mirror to legacy
-    }
-    if (values.imprintEditorsNote !== undefined)
-      fd.append("imprintEditorsNote", values.imprintEditorsNote)
-    if (values.primaryColor) fd.append("primaryColor", values.primaryColor)
-    if (logoFile) fd.append("profileImage", logoFile)
-    if (coverFile) fd.append("coverImage", coverFile)
-    // Removal intent. Only honored by the API when no replacement file was
-    // uploaded in the same submit (upload wins).
-    if (logoRemoved && !logoFile) fd.append("removeProfileImage", "true")
-    if (coverRemoved && !coverFile) fd.append("removeCoverImage", "true")
+  // Build the draft content payload from current form values + showcase.
+  // Used by both "Save draft" and the save-leg of "Save & publish".
+  //
+  // If the slug is locked (already set on the live store), we send the
+  // canonical live value rather than whatever the readonly input contains
+  // — defense in depth against form mutation through devtools etc. New
+  // users (no slug yet) still pass through their typed value.
+  const collectDraftContent = (values: EditorInput): Partial<DraftContent> => ({
+    imprintName: values.imprintName ?? null,
+    imprintSlug: slugLocked ? (liveSlug ?? null) : values.imprintSlug || null,
+    imprintTagline: values.imprintTagline ?? null,
+    imprintEditorsNote: values.imprintEditorsNote ?? null,
+    imprintCoverPreset: values.imprintCoverPreset,
+    imprintTypePairing: values.imprintTypePairing,
+    imprintAccent: values.imprintAccent,
+    primaryColor: values.primaryColor ?? null,
+    showcase,
+    socialInstagram: sf?.socialInstagram ?? null,
+    socialTwitter: sf?.socialTwitter ?? null,
+    socialYoutube: sf?.socialYoutube ?? null,
+    socialWebsite: sf?.socialWebsite ?? null,
+  })
 
-    // Showcase: reject save if the featured slot has content but doesn't parse,
-    // or if any FILLED item URL doesn't parse. Empty rows (the seller hit
-    // "Add another" but hasn't typed anything yet) are silently dropped so the
-    // save doesn't fail just because of an in-progress row.
+  // Save draft: writes the form values into the active draft (or auto-creates
+  // one if none is active). Image staging still runs through the legacy
+  // FormData submit so ImageKit gets the upload; this keeps the existing image
+  // flow working until drafts get their own multipart endpoint.
+  const handleSaveDraft = async (values: EditorInput) => {
+    // Validate showcase URLs locally so the seller sees a specific error
+    // instead of a server-side 400.
     if (showcase) {
       if (showcase.featured && !parseShowcaseUrl(showcase.featured.url)) {
         toast.error("— Featured showcase link couldn't be read.")
-        return
+        return null
       }
-      const filledItems = showcase.items.filter((it) => it.url.trim() !== "")
-      const badItem = filledItems.find((it) => !parseShowcaseUrl(it.url))
+      const badItem = showcase.items
+        .filter((it) => it.url.trim() !== "")
+        .find((it) => !parseShowcaseUrl(it.url))
       if (badItem) {
         toast.error("— One of the carousel links couldn't be read.")
-        return
+        return null
       }
-      const cleaned: StorefrontShowcase = { ...showcase, items: filledItems }
-      fd.append("showcase", JSON.stringify(cleaned))
-    } else {
-      fd.append("showcase", "null")
     }
 
+    let targetDraftId = activeDraftId
     try {
-      await update.mutateAsync(fd)
-      toast.success("— Store updated.")
-      // Clear staged files + remove flags now that they've been persisted.
-      setLogoFile(null)
-      setCoverFile(null)
-      setLogoPreview(null)
-      setCoverPreview(null)
-      setLogoRemoved(false)
-      setCoverRemoved(false)
+      const content = collectDraftContent(values)
+      if (!targetDraftId) {
+        // No active draft — create one from the current edits.
+        const created = await createDraft.mutateAsync({
+          name: `Untitled draft · ${new Date().toLocaleString()}`,
+          content,
+        })
+        targetDraftId = created.draft.id
+        setActiveDraft(targetDraftId)
+      } else {
+        await updateDraft.mutateAsync({ content })
+      }
+
+      // Still route image changes through the legacy live endpoint. Drafts
+      // carry refs only — the underlying ImageKit upload has to happen
+      // somewhere, and this is the path that already does it.
+      if (
+        logoFile ||
+        coverFile ||
+        (logoRemoved && !logoFile) ||
+        (coverRemoved && !coverFile)
+      ) {
+        const fd = new FormData()
+        if (logoFile) fd.append("profileImage", logoFile)
+        if (coverFile) fd.append("coverImage", coverFile)
+        if (logoRemoved && !logoFile) fd.append("removeProfileImage", "true")
+        if (coverRemoved && !coverFile) fd.append("removeCoverImage", "true")
+        await update.mutateAsync(fd)
+        setLogoFile(null)
+        setCoverFile(null)
+        setLogoPreview(null)
+        setCoverPreview(null)
+        setLogoRemoved(false)
+        setCoverRemoved(false)
+      }
+
+      toast.success("— Draft saved.")
+      return targetDraftId
     } catch (err) {
-      // Surface the real reason when the API explains itself (e.g. "Validation
-      // failed", "Featured showcase URL could not be parsed"). Falls back to a
-      // generic line for unknown failures.
-      const msg =
-        err instanceof Error && err.message
-          ? err.message
-          : "Couldn't save. Trying again should help."
-      toast.error(`— ${msg}`)
+      toast.error(
+        err instanceof Error ? err.message : "Couldn't save draft.",
+      )
+      return null
     }
+  }
+
+  // Save & publish: validate, save the draft, then promote it via the
+  // publish gate. Pre-flight validation here surfaces empty required
+  // fields inline instead of relying on the server's 422 — the seller
+  // sees what's missing without a roundtrip.
+  const handleSaveAndPublish = async (values: EditorInput) => {
+    // Clear any stale manual errors from a previous attempt so old
+    // messages don't linger when the seller fills in the missing field
+    // and tries again.
+    form.clearErrors(["imprintName", "imprintSlug"])
+
+    let hasErrors = false
+    const trimmedName = (values.imprintName ?? "").trim()
+    if (!trimmedName) {
+      form.setError("imprintName", {
+        type: "manual",
+        message: "Store name is required to publish",
+      })
+      hasErrors = true
+    }
+    // Slug is required unless it's already locked (a slug exists on the
+    // live store row, which the publish endpoint will use as fallback).
+    const trimmedSlug = (values.imprintSlug ?? "").trim()
+    if (!slugLocked && !trimmedSlug) {
+      form.setError("imprintSlug", {
+        type: "manual",
+        message: "Store URL is required to publish",
+      })
+      hasErrors = true
+    }
+    // Reject if the live slug-availability check is in a bad state — saves
+    // the seller a server-side reject for slug_taken.
+    if (!slugLocked && trimmedSlug && slugStatus === "taken") {
+      form.setError("imprintSlug", {
+        type: "manual",
+        message: "Pick a different store URL — this one is taken",
+      })
+      hasErrors = true
+    }
+    if (hasErrors) {
+      toast.error("— Fill in the highlighted fields to publish.")
+      return
+    }
+
+    const draftId = await handleSaveDraft(values)
+    if (!draftId) return
+    try {
+      await publishDraft.mutateAsync(draftId)
+      toast.success("— Store published.")
+    } catch (err) {
+      // The publish endpoint puts the actionable explanation in `detail`,
+      // which the fetcher surfaces as the error message — so just show it.
+      toast.error(
+        `— ${err instanceof Error ? err.message : "Couldn't publish."}`,
+      )
+    }
+  }
+
+  const onSubmit = async (values: EditorInput) => {
+    // Default form submit (Enter key on a field) is treated as Save draft.
+    await handleSaveDraft(values)
   }
 
   // Hold the entire editor behind a full-page loader until real storefront
@@ -419,6 +630,35 @@ export function StorefrontEditor() {
   }
 
   const liveSlug = sf.imprintSlug ?? sf.storeUrl ?? null
+  // The slug is permanent once set — same string across every version and
+  // not editable from the storefront UI after the seller has one. New users
+  // (no slug yet) can still type one here for their first publish.
+  const slugLocked = Boolean(liveSlug)
+
+  // ─── "Has anything actually changed?" ──────────────────────────────────────
+  // Combines react-hook-form's dirty flag (text fields, theme pickers, etc.),
+  // any staged image edits (new upload OR pending remove), and a JSON-diff
+  // of the showcase against the value at last hydration. Lets the header
+  // grey out the Save buttons when there's literally nothing to save.
+  const hasStagedImages = Boolean(
+    logoFile || coverFile || logoRemoved || coverRemoved,
+  )
+  const showcaseDirty =
+    JSON.stringify(showcase) !== initialShowcaseJsonRef.current
+  const hasChanges =
+    form.formState.isDirty || hasStagedImages || showcaseDirty
+
+  // Whether Save & publish is actionable. Stays enabled if the seller has
+  // edits to ship OR if the public store needs (re)publishing (it isn't
+  // currently published, or a different draft is currently live so this
+  // one needs to be promoted). Only disables in the "you're editing the
+  // exact version that's already live and you haven't touched anything"
+  // case — which is the one the user flagged as confusing.
+  const activeMatchesLive =
+    !!activeDraftId &&
+    sf.publishState === "published" &&
+    activeDraftId === sf.liveDraftId
+  const publishEnabled = hasChanges || !activeMatchesLive
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -432,42 +672,34 @@ export function StorefrontEditor() {
             Edit on the left — see the live preview update on the right.
           </p>
         </div>
-        <div className="flex items-center sm:justify-between justify-end gap-3">
-          <PublishStatusBadge published={sf.isPublished} />
-
-          <>
-            {liveSlug && (
-              <Button
-                type="button"
-                variant="paper"
-                className="gap-2"
-                onClick={() => {
-                  // If the store is still a draft, intercept and show the
-                  // publish-first modal so the seller doesn't get dumped on a
-                  // 404 page (or worse, link a tester to one).
-                  if (!sf.isPublished) {
-                    setPublishDialogOpen(true)
-                    return
-                  }
-                  window.open(
-                    `/store/${liveSlug}`,
-                    "_blank",
-                    "noopener,noreferrer",
-                  )
-                }}
-              >
-                <ExternalLink className="h-4 w-4" />
-                View store
-              </Button>
-            )}
-            <Button
-              type="submit"
-              disabled={update.isPending || slugStatus === "taken"}
-            >
-              {update.isPending ? "Saving…" : "Save store"}
-            </Button>
-          </>
-        </div>
+        <HeaderStrip
+          storefront={sf}
+          liveSlug={liveSlug}
+          activeDraftId={activeDraftId}
+          saveDraftEnabled={hasChanges}
+          publishEnabled={publishEnabled}
+          onDraftSelect={setActiveDraft}
+          isSaving={
+            createDraft.isPending || updateDraft.isPending || update.isPending
+          }
+          isPublishing={publishDraft.isPending}
+          onSaveDraft={() => form.handleSubmit(handleSaveDraft)()}
+          onSaveAndPublish={() => form.handleSubmit(handleSaveAndPublish)()}
+          onViewStore={() => {
+            if (!liveSlug) return
+            if (sf.publishState !== "published") {
+              setPublishDialogOpen(true)
+              return
+            }
+            window.open(
+              `/store/${liveSlug}`,
+              "_blank",
+              "noopener,noreferrer",
+            )
+          }}
+          onUnpublish={() => setUnpublishOpen(true)}
+          onEditClosedState={() => setClosedModalOpen(true)}
+        />
       </header>
 
       {/* Two-pane body: 40 / 60 split. Default grid stretch lets the right
@@ -492,18 +724,75 @@ export function StorefrontEditor() {
                   variant="editorial"
                   className="font-display text-2xl font-medium tracking-[-0.02em] py-2 mt-1 h-auto"
                   placeholder={defaultStoreName}
-                  {...form.register("imprintName")}
+                  aria-invalid={
+                    form.formState.errors.imprintName ? true : undefined
+                  }
+                  {...form.register("imprintName", {
+                    onChange: () => {
+                      // Manual errors set by the publish gate persist until
+                      // explicitly cleared — drop the moment the seller
+                      // starts typing so the inline message doesn't linger.
+                      if (form.formState.errors.imprintName?.type === "manual") {
+                        form.clearErrors("imprintName")
+                      }
+                    },
+                  })}
                 />
+                {form.formState.errors.imprintName && (
+                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-flicker mt-1">
+                    — {form.formState.errors.imprintName.message}
+                  </p>
+                )}
               </div>
               <div>
                 <Label className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
                   Store URL slug
+                  {slugLocked && (
+                    <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-muted/60 text-muted-foreground font-mono text-[8px] uppercase tracking-[0.14em]">
+                      Locked
+                    </span>
+                  )}
                 </Label>
                 <Input
                   variant="editorial"
-                  className="font-mono text-base mt-1"
-                  placeholder="e.g. shikhar"
-                  {...form.register("imprintSlug")}
+                  className={cn(
+                    "font-mono text-base mt-1",
+                    slugLocked && "opacity-70 cursor-not-allowed",
+                  )}
+                  placeholder="e.g. rohan_gupta"
+                  readOnly={slugLocked}
+                  aria-readonly={slugLocked || undefined}
+                  aria-invalid={
+                    form.formState.errors.imprintSlug ? true : undefined
+                  }
+                  {...form.register("imprintSlug", {
+                    onChange: (e) => {
+                      // As-you-type sanitization. Forces lowercase, rewrites
+                      // common separators (space, hyphen, dot) to underscore
+                      // so common patterns like "Rohan Gupta" → "rohan_gupta"
+                      // happen automatically, strips anything else outside
+                      // [a-z_], then collapses repeated underscores. We only
+                      // re-set the value if it changed to avoid an infinite
+                      // re-render loop and to preserve caret position when
+                      // the input was already valid.
+                      if (slugLocked) return
+                      const raw = String(e.target.value ?? "")
+                      const cleaned = raw
+                        .toLowerCase()
+                        .replace(/[\s.\-]+/g, "_")
+                        .replace(/[^a-z_]/g, "")
+                        .replace(/_+/g, "_")
+                      if (cleaned !== raw) {
+                        form.setValue("imprintSlug", cleaned, {
+                          shouldValidate: false,
+                          shouldDirty: true,
+                        })
+                      }
+                      if (form.formState.errors.imprintSlug?.type === "manual") {
+                        form.clearErrors("imprintSlug")
+                      }
+                    },
+                  })}
                 />
                 <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground mt-1">
                   genzaic.in/store/
@@ -511,30 +800,23 @@ export function StorefrontEditor() {
                     {watch.imprintSlug || "your-slug"}
                   </span>
                 </p>
-                {form.formState.errors.imprintSlug && (
-                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-flicker mt-1">
-                    — {form.formState.errors.imprintSlug.message}
+                {slugLocked ? (
+                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground mt-1">
+                    — Your store URL is permanent. It can&apos;t be changed
+                    once set, and it&apos;s the same across every version.
                   </p>
+                ) : (
+                  <>
+                    {form.formState.errors.imprintSlug && (
+                      <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-flicker mt-1">
+                        — {form.formState.errors.imprintSlug.message}
+                      </p>
+                    )}
+                    {!form.formState.errors.imprintSlug && (
+                      <SlugStatusBadge status={slugStatus} />
+                    )}
+                  </>
                 )}
-                {!form.formState.errors.imprintSlug &&
-                  slugStatus !== "idle" && (
-                    <p
-                      className={cn(
-                        "font-mono text-[10px] uppercase tracking-[0.12em] mt-1",
-                        slugStatus === "checking" && "text-muted-foreground",
-                        slugStatus === "available" &&
-                          "text-emerald-600 dark:text-emerald-400",
-                        slugStatus === "taken" && "text-flicker",
-                        slugStatus === "invalid" && "text-flicker",
-                      )}
-                    >
-                      {slugStatus === "checking" && "— Checking…"}
-                      {slugStatus === "available" && "— Available"}
-                      {slugStatus === "taken" && "— Taken, try another"}
-                      {slugStatus === "invalid" &&
-                        "— Lowercase letters, numbers, hyphens only"}
-                    </p>
-                  )}
               </div>
               <div>
                 <Label className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
@@ -853,10 +1135,29 @@ export function StorefrontEditor() {
         </aside>
       </div>
 
+      {/* Switching overlay — appears briefly while a different version's
+          content is being hydrated into the editor form. Backdrop is a
+          subtle scrim so context (header, layout) remains visible. */}
+      {isSwitchingDraft && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center pointer-events-auto">
+          <GenzaicLoader.Page label="Loading version" />
+        </div>
+      )}
+
       <PublishToShareDialog
         open={publishDialogOpen}
         onOpenChange={setPublishDialogOpen}
         slug={liveSlug}
+      />
+      <UnpublishDialog
+        open={unpublishOpen}
+        onOpenChange={setUnpublishOpen}
+        storefront={sf}
+      />
+      <ClosedStateModal
+        open={closedModalOpen}
+        onOpenChange={setClosedModalOpen}
+        storefront={sf}
       />
     </form>
   )

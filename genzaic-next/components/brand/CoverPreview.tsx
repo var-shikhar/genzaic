@@ -1,7 +1,7 @@
 "use client"
 
 import { useStorefront } from "@/lib/queries/storefront"
-import { Bloom, Grid, Halftone, Pinstripe, PostalRing } from "@/components/brand/motifs"
+import { Bloom, Grid, Halftone, Pinstripe } from "@/components/brand/motifs"
 import { cn } from "@/lib/utils"
 import type { CSSProperties } from "react"
 
@@ -83,7 +83,7 @@ export function CoverPreview(props: CoverPreviewProps) {
 const presetClass: Record<CoverPreset, string> = {
   ink:     "bg-foreground text-background",
   sunlit:  "text-[#2A1810]",
-  stamp:   "bg-background text-foreground border border-foreground",
+  stamp:   "bg-[#0A0F1F] text-white",
   studio:  "bg-background text-foreground border border-foreground",
   archive: "bg-paper-2 text-foreground",
   riso:    "bg-background text-foreground",
@@ -100,10 +100,18 @@ function presetMotif(preset: CoverPreset) {
     case "sunlit":
       return <SunlitBackdrop />
     case "stamp":
+      // Cobalt — luminous twin radial glows over a navy base. The right-side
+      // glow uses #3BA7FF (the theme accent) so the cover reads as "lit from
+      // within" rather than flat dark. Sits behind the title.
       return (
-        <PostalRing className="absolute top-5 right-5" rotate={-12}>
-          Stamp<br />2026
-        </PostalRing>
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at 25% 25%, rgba(59,167,255,0.35) 0%, transparent 55%), radial-gradient(ellipse at 80% 75%, rgba(59,167,255,0.18) 0%, transparent 60%)",
+          }}
+        />
       )
     case "studio":
       return <Grid centerDot />

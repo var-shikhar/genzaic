@@ -1,7 +1,7 @@
 import "server-only"
 import { cache as reactCache } from "react"
 import { db, storefronts, products, users, productImages, productTags, tags } from "@/lib/db"
-import { eq, and, asc, desc } from "drizzle-orm"
+import { eq, and, or, asc, desc } from "drizzle-orm"
 import { cache, cacheKeys, cacheTTL } from "@/lib/cache"
 
 // Hard cap on how many products are returned in the public payload. Sellers
@@ -81,17 +81,54 @@ async function _getPublicStorefront(slug: string) {
             imprintTypePairing: storefronts.imprintTypePairing,
             imprintAccent: storefronts.imprintAccent,
             showcase: storefronts.showcase,
+            publishState: storefronts.publishState,
+            closedHeadline: storefronts.closedHeadline,
+            closedMessage: storefronts.closedMessage,
+            closedShowSocials: storefronts.closedShowSocials,
           })
           .from(storefronts)
-          .where(eq(storefronts.storeUrl, slug))
+          // Match by either column: `imprint_slug` is the user-facing slug
+          // the editor writes; `store_url` is the legacy mirror. Older rows
+          // may have one populated but not the other — this OR keeps both
+          // working until the columns are fully consolidated.
+          .where(
+            or(
+              eq(storefronts.storeUrl, slug),
+              eq(storefronts.imprintSlug, slug),
+            ),
+          )
           .limit(1)
 
         if (!storefront) {
           return { kind: "not_found" as const }
         }
 
-        if (!storefront.isPublished) {
-          return { kind: "unpublished" as const }
+        if (storefront.publishState === "never_published") {
+          return { kind: "not_found" as const }
+        }
+
+        if (storefront.publishState === "unpublished") {
+          return {
+            kind: "closed" as const,
+            payload: {
+              storeName: storefront.storeName,
+              storeUrl: storefront.storeUrl,
+              themeId: storefront.themeId,
+              primaryColor: storefront.primaryColor,
+              imprintCoverPreset: storefront.imprintCoverPreset,
+              imprintTypePairing: storefront.imprintTypePairing,
+              imprintName: storefront.imprintName,
+              closedHeadline: storefront.closedHeadline,
+              closedMessage: storefront.closedMessage,
+              closedShowSocials: storefront.closedShowSocials,
+              socials: {
+                instagram: storefront.socialInstagram,
+                twitter: storefront.socialTwitter,
+                youtube: storefront.socialYoutube,
+                website: storefront.socialWebsite,
+              },
+            },
+          }
         }
 
         const [sellerRows, activeProducts] = await Promise.all([
@@ -178,11 +215,19 @@ async function _getPublicStorefrontProduct(slug: string, productId: string) {
         const [storefront] = await db
           .select()
           .from(storefronts)
-          .where(eq(storefronts.storeUrl, slug))
+          // Same OR-match as the storefront loader — handle legacy rows
+          // where only one of the two slug columns is populated.
+          .where(
+            or(
+              eq(storefronts.storeUrl, slug),
+              eq(storefronts.imprintSlug, slug),
+            ),
+          )
           .limit(1)
 
         if (!storefront) return { kind: "not_found" as const }
-        if (!storefront.isPublished) return { kind: "not_found" as const }
+        if (storefront.publishState !== "published")
+          return { kind: "not_found" as const }
 
         const [productRows, sellerRows] = await Promise.all([
           db
@@ -262,16 +307,20 @@ async function _getPublicStorefrontProduct(slug: string, productId: string) {
  */
 export async function invalidatePublicStorefrontForUser(userId: string): Promise<void> {
   const [row] = await db
-    .select({ storeUrl: storefronts.storeUrl })
+    .select({
+      storeUrl: storefronts.storeUrl,
+      imprintSlug: storefronts.imprintSlug,
+    })
     .from(storefronts)
     .where(eq(storefronts.userId, userId))
     .limit(1)
 
-  const slug = row?.storeUrl
-  if (!slug) return
-
-  cache.delete(cacheKeys.publicStorefront(slug))
-  cache.invalidateByPrefix(`public-storefront-product:${slug}:`)
+  // Bust caches keyed by either column — historic rows may only have one set.
+  for (const slug of [row?.storeUrl, row?.imprintSlug]) {
+    if (!slug) continue
+    cache.delete(cacheKeys.publicStorefront(slug))
+    cache.invalidateByPrefix(`public-storefront-product:${slug}:`)
+  }
 }
 
 /**

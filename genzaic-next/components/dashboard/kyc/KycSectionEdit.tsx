@@ -4,7 +4,11 @@ import { FormProvider, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { ArrowLeft } from "lucide-react"
-import { kycSchema, type KycInput } from "@/lib/validations/kyc"
+import {
+  kycSchema,
+  KYC_STEP_FIELDS,
+  type KycInput,
+} from "@/lib/validations/kyc"
 import { useSubmitKyc, type KycData } from "@/lib/queries/kyc"
 import { getApiErrorMessage } from "@/lib/api-error"
 import { Button } from "@/components/ui/button"
@@ -63,6 +67,9 @@ function KycSectionEditInner({
 
   const form = useForm<KycInput>({
     resolver: zodResolver(kycSchema),
+    // Live validation so errors appear/clear as the seller types — and so
+    // the Save button can be gated on real validity.
+    mode: "onChange",
     // Pre-fill EVERY field so submit can validate the whole record. The
     // section UI only exposes some of these for editing — the rest stay
     // at the existing values.
@@ -80,6 +87,21 @@ function KycSectionEditInner({
       bankName: existing.bankName ?? "",
     },
   })
+
+  // ─── Save validity (drives Save button disabled state) ────────────────────
+  const watchedValues = form.watch()
+  const errors = form.formState.errors
+
+  const fieldOk = (name: keyof KycInput) => {
+    const v = watchedValues[name]
+    const filled = typeof v === "string" ? v.trim().length > 0 : v != null
+    return filled && !errors[name]
+  }
+  const allFields = [
+    ...KYC_STEP_FIELDS.identity,
+    ...KYC_STEP_FIELDS.payment,
+  ] as const
+  const canSave = allFields.every(fieldOk)
 
   // ─── Submit ────────────────────────────────────────────────────────────────
 
@@ -122,7 +144,11 @@ function KycSectionEditInner({
   return (
     <FormProvider {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
+        // Block form-level submit events (Enter key in inputs, etc.). Save
+        // is wired to the button's onClick instead, so the only path to
+        // mutation is an intentional click on Save & re-verify.
+        onSubmit={(e) => e.preventDefault()}
+        noValidate
         className="space-y-8 max-w-3xl"
       >
         <header className="space-y-3">
@@ -149,8 +175,9 @@ function KycSectionEditInner({
             Back
           </Button>
           <Button
-            type="submit"
-            disabled={isSubmitting}
+            type="button"
+            onClick={form.handleSubmit(onSubmit)}
+            disabled={!canSave || isSubmitting}
             className="gap-2"
           >
             {isSubmitting ? (

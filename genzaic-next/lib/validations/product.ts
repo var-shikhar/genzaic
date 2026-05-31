@@ -32,6 +32,17 @@ const productBaseSchema = z.object({
 
 export const productSchema = productBaseSchema
   .superRefine((data, ctx) => {
+    // "Was" only makes sense as a strike-through if it's HIGHER than the
+    // live price. Runs for drafts too — the constraint is logical, not
+    // publish-gated, so creators don't save broken numbers and forget.
+    if (data.originalPrice != null && data.originalPrice <= data.price) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: VALIDATION.originalPriceTooLow,
+        path: ["originalPrice"],
+      })
+    }
+
     // Skip delivery-specific field checks for drafts. They run only when the
     // creator publishes (isActive === true) — quick-add creates inactive
     // products that the seller fills in on the edit page before going live.

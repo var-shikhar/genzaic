@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { signOut, useSession } from "next-auth/react"
@@ -123,37 +123,130 @@ function Sidebar({
   collapsed: boolean
   onToggle: () => void
 }) {
+  const [peeking, setPeeking] = useState(false)
+  // Single shared timer for both open and close. Whichever event fires last
+  // wins, so a quick in-and-out won't leave the panel stuck open.
+  const peekTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Two independent flags: the header (logo + toggle) only ever expands
+  // when the user has the sidebar fully open via the toggle. The nav
+  // (ScrollArea) additionally expands during a hover peek. This keeps the
+  // toggle button at the same pixel position whether peeking or not, and
+  // avoids the wordmark sliding under the page header on overlay.
+  const headerExpanded = !collapsed
+  const navExpanded = !collapsed || peeking
+  const overlaying = collapsed && peeking
+
+  const cancelPeekTimer = () => {
+    if (peekTimerRef.current) {
+      clearTimeout(peekTimerRef.current)
+      peekTimerRef.current = null
+    }
+  }
+
+  // A small open delay keeps the panel from flashing open when the cursor
+  // just grazes the nav on the way somewhere else. The close delay is a bit
+  // longer so a brief stray (e.g. heading toward the toggle) doesn't yank
+  // the panel away mid-interaction.
+  const schedulePeekOpen = () => {
+    cancelPeekTimer()
+    if (!collapsed) return
+    peekTimerRef.current = setTimeout(() => setPeeking(true), 150)
+  }
+
+  const schedulePeekClose = () => {
+    cancelPeekTimer()
+    peekTimerRef.current = setTimeout(() => setPeeking(false), 200)
+  }
+
+  useEffect(() => cancelPeekTimer, [])
+
   return (
-    <aside
+    // Outer wrapper keeps the collapsed-width slot in the flex layout so the
+    // main content never shifts when the sidebar peeks open on hover.
+    //
+    // The wrapper is `sticky top-0`, which establishes its own stacking
+    // context. Anything inside (including the aside's own z-index) only
+    // stacks *within* that context. To the outer flex parent the wrapper
+    // sits at `z: auto`, so right-column content paints over it in document
+    // order — that's what was leaking through during a peek. Lifting the
+    // wrapper itself to z-50 when overlaying puts the whole stacking context
+    // above the page header (z-40) and the storefront editor content.
+    <div
       className={cn(
-        "hidden lg:flex flex-col border-r bg-primary/10 sticky top-0 h-screen shrink-0 transition-[width] duration-200 ease-out",
+        "hidden lg:block sticky top-0 h-screen shrink-0 transition-[width] duration-200 ease-out",
         collapsed ? "w-16" : "w-64",
+        overlaying && "z-50",
       )}
     >
-      <div
+      <aside
+        // Closing fires only when the cursor truly leaves the aside, so
+        // moving from the nav up to the (still-collapsed) header during a
+        // peek doesn't close it.
+        onMouseLeave={schedulePeekClose}
         className={cn(
-          "flex items-center border-b h-16",
-          collapsed ? "justify-center px-2" : "px-4 justify-between",
+          "absolute top-0 left-0 h-full flex flex-col border-r overflow-hidden transition-[width,box-shadow] duration-300 ease-out",
+          navExpanded ? "w-64" : "w-16",
+          // Same primary wash in every state. While peeking, we additionally
+          // paint a solid bg-background underneath via the gradient layer so
+          // the main content behind doesn't bleed through the 10% alpha. The
+          // z-50 puts the overlay above the page header (z-40) so nothing
+          // bleeds in from the right column.
+          overlaying
+            ? "z-50 shadow-2xl bg-background bg-gradient-to-r from-primary/10 to-primary/10"
+            : "bg-primary/10",
         )}
       >
-        {!collapsed && (
-          <Link href="/dashboard" className="flex items-center">
-            <Wordmark size="md" />
-          </Link>
-        )}
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        {/* Header content matrix:
+             - Always-expanded (toggler off): wordmark + toggle, justify-between
+             - Peeking (collapsed + hover):   wordmark only — peek is a preview,
+                                              pinning is done from the resting toggle
+             - Resting collapsed:             toggle only, centered in a w-16 box */}
+        <div
+          className={cn(
+            "flex items-center border-b h-16 shrink-0",
+            navExpanded && "px-4",
+            !collapsed && "justify-between",
+          )}
         >
-          {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-        </button>
-      </div>
-      <ScrollArea className={cn("flex-1", collapsed ? "p-2" : "p-4")}>
-        <SidebarNav collapsed={collapsed} />
-      </ScrollArea>
-    </aside>
+          {navExpanded && (
+            <Link href="/dashboard" className="flex items-center">
+              <Wordmark size="md" />
+            </Link>
+          )}
+          {!collapsed && (
+            <button
+              type="button"
+              onClick={onToggle}
+              aria-label="Collapse sidebar"
+              className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          )}
+          {collapsed && !peeking && (
+            <div className="w-16 shrink-0 flex items-center justify-center">
+              <button
+                type="button"
+                onClick={onToggle}
+                aria-label="Expand sidebar"
+                className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              >
+                <PanelLeftOpen className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+        </div>
+        {/* Peek opens from the nav region only — hovering the header (toggle
+            button) never triggers it, so the toggle stays put and clickable. */}
+        <ScrollArea
+          onMouseEnter={schedulePeekOpen}
+          className={cn("flex-1", navExpanded ? "p-4" : "p-2")}
+        >
+          <SidebarNav collapsed={!navExpanded} />
+        </ScrollArea>
+      </aside>
+    </div>
   )
 }
 
@@ -301,7 +394,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleLogout}
-                  className="text-destructive focus:text-destructive"
+                  className="text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   Log out

@@ -1,7 +1,7 @@
 import { HydrationBoundary, dehydrate, QueryClient } from "@tanstack/react-query"
 import { auth } from "@/lib/auth"
 import { getProductsListForUser } from "@/lib/data/dashboard"
-import { productKeys } from "@/lib/queries/products"
+import { productKeys } from "@/lib/queries/products-keys"
 import { CatalogClient } from "./CatalogClient"
 
 // Server Component: prefetches the initial unfiltered products list (the

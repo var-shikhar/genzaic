@@ -84,7 +84,7 @@ export function BuyerProfileMenu({ user }: BuyerProfileMenuProps) {
           </DropdownMenuItem>
         ) : (
           <DropdownMenuItem asChild>
-            <Link href="/plan-selection">
+            <Link href="/onboarding">
               <Store className="mr-2 h-4 w-4" />
               Start selling
             </Link>
@@ -99,7 +99,7 @@ export function BuyerProfileMenu({ user }: BuyerProfileMenuProps) {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleLogout}
-          className="text-destructive focus:text-destructive"
+          className="text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20"
         >
           <LogOut className="mr-2 h-4 w-4" />
           Log out

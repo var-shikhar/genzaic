@@ -1,12 +1,12 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import Image from "next/image"
-import { Upload, X, Sparkles, ArrowLeft } from "lucide-react"
+import { Upload, X, Sparkles, ArrowLeft, ArrowRight } from "lucide-react"
 import { productSchema, type ProductInput } from "@/lib/validations/product"
 import { useUpdateProduct } from "@/lib/queries/products"
 import type { Product } from "@/lib/queries/products"
@@ -37,6 +37,8 @@ import { CategoryPicker } from "./CategoryPicker"
 import { type SelectedTag } from "./TagsCombobox"
 import { type ExistingGalleryImage } from "./GalleryUploader"
 import { DeliverySection } from "./DeliverySection"
+import { PublishRitual } from "@/components/brand/PublishRitual"
+import { GenzaicLoader } from "@/components/ui/genzaic-loader"
 import { cn } from "@/lib/utils"
 import { getApiErrorMessage } from "@/lib/api-error"
 import { TOAST } from "@/lib/brand/voice"
@@ -59,7 +61,32 @@ function formatBytes(bytes: number): string {
 export function ProductForm({ product }: ProductFormProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const fromQuickAdd = searchParams.get("from") === "quick-add"
+  const pathname = usePathname()
+
+  const [ritual, setRitual] = useState<{
+    productTitle: string
+    hexCode: string
+    mode: "filed"
+  } | null>(null)
+
+  // Quick-add → edit hand-off: when the URL carries `?filed=1&title=...&hex=...`
+  // (set by QuickAddProductModal after a successful create), fire the
+  // "filed" celebration once, then strip those params so a refresh
+  // doesn't replay it.
+  useEffect(() => {
+    if (searchParams.get("filed") !== "1") return
+    const title = searchParams.get("title")
+    const hex = searchParams.get("hex") ?? product.hexCode ?? null
+    if (!title || !hex) return
+    setRitual({ productTitle: title, hexCode: hex, mode: "filed" })
+    const next = new URLSearchParams(searchParams.toString())
+    next.delete("filed")
+    next.delete("title")
+    next.delete("hex")
+    const query = next.toString()
+    router.replace(`${pathname}${query ? `?${query}` : ""}`, { scroll: false })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const [tab, setTab] = useState<"details" | "delivery">("details")
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
@@ -81,6 +108,11 @@ export function ProductForm({ product }: ProductFormProps) {
 
   const form = useForm<ProductInput>({
     resolver: zodResolver(productSchema),
+    // Surface schema errors as the user types/changes fields so they
+    // don't have to click Save to learn what's wrong. Errors still clear
+    // the moment the field becomes valid.
+    mode: "onChange",
+    reValidateMode: "onChange",
     defaultValues: {
       title: product.title ?? "",
       description: product.description ?? "",
@@ -120,6 +152,18 @@ export function ProductForm({ product }: ProductFormProps) {
   }
 
   const onSubmit = async (values: ProductInput) => {
+    // Downloadable products that go live MUST carry a file. The Zod
+    // schema can't see component-side file state, so guard here: jump the
+    // user back to the delivery tab where the upload lives, and toast.
+    const hasFile = Boolean(
+      productFile || (product.fileUrl && !removeProductFile),
+    )
+    if (values.deliveryType === "download" && values.isActive && !hasFile) {
+      setTab("delivery")
+      toast.error("— Upload a product file before going live.")
+      return
+    }
+
     const formData = new FormData()
     formData.append("title", values.title)
     formData.append("price", String(values.price))
@@ -198,7 +242,20 @@ export function ProductForm({ product }: ProductFormProps) {
   return (
     <>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+        <form
+          onSubmit={(e) => {
+            // Only the explicit "Save Product" button on the delivery tab
+            // is allowed to submit. Guard against stray submits coming from
+            // Enter-in-input, nested Radix buttons that miss type="button",
+            // or re-renders that swap the action button mid-click.
+            if (tab !== "delivery") {
+              e.preventDefault()
+              return
+            }
+            form.handleSubmit(onSubmit)(e)
+          }}
+          className="space-y-3"
+        >
           {/* Title block */}
           <div className="pb-4 border-b border-border">
             {/* Back link sits on its own row on mobile so the meta line below
@@ -286,13 +343,37 @@ export function ProductForm({ product }: ProductFormProps) {
                   <Sparkles className="h-4 w-4 text-primary" />
                   Extract with AI
                 </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={isPending}
-                >
-                  {isPending ? "Saving…" : "Save Product"}
-                </Button>
+                {tab === "details" ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={async (e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      const ok = await form.trigger([
+                        "title",
+                        "price",
+                        "originalPrice",
+                        "categoryId",
+                        "description",
+                        "subscriptionDuration",
+                      ])
+                      if (ok) setTab("delivery")
+                    }}
+                  >
+                    Next
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={isPending}
+                  >
+                    {isPending ? "Saving…" : "Save Product"}
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -306,7 +387,7 @@ export function ProductForm({ product }: ProductFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                          Title
+                          Title <span className="text-flicker not-italic">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -327,7 +408,7 @@ export function ProductForm({ product }: ProductFormProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                            Price (₹)
+                            Price (₹) <span className="text-flicker not-italic">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -516,6 +597,10 @@ export function ProductForm({ product }: ProductFormProps) {
         onClose={() => setAiModalOpen(false)}
         onExtract={handleAIExtract}
       />
+
+      {isPending && <GenzaicLoader.Page label="Saving your product" />}
+
+      <PublishRitual payload={ritual} onDismiss={() => setRitual(null)} />
     </>
   )
 }

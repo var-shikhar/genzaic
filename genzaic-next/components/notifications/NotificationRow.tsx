@@ -39,7 +39,13 @@ export function NotificationRow({
 }) {
   const Icon = ICONS[notification.type] ?? Bell
   const body = (
-    <div className={cn("flex items-start gap-3 p-3 hover:bg-accent rounded-md", className)}>
+    <div
+      className={cn(
+        "group flex items-start gap-3 p-3 rounded-md transition-colors",
+        "hover:bg-muted/60 dark:hover:bg-muted/40",
+        className,
+      )}
+    >
       <div className={cn(
         "h-8 w-8 rounded-full flex items-center justify-center shrink-0",
         notification.isRead ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary",
@@ -47,9 +53,13 @@ export function NotificationRow({
         <Icon className="h-4 w-4" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className={cn("text-sm", !notification.isRead && "font-semibold")}>{notification.title}</p>
-        <p className="text-xs text-muted-foreground line-clamp-2">{notification.message}</p>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className={cn("text-sm text-foreground", !notification.isRead && "font-semibold")}>
+          {notification.title}
+        </p>
+        <p className="text-xs text-muted-foreground group-hover:text-foreground/70 line-clamp-2">
+          {notification.message}
+        </p>
+        <p className="text-xs text-muted-foreground group-hover:text-foreground/60 mt-1">
           {formatDistanceToNow(notification.createdAt, { addSuffix: true })}
         </p>
       </div>

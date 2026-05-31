@@ -30,10 +30,13 @@ export function useSelectPlan() {
       // Without rotating the JWT here, middleware.ts keeps seeing the old
       // buyer claims and bounces the user away from seller-only routes until
       // their token naturally refreshes (lib/auth/config.ts, 7-day maxAge).
+      // Payload must be wrapped in `user` — the jwt callback reads session.user.
       await update({
-        planType: data.planType,
-        isSeller: data.isSeller,
-        role: data.role,
+        user: {
+          planType: data.planType,
+          isSeller: data.isSeller,
+          role: data.role,
+        },
       })
       qc.invalidateQueries({ queryKey: onboardingKeys.status() })
     },
@@ -49,7 +52,7 @@ export function useCompleteOnboarding() {
       // Rotate the JWT so `middleware.ts` sees `onboardingComplete: true` on
       // the next request — otherwise the user can be looped back to /onboarding
       // until their token naturally refreshes (lib/auth/config.ts).
-      await update({ onboardingComplete: true })
+      await update({ user: { onboardingComplete: true } })
       qc.invalidateQueries({ queryKey: onboardingKeys.status() })
     },
   })
@@ -61,7 +64,7 @@ export function useSkipOnboarding() {
   return useMutation({
     mutationFn: () => postJSON<undefined, unknown>("/api/onboarding/skip"),
     onSuccess: async () => {
-      await update({ onboardingComplete: true })
+      await update({ user: { onboardingComplete: true } })
       qc.invalidateQueries({ queryKey: onboardingKeys.status() })
     },
   })

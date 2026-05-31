@@ -65,7 +65,7 @@ export default function HowItWorksSection() {
             {steps.map((item, i) => (
               <div key={i} className="relative group h-full">
                 <div className="absolute -inset-2 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative bg-white rounded-2xl p-6 sm:p-8 border border-border/50 shadow-sm hover:shadow-xl transition-all duration-300 h-full">
+                <div className="relative bg-card rounded-2xl p-6 sm:p-8 border border-border/50 shadow-sm hover:shadow-xl transition-all duration-300 h-full">
                   <div className="absolute -top-3 -left-3 w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-white font-bold text-xs shadow-lg shadow-primary/25 z-10">
                     {item.step}
                   </div>

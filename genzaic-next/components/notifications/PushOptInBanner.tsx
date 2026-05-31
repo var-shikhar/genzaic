@@ -44,6 +44,13 @@ export function PushOptInBanner() {
       const messaging = await getMessagingClient()
       if (!messaging) return
       const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js")
+      // register() resolves once the SW is registered, but the worker may
+      // still be in "installing" or "waiting" state. getToken() immediately
+      // calls pushManager.subscribe() which requires an *active* worker —
+      // without this wait the very first opt-in throws AbortError: "no
+      // active Service Worker". serviceWorker.ready resolves once a SW
+      // controls this scope.
+      await navigator.serviceWorker.ready
       const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg })
       if (token) await register({ fcmToken: token, userAgent: navigator.userAgent })
       setShouldShow(false)

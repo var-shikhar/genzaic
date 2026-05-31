@@ -3,7 +3,6 @@ import { auth } from "@/lib/auth"
 import { db, users } from "@/lib/db"
 import { eq } from "drizzle-orm"
 import { z } from "zod"
-import { enforceRateLimit } from "@/lib/rate-limit"
 
 const planSchema = z.object({
   plan: z.enum(["creator", "startup", "enterprise"]),
@@ -11,11 +10,6 @@ const planSchema = z.object({
 
 // POST /api/onboarding/plan - select a pricing plan during onboarding
 export async function POST(req: NextRequest) {
-  // 5 plan changes per IP per hour. This endpoint flips role → seller and
-  // upgrades isSeller; should be hit at most a few times per onboarding.
-  const limited = await enforceRateLimit(req, "onboarding-plan", { max: 5, windowSec: 3600 })
-  if (limited) return limited
-
   try {
     const session = await auth()
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
