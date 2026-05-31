@@ -1,15 +1,16 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse, after } from "next/server"
 import { db, users } from "@/lib/db"
 import { eq } from "drizzle-orm"
 import { randomBytes } from "crypto"
 import { sendPasswordResetEmail } from "@/lib/email"
+import { sendEmailWithRetry } from "@/lib/email/send-with-retry"
 import { forgotPasswordSchema } from "@/lib/validations/auth"
 import { enforceRateLimit } from "@/lib/rate-limit"
 import { env } from "@/lib/env"
 
 export async function POST(req: NextRequest) {
   // 3 reset attempts per IP per 10 minutes — prevents email enumeration spam.
-  const limited = enforceRateLimit(req, "forgot-password", { max: 3, windowSec: 600 })
+  const limited = await enforceRateLimit(req, "forgot-password", { max: 3, windowSec: 600 })
   if (limited) return limited
 
   try {
@@ -33,7 +34,12 @@ export async function POST(req: NextRequest) {
     }).where(eq(users.id, user.id))
 
     const resetUrl = `${env.NEXT_PUBLIC_APP_URL}/reset-password?token=${token}`
-    await sendPasswordResetEmail(email, user.name, resetUrl)
+    after(() =>
+      sendEmailWithRetry(() => sendPasswordResetEmail(email, user.name, resetUrl), {
+        label: "password-reset",
+        to: email,
+      }).catch(() => {}),
+    )
 
     return NextResponse.json({ message: "If that email exists, a reset link was sent." })
   } catch (error) {

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse, after } from "next/server"
 import { randomBytes } from "crypto"
 import { db, products, storefronts, orders, orderItems, users } from "@/lib/db"
 import { eq, and } from "drizzle-orm"
@@ -9,12 +9,14 @@ import { cache, cacheKeys } from "@/lib/cache"
 import { PLATFORM_FEE_PERCENT, GST_RATE } from "@/lib/config"
 import { issueOrderAccessToken } from "@/lib/order-access"
 import { sendOrderConfirmationEmail } from "@/lib/email"
+import { sendEmailWithRetry } from "@/lib/email/send-with-retry"
 import { env } from "@/lib/env"
+import { notifyEvent } from "@/lib/notifications/notify"
 
 // POST /api/checkout/create-order
 export async function POST(req: NextRequest) {
   // 10 orders per IP per minute — legitimate buyers won't hit this; bots will.
-  const limited = enforceRateLimit(req, "checkout", { max: 10, windowSec: 60 })
+  const limited = await enforceRateLimit(req, "checkout", { max: 10, windowSec: 60 })
   if (limited) return limited
 
   try {
@@ -140,53 +142,58 @@ export async function POST(req: NextRequest) {
     // Generate a unique order number
     const orderNumber = `GZ-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
 
-    // Create order
-    const [order] = await db
-      .insert(orders)
-      .values({
-        orderNumber,
-        sellerId: storefront.userId,
-        buyerId: buyerId,
-        buyerEmail,
-        buyerName,
-        buyerPhone: buyerPhone ?? null,
-        buyerGstin: buyerGstin ?? null,
-        subtotal: String(subtotal),
-        gstAmount: String(gstAmount),
-        platformFee: String(platformFee),
-        discountAmount: "0",
-        totalAmount: String(totalAmount),
-        status: "pending",
-      })
-      .returning()
+    // Atomic: order + orderItem + stock decrement all succeed together or
+    // none do. Without this, a stock decrement failure (network blip after
+    // the order insert) would leave a phantom paid order with un-decremented
+    // inventory; or worse, two concurrent checkouts could oversell.
+    const { order, item } = await db.transaction(async (tx) => {
+      const [createdOrder] = await tx
+        .insert(orders)
+        .values({
+          orderNumber,
+          sellerId: storefront.userId,
+          buyerId: buyerId,
+          buyerEmail,
+          buyerName,
+          buyerPhone: buyerPhone ?? null,
+          buyerGstin: buyerGstin ?? null,
+          subtotal: String(subtotal),
+          gstAmount: String(gstAmount),
+          platformFee: String(platformFee),
+          discountAmount: "0",
+          totalAmount: String(totalAmount),
+          status: "pending",
+        })
+        .returning()
 
-    // Create order item
-    const [item] = await db
-      .insert(orderItems)
-      .values({
-        orderId: order.id,
-        productId,
-        productTitle: product.title,
-        productThumbnail: product.coverImageUrl,
-        productDescription: product.description,
-        price: String(baseAmount),
-        quantity: 1,
-        deliveryType: product.deliveryType,
-        deliveryStatus: "pending",
-        externalUrl: product.externalUrl,
-        downloadLink,
-        maxDownloads: 5,
-        downloadCount: 0,
-      })
-      .returning()
+      const [createdItem] = await tx
+        .insert(orderItems)
+        .values({
+          orderId: createdOrder.id,
+          productId,
+          productTitle: product.title,
+          productThumbnail: product.coverImageUrl,
+          productDescription: product.description,
+          price: String(baseAmount),
+          quantity: 1,
+          deliveryType: product.deliveryType,
+          deliveryStatus: "pending",
+          externalUrl: product.externalUrl,
+          downloadLink,
+          maxDownloads: 5,
+          downloadCount: 0,
+        })
+        .returning()
 
-    // Decrement stock if applicable
-    if (product.stock !== null) {
-      await db
-        .update(products)
-        .set({ stock: product.stock - 1 })
-        .where(eq(products.id, productId))
-    }
+      if (product.stock !== null) {
+        await tx
+          .update(products)
+          .set({ stock: product.stock - 1 })
+          .where(eq(products.id, productId))
+      }
+
+      return { order: createdOrder, item: createdItem }
+    })
 
     // Bust cached aggregations so the seller's dashboard reflects the new
     // order within 1 dashboard refresh instead of waiting for the 30s TTL.
@@ -199,28 +206,64 @@ export async function POST(req: NextRequest) {
     //    lived because they're standing on the success screen *right now*.
     //  - `email` (24 h): embedded in the confirmation email so they can
     //    come back later from their inbox. We send the email
-    //    fire-and-forget so a Resend hiccup doesn't fail the order.
-    const checkoutToken = await issueOrderAccessToken(order.id, "checkout")
-    const emailToken = await issueOrderAccessToken(order.id, "email")
+    //    fire-and-forget with retry so a Resend hiccup doesn't fail the
+    //    order, but a transient failure still gets retried 3x with backoff.
+    const [checkoutToken, emailToken] = await Promise.all([
+      issueOrderAccessToken(order.id, "checkout"),
+      issueOrderAccessToken(order.id, "email"),
+    ])
 
     const accessUrl = `${env.NEXT_PUBLIC_APP_URL}/order/${order.id}?t=${emailToken.token}`
     const passwordSetupUrl = passwordSetupToken
       ? `${env.NEXT_PUBLIC_APP_URL}/reset-password?token=${passwordSetupToken}`
       : undefined
 
-    sendOrderConfirmationEmail({
-      buyerEmail,
-      buyerName,
-      productTitle: product.title,
-      orderNumber: order.orderNumber,
-      accessUrl,
-      passwordSetupUrl,
-    }).catch((err) => {
-      console.error(
-        `Failed to send order confirmation email for order ${order.id}:`,
-        err,
-      )
-    })
+    after(() =>
+      sendEmailWithRetry(
+        () =>
+          sendOrderConfirmationEmail({
+            buyerEmail,
+            buyerName,
+            productTitle: product.title,
+            orderNumber: order.orderNumber,
+            accessUrl,
+            passwordSetupUrl,
+          }),
+        { label: "order-confirmation", to: buyerEmail },
+      ).catch(() => {
+        /* terminal failure already logged inside helper */
+      }),
+    )
+
+    // Notify seller (new order) and buyer (purchase ready). Buyer email is
+    // suppressed because the order-confirmation email above already covered it.
+    try {
+      await notifyEvent({
+        userId: storefront.userId,
+        type: "order_placed",
+        title: "New order received",
+        message: `Order #${order.orderNumber} for ${product.title}`,
+        link: `/dashboard/sales/${order.id}`,
+        metadata: { orderId: order.id, productId, amount: totalAmount },
+      })
+    } catch (err) {
+      console.error("[notifications] order_placed emit failed:", err)
+    }
+    if (buyerId) {
+      try {
+        await notifyEvent({
+          userId: buyerId,
+          type: "order_completed",
+          title: "Your purchase is ready",
+          message: `${product.title} — order #${order.orderNumber}`,
+          link: `/order/${order.id}`,
+          suppress: { email: true },
+          metadata: { orderId: order.id },
+        })
+      } catch (err) {
+        console.error("[notifications] order_completed emit failed:", err)
+      }
+    }
 
     // Return a response shape that matches the frontend expectations
     return NextResponse.json(

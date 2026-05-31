@@ -3,8 +3,15 @@ import { db, users } from "@/lib/db"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { resetPasswordApiSchema } from "@/lib/validations/auth"
+import { enforceRateLimit } from "@/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
+  // 5 attempts per IP per 10 minutes. The reset token is 256-bit so brute
+  // force is infeasible; this guards against an attacker burning a known
+  // valid token via many concurrent attempts before the user can use it.
+  const limited = await enforceRateLimit(req, "reset-password", { max: 5, windowSec: 600 })
+  if (limited) return limited
+
   try {
     const body = await req.json()
     const parsed = resetPasswordApiSchema.safeParse(body)

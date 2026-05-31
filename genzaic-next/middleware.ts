@@ -30,12 +30,12 @@ const publicPrefixes = [
   "/api/checkout/order",
   "/api/checkout/record-download",
 ]
-// `/plan-selection` is intentionally NOT in this list — it's the entry point
-// for a buyer who wants to upgrade to a seller account. The plan-selection
-// API (`POST /api/onboarding/plan`) is what actually flips `isSeller: true`
-// + `role: "seller"`, so the user must be allowed to land there as a buyer.
-// After plan pick, normal seller-only gating resumes for /dashboard etc.
-const sellerRoutes = ["/dashboard", "/onboarding"]
+// `/onboarding` is intentionally NOT in this list — it doubles as the
+// buyer-to-seller upgrade entry point. `POST /api/onboarding/plan` is what
+// actually flips `isSeller: true` + `role: "seller"`, so buyers must be
+// allowed to land there. After plan pick, normal seller-only gating resumes.
+// `/plan-selection` legacy route now redirects here (see app/plan-selection).
+const sellerRoutes = ["/dashboard"]
 
 // Routes where we need to *also* check auth (to redirect logged-in users
 // away from the auth pages). Everything else in publicRoutes/publicPrefixes
@@ -87,8 +87,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/my-purchases", request.url))
   }
 
-  // Sellers with incomplete onboarding can only access /onboarding and /plan-selection.
-  // Anywhere else (e.g. /dashboard) bounces them back to /onboarding so they finish setup.
+  // A seller who already finished onboarding has no business on /onboarding
+  // again — kick them straight to /dashboard. Buyers (upgrade flow) and
+  // sellers with onboardingComplete=false are both allowed through.
+  if (pathname.startsWith("/onboarding") && isSeller && user?.onboardingComplete) {
+    return NextResponse.redirect(new URL("/dashboard", request.url))
+  }
+
+  // Sellers with incomplete onboarding get bounced back to /onboarding from
+  // anywhere else (e.g. /dashboard) so they finish setup.
   if (
     isSeller &&
     !user?.onboardingComplete &&

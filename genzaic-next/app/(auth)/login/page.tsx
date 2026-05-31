@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { signIn } from "next-auth/react"
+import { signIn, getSession } from "next-auth/react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
@@ -56,9 +56,24 @@ export default function LoginPage() {
 
       if (callbackUrl) {
         router.push(callbackUrl)
-      } else {
+        return
+      }
+
+      // Read the fresh JWT so we land on the right page in ONE navigation
+      // instead of /dashboard → middleware-redirect → /onboarding (which costs
+      // a full middleware pass and, in dev, a cold compile of /dashboard).
+      const session = await getSession()
+      const u = session?.user as
+        | { role?: string; isSeller?: boolean; onboardingComplete?: boolean }
+        | undefined
+      const isSeller = u?.role === "seller" || u?.isSeller
+
+      if (isSeller && !u?.onboardingComplete) {
+        router.push("/onboarding")
+      } else if (isSeller) {
         router.push("/dashboard")
-        router.refresh()
+      } else {
+        router.push("/my-purchases")
       }
     } catch {
       toast.error("Something went wrong. Please try again.")

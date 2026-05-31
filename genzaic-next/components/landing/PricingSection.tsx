@@ -9,7 +9,7 @@ import { ParallaxLayer } from "@/components/motion/ParallaxLayer"
 
 const planFeatures = [
   "Unlimited products",
-  "Unlimited sales",
+  "Fast Setup",
   "Auto GST invoicing",
   "T+7 bank payouts",
   "UPI & card payments",

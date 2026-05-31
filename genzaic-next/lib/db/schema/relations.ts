@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm"
 import { users, sessions } from "./users"
 import { storefronts } from "./storefronts"
+import { storefrontDrafts } from "./storefront-drafts"
 import {
   categories,
   tags,
@@ -19,7 +20,7 @@ import {
   couponUsages,
 } from "./commerce"
 import { reviews, follows, wishlists } from "./social"
-import { notifications, notificationPreferences } from "./notifications"
+import { notifications, notificationPreferences, userDevices, notificationOutbox } from "./notifications"
 import { kyc } from "./kyc"
 import { payouts, downloadLogs } from "./payouts"
 
@@ -45,7 +46,9 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   wishlists: many(wishlists),
   notifications: many(notifications),
   notificationPreferences: many(notificationPreferences),
+  devices: many(userDevices),
   sellerCoupons: many(coupons),
+  storefrontDrafts: many(storefrontDrafts),
 
   // follows (bidirectional)
   followers: many(follows, { relationName: "following" }),
@@ -64,6 +67,16 @@ export const storefrontsRelations = relations(storefronts, ({ one, many }) => ({
   user: one(users, { fields: [storefronts.userId], references: [users.id] }),
   products: many(products),
 }))
+
+export const storefrontDraftsRelations = relations(
+  storefrontDrafts,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [storefrontDrafts.userId],
+      references: [users.id],
+    }),
+  }),
+)
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CATALOG
@@ -259,11 +272,12 @@ export const wishlistsRelations = relations(wishlists, ({ one }) => ({
 // NOTIFICATIONS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export const notificationsRelations = relations(notifications, ({ one }) => ({
+export const notificationsRelations = relations(notifications, ({ one, many }) => ({
   user: one(users, {
     fields: [notifications.userId],
     references: [users.id],
   }),
+  outboxRows: many(notificationOutbox),
 }))
 
 export const notificationPreferencesRelations = relations(
@@ -272,6 +286,20 @@ export const notificationPreferencesRelations = relations(
     user: one(users, {
       fields: [notificationPreferences.userId],
       references: [users.id],
+    }),
+  }),
+)
+
+export const userDevicesRelations = relations(userDevices, ({ one }) => ({
+  user: one(users, { fields: [userDevices.userId], references: [users.id] }),
+}))
+
+export const notificationOutboxRelations = relations(
+  notificationOutbox,
+  ({ one }) => ({
+    notification: one(notifications, {
+      fields: [notificationOutbox.notificationId],
+      references: [notifications.id],
     }),
   }),
 )

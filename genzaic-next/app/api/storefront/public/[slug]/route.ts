@@ -17,7 +17,7 @@ type RouteContext = { params: Promise<{ slug: string }> }
 // instance hop entirely for repeat visitors within the window.
 export async function GET(req: NextRequest, { params }: RouteContext) {
   // 60 reads per IP per minute. Anonymous endpoint, most exposed surface.
-  const limited = enforceRateLimit(req, "public-storefront", { max: 60, windowSec: 60 })
+  const limited = await enforceRateLimit(req, "public-storefront", { max: 60, windowSec: 60 })
   if (limited) return limited
 
   try {
@@ -32,8 +32,14 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
     if (result.kind === "not_found") {
       return NextResponse.json({ error: "Storefront not found" }, { status: 404 })
     }
-    if (result.kind === "unpublished") {
-      return NextResponse.json({ error: "This storefront is not published" }, { status: 404 })
+    if (result.kind === "closed") {
+      // The storefront exists but is in the explicit `unpublished` state.
+      // Surface the closed-state payload so a public-API caller can render
+      // the same closed page the SSR route does.
+      return NextResponse.json(
+        { kind: "closed", payload: result.payload },
+        { status: 200 },
+      )
     }
 
     return NextResponse.json(result.payload, {

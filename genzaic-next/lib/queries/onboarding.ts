@@ -18,9 +18,28 @@ export function useOnboardingStatus() {
 
 export function useSelectPlan() {
   const qc = useQueryClient()
+  const { update } = useSession()
   return useMutation({
-    mutationFn: (input: { plan: string }) => postJSON<typeof input, unknown>("/api/onboarding/plan", input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: onboardingKeys.status() }),
+    mutationFn: (input: { plan: string }) =>
+      postJSON<typeof input, { planType?: string; isSeller?: boolean; role?: string }>(
+        "/api/onboarding/plan",
+        input,
+      ),
+    onSuccess: async (data) => {
+      // Plan selection flips role -> "seller" and isSeller -> true server-side.
+      // Without rotating the JWT here, middleware.ts keeps seeing the old
+      // buyer claims and bounces the user away from seller-only routes until
+      // their token naturally refreshes (lib/auth/config.ts, 7-day maxAge).
+      // Payload must be wrapped in `user` — the jwt callback reads session.user.
+      await update({
+        user: {
+          planType: data.planType,
+          isSeller: data.isSeller,
+          role: data.role,
+        },
+      })
+      qc.invalidateQueries({ queryKey: onboardingKeys.status() })
+    },
   })
 }
 
@@ -33,7 +52,7 @@ export function useCompleteOnboarding() {
       // Rotate the JWT so `middleware.ts` sees `onboardingComplete: true` on
       // the next request — otherwise the user can be looped back to /onboarding
       // until their token naturally refreshes (lib/auth/config.ts).
-      await update({ onboardingComplete: true })
+      await update({ user: { onboardingComplete: true } })
       qc.invalidateQueries({ queryKey: onboardingKeys.status() })
     },
   })
@@ -45,7 +64,7 @@ export function useSkipOnboarding() {
   return useMutation({
     mutationFn: () => postJSON<undefined, unknown>("/api/onboarding/skip"),
     onSuccess: async () => {
-      await update({ onboardingComplete: true })
+      await update({ user: { onboardingComplete: true } })
       qc.invalidateQueries({ queryKey: onboardingKeys.status() })
     },
   })

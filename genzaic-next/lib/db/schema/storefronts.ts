@@ -16,6 +16,7 @@ import {
   coverPresetEnum,
   typePairingEnum,
   imprintAccentEnum,
+  publishStateEnum,
 } from "./enums"
 import { users } from "./users"
 import type { StorefrontShowcase } from "@/lib/showcase/types"
@@ -46,6 +47,17 @@ export const storefronts = pgTable(
       .notNull()
       .default("Inter"),
     isPublished: boolean("is_published").notNull().default(false),
+    publishState: publishStateEnum("publish_state")
+      .notNull()
+      .default("never_published"),
+    lastPublishedAt: timestamp("last_published_at"),
+    // Pointer to the draft whose content is currently mirrored onto this row.
+    // Set on every publish so the UI can mark "which version is live" and
+    // the delete flow can find a successor.
+    liveDraftId: uuid("live_draft_id"),
+    closedHeadline: varchar("closed_headline", { length: 120 }),
+    closedMessage: text("closed_message"),
+    closedShowSocials: boolean("closed_show_socials").notNull().default(true),
     platformFeeMode: platformFeeModeEnum("platform_fee_mode")
       .notNull()
       .default("buyer"),
@@ -83,10 +95,13 @@ export const storefronts = pgTable(
     index("storefronts_created_at_idx").on(t.createdAt),
     uniqueIndex("storefronts_imprint_slug_idx").on(t.imprintSlug),
     // Mirrors the Zod regex in lib/validations/storefront.ts so a direct DB
-    // insert can't bypass the slug format rule.
+    // insert can't bypass the slug format rule. Permissive set: allows both
+    // legacy hyphen/digit slugs AND new lowercase+underscore slugs — the
+    // editor's UI enforces the stricter "lowercase + underscore only" rule
+    // for new sellers.
     check(
       "storefronts_imprint_slug_format",
-      sql`${t.imprintSlug} IS NULL OR ${t.imprintSlug} ~ '^[a-z0-9][a-z0-9-]*$'`,
+      sql`${t.imprintSlug} IS NULL OR ${t.imprintSlug} ~ '^[a-z0-9][a-z0-9_-]*$'`,
     ),
   ],
 )

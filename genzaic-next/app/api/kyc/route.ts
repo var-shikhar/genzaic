@@ -8,6 +8,7 @@ import {
   deleteFromImageKit,
   IMAGEKIT_FOLDERS,
 } from "@/lib/imagekit"
+import { notifyEvent } from "@/lib/notifications/notify"
 
 // GET /api/kyc — return the seller's KYC row (or null).
 export async function GET(_req: NextRequest) {
@@ -196,28 +197,44 @@ export async function POST(req: NextRequest) {
       updatedAt: new Date(),
     }
 
-    // Persist the kyc row, then mirror users.kycStatus. Not wrapped in a
-    // transaction — the neon-http driver doesn't support them. If the
-    // users update fails, we throw; drift between the two tables is
-    // recoverable on the seller's next submit (baseValues resets everything).
-    let row
-    if (existing) {
-      ;[row] = await db
-        .update(kyc)
-        .set(baseValues)
-        .where(eq(kyc.userId, userId))
-        .returning()
-    } else {
-      ;[row] = await db.insert(kyc).values(baseValues).returning()
-    }
-    await db
-      .update(users)
-      .set({ kycStatus: "pending", updatedAt: new Date() })
-      .where(eq(users.id, userId))
+    // Atomic: persist the kyc row AND mirror users.kycStatus so the two can
+    // never drift. Now possible because we're on the Neon WebSocket driver
+    // (the old neon-http driver didn't support transactions; see the
+    // original commit that called this out).
+    const row = await db.transaction(async (tx) => {
+      let saved
+      if (existing) {
+        ;[saved] = await tx
+          .update(kyc)
+          .set(baseValues)
+          .where(eq(kyc.userId, userId))
+          .returning()
+      } else {
+        ;[saved] = await tx.insert(kyc).values(baseValues).returning()
+      }
+      await tx
+        .update(users)
+        .set({ kycStatus: "pending", updatedAt: new Date() })
+        .where(eq(users.id, userId))
+      return saved
+    })
 
     // No auto-validation runs on submit. The row sits in pending state
     // until a future cron / admin tool flips verificationStatus. The seller
     // gets an email when that decision is made (separate path).
+    try {
+      await notifyEvent({
+        userId,
+        type: "kyc_submitted",
+        title: "KYC submitted",
+        message:
+          "We received your details and started verification. We'll let you know in 1–2 business days.",
+        link: "/dashboard/kyc",
+      })
+    } catch (err) {
+      console.error("[notifications] kyc_submitted emit failed:", err)
+    }
+
     return NextResponse.json(row, { status: existing ? 200 : 201 })
   } catch (error) {
     console.error("POST /api/kyc error:", error)

@@ -28,7 +28,7 @@ export function presetToThemeId(preset: string | null | undefined): string {
     case "sunlit":
       return "playful"
     case "stamp":
-      return "elegant"
+      return "cobalt"
     case "studio":
       return "modern"
     case "archive":
@@ -198,6 +198,28 @@ export function themeFor(themeId: string, _primary: string): ThemeStyle {
         productPrice: "text-amber-900 font-medium",
         fontWeightHeading: "font-medium italic tracking-tight",
         cornerRadius: "rounded-2xl",
+      }
+    case "cobalt":
+      // Cobalt — premium creator platform. Deep navy (#0A0F1F) with crisp
+      // white headings and a sky-blue accent (#3BA7FF) for prices and links.
+      // Cover layers a soft radial glow from the seller's accent over a
+      // navy gradient so the swatch reads as a luminous "screen" rather
+      // than a flat dark page. Cards sit slightly lighter (#101A33) with a
+      // hairline white-tinted border, giving them a defined "lifted off
+      // the background" feel without going full glassmorphism.
+      return {
+        pageBg: "bg-[#0A0F1F]",
+        coverGradient: (c) =>
+          `radial-gradient(ellipse at 30% 20%, ${c}66 0%, transparent 55%), radial-gradient(ellipse at 80% 75%, #3BA7FF33 0%, transparent 60%), linear-gradient(180deg, #0E1530 0%, #0A0F1F 70%, #060A18 100%)`,
+        hero: "py-8",
+        heroText: "text-white tracking-[-0.02em]",
+        subText: "text-[#A8B5D1]",
+        productCard:
+          "bg-[#101A33] border-white/[0.08] ring-1 ring-white/[0.04] shadow-[0_8px_32px_-12px_rgba(59,167,255,0.18)]",
+        productCardText: "text-white",
+        productPrice: "text-[#3BA7FF] font-semibold tracking-tight",
+        fontWeightHeading: "font-semibold tracking-[-0.02em]",
+        cornerRadius: "rounded-lg",
       }
     case "noir":
       // Premium / fashion-house. True deep black with a single soft spotlight

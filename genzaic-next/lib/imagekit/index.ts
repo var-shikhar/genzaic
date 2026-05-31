@@ -38,6 +38,22 @@ export async function getImageKitAuthParams() {
   return getImageKit().getAuthenticationParameters()
 }
 
+/**
+ * Everything a browser needs to upload directly to ImageKit. Returned by
+ * `GET /api/imagekit/auth` so the client uploader doesn't need any other
+ * round-trip. The signature/token/expire triple is short-lived and signed
+ * with the private key on the server.
+ */
+export async function getImageKitClientUploadConfig() {
+  const auth = await getImageKitAuthParams()
+  return {
+    ...auth,
+    publicKey: env.IMAGEKIT_PUBLIC_KEY,
+    urlEndpoint: env.IMAGEKIT_URL_ENDPOINT,
+    uploadEndpoint: "https://upload.imagekit.io/api/v1/files/upload" as const,
+  }
+}
+
 export const IMAGEKIT_FOLDERS = {
   AVATARS: "/genzaic/avatars",
   PRODUCTS: "/genzaic/products",

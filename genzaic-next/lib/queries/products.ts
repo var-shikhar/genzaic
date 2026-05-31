@@ -1,47 +1,20 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import type { Product as DbProduct } from "@/lib/db/schema"
 import { deleteJSON, getJSON, patchJSON, postForm, putForm } from "@/lib/react-query/fetcher"
+import {
+  productKeys,
+  type Product,
+  type ProductsResponse,
+  type ProductStats,
+  type ProductsListFilters,
+} from "./products-keys"
 
-/** Client-side product: the DB row plus optional detail-view extras
- *  (gallery + tags) populated by `GET /api/products/[id]`. Timestamps
- *  arrive as JSON strings on the wire — the Drizzle inferred type names
- *  them `Date`, but consumers always wrap with `new Date(...)`. */
-export type Product = DbProduct & {
-  gallery?: { id: string; imageUrl: string }[]
-  tags?: { id: string; name: string }[]
-}
-
-export interface ProductsResponse {
-  products: Product[]
-  total: number
-  page: number
-  limit: number
-}
-
-export interface ProductStats {
-  totalProducts: number
-  activeProducts: number
-  totalDownloads: number
-  totalViews: number
-}
-
-export interface ProductsListFilters {
-  page?: number
-  limit?: number
-  search?: string
-  status?: string
-}
-
-export const productKeys = {
-  all: ["products"] as const,
-  lists: () => [...productKeys.all, "list"] as const,
-  list: (filters: ProductsListFilters) => [...productKeys.lists(), filters] as const,
-  details: () => [...productKeys.all, "detail"] as const,
-  detail: (id: string) => [...productKeys.details(), id] as const,
-  stats: () => [...productKeys.all, "stats"] as const,
-} as const
+// Re-export so existing `from "@/lib/queries/products"` imports keep working.
+// New server-side imports should pull from "@/lib/queries/products-keys"
+// directly — see the file header there for why.
+export { productKeys }
+export type { Product, ProductsResponse, ProductStats, ProductsListFilters }
 
 export function useProducts(filters: ProductsListFilters = {}) {
   return useQuery({
@@ -73,20 +46,117 @@ export function useProductStats() {
   })
 }
 
+/** Build a placeholder Product row from the create-form payload. Filled with
+ *  conservative defaults so list renderers don't crash on null reads. The
+ *  `id` is a sentinel we look up in onSuccess to swap in the real row. */
+function buildOptimisticProduct(form: FormData, tempId: string): Product {
+  const get = (k: string) => {
+    const v = form.get(k)
+    return typeof v === "string" && v.length > 0 ? v : null
+  }
+  const now = new Date()
+  return {
+    id: tempId,
+    storefrontId: "",
+    categoryId: get("categoryId"),
+    title: get("title") ?? "Untitled",
+    slug: null,
+    hexCode: "····",
+    description: get("description"),
+    price: get("price") ?? "0",
+    originalPrice: get("originalPrice"),
+    coverImageUrl: null,
+    coverImageFileId: null,
+    fileUrl: null,
+    fileId: null,
+    deliveryType: (get("deliveryType") ?? "download") as Product["deliveryType"],
+    externalUrl: get("externalUrl"),
+    sellerContactEmail: get("sellerContactEmail"),
+    sellerContactPhone: get("sellerContactPhone"),
+    sellerContactWhatsapp: get("sellerContactWhatsapp"),
+    subscriptionDuration: get("subscriptionDuration"),
+    seoTitle: null,
+    seoKeywords: null,
+    isActive: get("isActive") === "true",
+    stock: null,
+    downloads: 0,
+    views: 0,
+    avgRating: "0",
+    totalReviews: 0,
+    deletedAt: null,
+    createdAt: now,
+    updatedAt: now,
+  } as Product
+}
+
 export function useCreateProduct() {
   const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (form: FormData) => postForm<Product>("/api/products", form),
-    onSuccess: (created) => {
+  return useMutation<
+    Product,
+    unknown,
+    FormData,
+    { tempId: string; snapshots: Array<[unknown, ProductsResponse | undefined]>; statsSnapshot?: ProductStats }
+  >({
+    mutationFn: (form) => postForm<Product>("/api/products", form),
+    onMutate: async (form) => {
+      // Cancel in-flight list/stats refetches so they can't clobber our
+      // optimistic write.
+      await Promise.all([
+        qc.cancelQueries({ queryKey: productKeys.lists() }),
+        qc.cancelQueries({ queryKey: productKeys.stats() }),
+      ])
+      const tempId = `__optimistic_${
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : Math.random().toString(36).slice(2)
+      }`
+      const optimistic = buildOptimisticProduct(form, tempId)
+
+      const lists = qc.getQueriesData<ProductsResponse>({ queryKey: productKeys.lists() })
+      const snapshots: Array<[unknown, ProductsResponse | undefined]> = []
+      for (const [key, value] of lists) {
+        snapshots.push([key, value])
+        if (!value) continue
+        qc.setQueryData<ProductsResponse>(key, {
+          ...value,
+          products: [optimistic, ...value.products],
+          total: value.total + 1,
+        })
+      }
+
+      const statsSnapshot = qc.getQueryData<ProductStats>(productKeys.stats())
+      if (statsSnapshot) {
+        qc.setQueryData<ProductStats>(productKeys.stats(), {
+          ...statsSnapshot,
+          totalProducts: statsSnapshot.totalProducts + 1,
+          activeProducts:
+            statsSnapshot.activeProducts + (optimistic.isActive ? 1 : 0),
+        })
+      }
+
+      return { tempId, snapshots, statsSnapshot }
+    },
+    onError: (_err, _form, ctx) => {
+      ctx?.snapshots.forEach(([key, value]) =>
+        qc.setQueryData(key as readonly unknown[], value),
+      )
+      if (ctx?.statsSnapshot) {
+        qc.setQueryData<ProductStats>(productKeys.stats(), ctx.statsSnapshot)
+      }
+    },
+    onSuccess: (created, _form, ctx) => {
+      // Swap the placeholder row for the real one across every list cache.
+      if (!ctx?.tempId) return
       const lists = qc.getQueriesData<ProductsResponse>({ queryKey: productKeys.lists() })
       for (const [key, value] of lists) {
         if (!value) continue
         qc.setQueryData<ProductsResponse>(key, {
           ...value,
-          products: [created, ...value.products],
-          total: value.total + 1,
+          products: value.products.map((p) => (p.id === ctx.tempId ? created : p)),
         })
       }
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: productKeys.lists() })
       qc.invalidateQueries({ queryKey: productKeys.stats() })
     },

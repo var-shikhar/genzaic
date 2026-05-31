@@ -6,6 +6,7 @@ import type { Session } from "next-auth"
 import { ReactQueryProvider } from "@/lib/react-query/provider"
 import { ConfirmProvider } from "@/lib/react/confirm"
 import { AuthSync } from "./auth-sync"
+import { NotificationsProvider } from "@/components/notifications/NotificationsProvider"
 
 interface ProvidersProps {
   children: React.ReactNode
@@ -24,6 +25,7 @@ export function Providers({ children, session }: ProvidersProps) {
         >
           <ConfirmProvider>
             <AuthSync />
+            <NotificationsProvider />
             {children}
           </ConfirmProvider>
         </ThemeProvider>

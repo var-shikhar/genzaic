@@ -17,17 +17,42 @@ export async function PATCH(_req: NextRequest) {
       return NextResponse.json({ error: "Storefront not found" }, { status: 404 })
     }
 
+    if (existing.publishState === "never_published") {
+      return NextResponse.json(
+        {
+          error:
+            "Use POST /api/storefront/drafts/:id/publish to first-publish.",
+        },
+        { status: 409 },
+      )
+    }
+
+    const nextState =
+      existing.publishState === "published" ? "unpublished" : "published"
+
     const [updated] = await db
       .update(storefronts)
-      .set({ isPublished: !existing.isPublished, updatedAt: new Date() })
+      .set({
+        publishState: nextState,
+        isPublished: nextState === "published",
+        lastPublishedAt:
+          nextState === "published" ? new Date() : existing.lastPublishedAt,
+        updatedAt: new Date(),
+      })
       .where(eq(storefronts.userId, userId))
-      .returning({ isPublished: storefronts.isPublished })
+      .returning({
+        publishState: storefronts.publishState,
+        isPublished: storefronts.isPublished,
+      })
 
     // Critical: publishing/unpublishing changes whether the storefront
     // returns 200 or 404, so the cache MUST be busted immediately.
     if (existing.storeUrl) invalidatePublicStorefrontBySlug(existing.storeUrl)
 
-    return NextResponse.json({ isPublished: updated.isPublished })
+    return NextResponse.json({
+      publishState: updated.publishState,
+      isPublished: updated.isPublished,
+    })
   } catch (error) {
     console.error("PATCH /api/storefront/toggle-publish error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

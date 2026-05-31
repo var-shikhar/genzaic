@@ -1,15 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
 import { toast } from "sonner"
-import { Check, ArrowRight, Sparkles, Store, CreditCard } from "lucide-react"
+import { motion } from "framer-motion"
+import { Check, ArrowRight, Sparkles, CreditCard, Paintbrush, Rocket, Loader2, type LucideIcon } from "lucide-react"
 import { useCompleteOnboarding, useSkipOnboarding, useSelectPlan } from "@/lib/queries/onboarding"
 import { getApiErrorMessage } from "@/lib/api-error"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { Spotlight } from "@/components/ui/spotlight"
 import { cn } from "@/lib/utils"
 
 const STEPS = [
@@ -18,61 +19,103 @@ const STEPS = [
   { id: 3, title: "Ready!", icon: Check },
 ]
 
-const PLANS = [
+type Plan = {
+  id: string
+  label: string
+  price: string
+  description: string
+  features: string[]
+  icon: LucideIcon
+  footer: string
+  comingSoon?: boolean
+}
+
+const PLANS: Plan[] = [
   {
     id: "creator",
-    label: "Creator",
-    price: "Free",
-    description: "Perfect for starting out",
-    features: ["Up to 5 products", "Basic analytics", "File downloads", "5% platform fee"],
+    label: "I'm a Creator",
+    price: "25% Per Sell",
+    description: "Perfect starting point for individual creators looking to monetize their skills",
+    icon: Paintbrush,
+    features: [
+      "Product listing & storefront",
+      "Analytics & reporting",
+      "Marketing support",
+      "Community access",
+      "Customer reviews & ratings",
+      "Storefront customization",
+      "24/7 customer support",
+    ],
+    footer: "Perfect for individual creators",
   },
   {
     id: "startup",
-    label: "Startup",
-    price: "₹499/mo",
-    description: "For growing creators",
-    features: ["Unlimited products", "Advanced analytics", "All delivery types", "3% platform fee", "Custom domain"],
-    popular: true,
+    label: "I'm a Startup Owner",
+    price: "₹xxxx",
+    description: "Scale your business with advanced tools, analytics, and premium features",
+    icon: Rocket,
+    features: [
+      "Everything in Creator Plan",
+      "Advanced analytics & insights",
+      "Team access & collaboration",
+      "Storefront customization",
+      "Advanced sales funnels",
+      "Premium community access",
+      "Loyal customer program",
+      "Ad campaigns within marketplace",
+    ],
+    footer: "Advanced tools for growing your business",
+    comingSoon: true,
   },
 ]
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const { update } = useSession()
   const [step, setStep] = useState(1)
   const [selectedPlan, setSelectedPlan] = useState("creator")
-  const { mutateAsync: selectPlan, isPending: isPlanLoading } = useSelectPlan()
-  const { mutateAsync: completeOnboarding, isPending: isCompleting } = useCompleteOnboarding()
-  const { mutateAsync: skipOnboarding } = useSkipOnboarding()
+  const { mutateAsync: selectPlan } = useSelectPlan()
+  const { mutateAsync: completeOnboarding } = useCompleteOnboarding()
+  const { mutateAsync: skipOnboarding, isPending: isSkipping } = useSkipOnboarding()
+  // Covers the whole final-click sequence (plan-await + complete + nav) so the
+  // button stays in a loading state until we've actually left /onboarding.
+  const [isFinalizing, setIsFinalizing] = useState(false)
+  // Holds the in-flight plan mutation so step 2 -> 3 can advance optimistically
+  // while step 3's final action still waits for the DB write + JWT rotation
+  // to settle before navigating to the seller-only dashboard.
+  const planPromiseRef = useRef<Promise<unknown> | null>(null)
 
   const handleNext = async () => {
-    if (step === 2) {
-      try {
-        await selectPlan({ plan: selectedPlan })
-      } catch (err) {
-        toast.error(getApiErrorMessage(err, "Failed to select plan"))
-        return
-      }
+    if (step === 1) {
+      setStep(2)
+      return
     }
-    if (step < 3) {
-      setStep(step + 1)
-    } else {
-      try {
-        await completeOnboarding()
-        // Refresh JWT so middleware sees onboardingComplete=true on the next nav.
-        await update({ user: { onboardingComplete: true } })
-        router.push("/dashboard")
-        router.refresh()
-      } catch (err) {
-        toast.error(getApiErrorMessage(err, "Failed to complete onboarding"))
+    if (step === 2) {
+      // Fire the plan mutation but don't block the step transition on it.
+      planPromiseRef.current = selectPlan({ plan: selectedPlan }).catch((err) => {
+        toast.error(getApiErrorMessage(err, "Failed to select plan"))
+        throw err
+      })
+      setStep(3)
+      return
+    }
+    // step === 3
+    setIsFinalizing(true)
+    try {
+      if (planPromiseRef.current) {
+        await planPromiseRef.current
       }
+      await completeOnboarding()
+      router.push("/dashboard")
+      router.refresh()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to complete onboarding"))
+      setIsFinalizing(false)
     }
   }
 
   const handleSkip = async () => {
     try {
       await skipOnboarding()
-      await update({ user: { onboardingComplete: true } })
       router.push("/dashboard")
       router.refresh()
     } catch (err) {
@@ -81,8 +124,50 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-xl space-y-6">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none">
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(139,92,246,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(139,92,246,0.08) 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+            maskImage: "radial-gradient(ellipse at center, black 40%, transparent 80%)",
+            WebkitMaskImage: "radial-gradient(ellipse at center, black 40%, transparent 80%)",
+          }}
+        />
+        <Spotlight
+          className="-top-40 left-0 md:left-60 md:-top-20"
+          fill="rgba(139,92,246,0.45)"
+        />
+        <motion.div
+          aria-hidden
+          animate={{ x: [0, 60, -40, 0], y: [0, -50, 40, 0], scale: [1, 1.15, 0.9, 1] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[8%] left-[4%] w-[420px] h-[420px] bg-purple-400/45 dark:bg-purple-600/40 rounded-full blur-[100px]"
+        />
+        <motion.div
+          aria-hidden
+          animate={{ x: [0, -50, 40, 0], y: [0, 50, -40, 0], scale: [1, 0.9, 1.15, 1] }}
+          transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[4%] right-[4%] w-[480px] h-[480px] bg-indigo-400/40 dark:bg-indigo-500/40 rounded-full blur-[110px]"
+        />
+        <motion.div
+          aria-hidden
+          animate={{ x: [0, 30, -20, 0], y: [0, -30, 20, 0], opacity: [0.35, 0.5, 0.35] }}
+          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] h-[380px] bg-pink-400/35 dark:bg-pink-500/30 rounded-full blur-[100px]"
+        />
+        <motion.div
+          aria-hidden
+          animate={{ x: [0, -40, 30, 0], y: [0, 40, -30, 0] }}
+          transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[30%] right-[20%] w-[300px] h-[300px] bg-fuchsia-400/30 dark:bg-fuchsia-500/25 rounded-full blur-[90px]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-transparent to-background/30" />
+      </div>
+      <div className={cn("relative z-10 w-full space-y-6", step === 2 ? "max-w-4xl" : "max-w-xl")}>
         <div className="text-center">
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
@@ -114,50 +199,81 @@ export default function OnboardingPage() {
                   </div>
                 ))}
               </div>
-              <Button onClick={handleNext} size="lg" className="w-full gradient-primary text-white gap-2">
+              <Button onClick={handleNext} size="lg" className="w-full gradient-primary text-white gap-2" disabled={isSkipping}>
                 Get Started <ArrowRight className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" className="w-full" onClick={handleSkip}>Skip for now</Button>
+              <Button variant="ghost" className="w-full" onClick={handleSkip} disabled={isSkipping}>
+                {isSkipping ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Skipping…
+                  </>
+                ) : (
+                  "Skip for now"
+                )}
+              </Button>
             </CardContent>
           </Card>
         )}
 
         {step === 2 && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="text-center">
               <h2 className="text-2xl font-bold">Choose your plan</h2>
               <p className="text-muted-foreground">You can upgrade anytime</p>
             </div>
-            <div className="grid gap-4">
-              {PLANS.map((plan) => (
-                <button key={plan.id} type="button" onClick={() => setSelectedPlan(plan.id)}
-                  className={cn(
-                    "w-full text-left rounded-xl border-2 p-5 transition-all relative",
-                    selectedPlan === plan.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
-                  )}>
-                  {plan.popular && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 gradient-primary text-white text-xs rounded-full font-medium">
-                      Popular
-                    </span>
-                  )}
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className={cn("font-semibold", selectedPlan === plan.id && "text-primary")}>{plan.label}</p>
-                      <p className="text-sm text-muted-foreground">{plan.description}</p>
+            <div className="grid gap-5 md:grid-cols-2">
+              {PLANS.map((plan) => {
+                const Icon = plan.icon
+                const disabled = plan.comingSoon
+                const active = selectedPlan === plan.id
+                return (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    onClick={() => !disabled && setSelectedPlan(plan.id)}
+                    disabled={disabled}
+                    aria-pressed={active}
+                    className={cn(
+                      "w-full text-left rounded-2xl border-2 p-6 pt-8 transition-all relative flex flex-col bg-card",
+                      active && !disabled && "border-primary bg-primary/5 shadow-lg",
+                      !active && !disabled && "border-border hover:border-primary/40 hover:shadow-md",
+                      disabled && "border-border opacity-80 cursor-not-allowed"
+                    )}
+                  >
+                    {plan.comingSoon && (
+                      <span className="absolute top-3 right-3 px-3 py-1 bg-foreground/90 text-background text-xs rounded-full font-medium inline-flex items-center gap-1">
+                        Coming Soon
+                      </span>
+                    )}
+                    <div className="flex flex-col items-center text-center gap-3">
+                      <div className="w-14 h-14 rounded-xl bg-card border border-border shadow-sm flex items-center justify-center">
+                        <Icon className="h-6 w-6 text-foreground" />
+                      </div>
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500 text-white text-xs font-semibold">
+                        {plan.price}
+                      </span>
+                      <h3 className={cn("text-xl font-bold", active && !disabled && "text-primary")}>{plan.label}</h3>
+                      <p className="text-sm text-muted-foreground -mt-1">{plan.description}</p>
                     </div>
-                    <p className="font-bold">{plan.price}</p>
-                  </div>
-                  <ul className="space-y-1">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Check className="h-3.5 w-3.5 text-primary shrink-0" /> {f}
-                      </li>
-                    ))}
-                  </ul>
-                </button>
-              ))}
+                    <div className="mt-6">
+                      <p className="text-center text-sm font-semibold mb-3">Included Benefits</p>
+                      <ul className="space-y-2">
+                        {plan.features.map((f) => (
+                          <li key={f} className="flex items-center gap-2 text-sm">
+                            <span className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+                              <Check className="h-3 w-3 text-white" />
+                            </span>
+                            <span className="text-foreground/80">{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <p className="mt-5 text-center text-xs italic text-muted-foreground">{plan.footer}</p>
+                  </button>
+                )
+              })}
             </div>
-            <Button onClick={handleNext} size="lg" className="w-full gradient-primary text-white gap-2" disabled={isPlanLoading}>
+            <Button onClick={handleNext} size="lg" className="w-full md:w-auto md:mx-auto md:flex gradient-primary text-white gap-2 md:px-10">
               Continue <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
@@ -171,8 +287,16 @@ export default function OnboardingPage() {
               </div>
               <h2 className="text-2xl font-bold">You&apos;re all set!</h2>
               <p className="text-muted-foreground">Your store is ready. Start adding products and customize your storefront.</p>
-              <Button onClick={handleNext} size="lg" className="gradient-primary text-white gap-2" disabled={isCompleting}>
-                Go to Dashboard <ArrowRight className="h-4 w-4" />
+              <Button onClick={handleNext} size="lg" className="gradient-primary text-white gap-2 min-w-[200px]" disabled={isFinalizing}>
+                {isFinalizing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Setting things up…
+                  </>
+                ) : (
+                  <>
+                    Go to Dashboard <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>

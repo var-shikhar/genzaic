@@ -27,6 +27,65 @@ export async function sendVerificationEmail(email: string, name: string, otp: st
   })
 }
 
+/**
+ * Welcome email — fires once when a creator finishes /onboarding. Introduces
+ * the key things they can do on GenZaic so they're not staring at an empty
+ * dashboard wondering where to start. Guarded by the complete-onboarding
+ * endpoint so it only sends on the first completion, not on retries.
+ */
+export async function sendWelcomeEmail(email: string, name: string) {
+  const dashboardUrl = `${env.NEXT_PUBLIC_APP_URL}/dashboard`
+  const addProductUrl = `${env.NEXT_PUBLIC_APP_URL}/dashboard/products/new`
+  const storefrontUrl = `${env.NEXT_PUBLIC_APP_URL}/dashboard/storefront`
+  const kycUrl = `${env.NEXT_PUBLIC_APP_URL}/dashboard/kyc`
+
+  return resend.emails.send({
+    from: FROM,
+    to: email,
+    subject: "Welcome to GenZaic — let's get your store live",
+    html: `
+      <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
+        <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 24px;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to GenZaic ✨</h1>
+        </div>
+        <h2 style="margin: 0 0 8px;">Hi ${name},</h2>
+        <p style="color: #6b7280; line-height: 1.6;">
+          You're all set up. GenZaic gives Indian creators everything you need to sell digital products —
+          PDFs, templates, code, courses — and get paid directly to your bank via UPI or cards.
+        </p>
+        <p style="color: #6b7280; line-height: 1.6;">Here's how to get rolling:</p>
+
+        <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px; margin: 14px 0;">
+          <p style="margin: 0 0 4px; font-weight: 600;">1. Add your first product</p>
+          <p style="margin: 0; color: #6b7280; font-size: 14px;">Upload a file, set a price, and we'll handle delivery and access for your buyers.</p>
+          <a href="${addProductUrl}" style="display: inline-block; margin-top: 8px; color: #6366f1; font-weight: 600; text-decoration: none;">Add a product →</a>
+        </div>
+
+        <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px; margin: 14px 0;">
+          <p style="margin: 0 0 4px; font-weight: 600;">2. Customize your storefront</p>
+          <p style="margin: 0; color: #6b7280; font-size: 14px;">Pick a theme, add your bio, and share your store link anywhere.</p>
+          <a href="${storefrontUrl}" style="display: inline-block; margin-top: 8px; color: #6366f1; font-weight: 600; text-decoration: none;">Customize storefront →</a>
+        </div>
+
+        <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px; margin: 14px 0;">
+          <p style="margin: 0 0 4px; font-weight: 600;">3. Finish KYC to unlock payouts</p>
+          <p style="margin: 0; color: #6b7280; font-size: 14px;">Verify your bank and UPI so we can transfer your earnings.</p>
+          <a href="${kycUrl}" style="display: inline-block; margin-top: 8px; color: #6366f1; font-weight: 600; text-decoration: none;">Complete KYC →</a>
+        </div>
+
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${dashboardUrl}" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">Open dashboard</a>
+        </div>
+
+        <p style="color: #9ca3af; font-size: 14px; line-height: 1.6;">
+          Stuck or have questions? Just reply to this email — a human reads every one.
+        </p>
+        <p style="color: #9ca3af; font-size: 14px; margin-top: 24px;">— Team GenZaic</p>
+      </div>
+    `,
+  })
+}
+
 export async function sendPasswordResetEmail(email: string, name: string, resetUrl: string) {
   return resend.emails.send({
     from: FROM,

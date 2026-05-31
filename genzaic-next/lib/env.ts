@@ -39,8 +39,33 @@ const envSchema = z.object({
   RAZORPAY_KEY_ID: z.string().min(1),
   RAZORPAY_KEY_SECRET: z.string().min(1),
 
+  // ─── Firebase (Cloud Messaging) — optional until provisioned, made required at rollout ───
+  FIREBASE_SERVICE_ACCOUNT_KEY: z.string().optional(),
+  NEXT_PUBLIC_FIREBASE_API_KEY: z.string().optional(),
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: z.string().optional(),
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: z.string().optional(),
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: z.string().optional(),
+  NEXT_PUBLIC_FIREBASE_APP_ID: z.string().optional(),
+  NEXT_PUBLIC_FIREBASE_VAPID_KEY: z.string().optional(),
+
+  // ─── Cron auth ────────────────────────────────────────────────────────────
+  CRON_SECRET: z.string().min(16, "CRON_SECRET must be at least 16 chars (Vercel cron auth)").optional(),
+
+  // ─── Feature flags ────────────────────────────────────────────────────────
+  NEXT_PUBLIC_NOTIFICATIONS_OPT_IN_ENABLED: z
+    .enum(["true", "false"])
+    .default("false"),
+
   // ─── App ─────────────────────────────────────────────────────────────────
   NEXT_PUBLIC_APP_URL: z.string().url(),
+
+  // ─── Rate limiting (Upstash Redis — optional) ─────────────────────────
+  // When both are set, lib/rate-limit uses a distributed Upstash sliding
+  // window. When either is missing, falls back to the per-instance
+  // in-memory limiter (fine for local dev / single-instance deployments,
+  // but ineffective under serverless fan-out — wire Upstash in production).
+  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
 
   // ─── Runtime ─────────────────────────────────────────────────────────────
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),

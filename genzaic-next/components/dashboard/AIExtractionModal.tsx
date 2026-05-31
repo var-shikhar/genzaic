@@ -24,7 +24,8 @@ interface AIExtractionModalProps {
 
 export function AIExtractionModal({ open, onClose, onExtract }: AIExtractionModalProps) {
   const [text, setText] = useState("")
-  const { mutateAsync: parseProductText, isPending: isLoading } = useParseProductText()
+  const parseMutation = useParseProductText()
+  const { mutateAsync: parseProductText, isPending: isLoading, streamingText } = parseMutation
 
   const handleExtract = async () => {
     if (!text.trim()) {
@@ -73,6 +74,11 @@ export function AIExtractionModal({ open, onClose, onExtract }: AIExtractionModa
               className="min-h-[160px]"
             />
           </div>
+          {isLoading && streamingText && (
+            <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground font-mono max-h-32 overflow-auto whitespace-pre-wrap">
+              {streamingText}
+            </div>
+          )}
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
             <Button
