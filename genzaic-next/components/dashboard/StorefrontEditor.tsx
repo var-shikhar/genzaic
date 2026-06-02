@@ -551,9 +551,7 @@ export function StorefrontEditor() {
       toast.success("— Draft saved.")
       return targetDraftId
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Couldn't save draft.",
-      )
+      toast.error(err instanceof Error ? err.message : "Couldn't save draft.")
       return null
     }
   }
@@ -645,8 +643,7 @@ export function StorefrontEditor() {
   )
   const showcaseDirty =
     JSON.stringify(showcase) !== initialShowcaseJsonRef.current
-  const hasChanges =
-    form.formState.isDirty || hasStagedImages || showcaseDirty
+  const hasChanges = form.formState.isDirty || hasStagedImages || showcaseDirty
 
   // Whether Save & publish is actionable. Stays enabled if the seller has
   // edits to ship OR if the public store needs (re)publishing (it isn't
@@ -691,11 +688,7 @@ export function StorefrontEditor() {
               setPublishDialogOpen(true)
               return
             }
-            window.open(
-              `/store/${liveSlug}`,
-              "_blank",
-              "noopener,noreferrer",
-            )
+            window.open(`/store/${liveSlug}`, "_blank", "noopener,noreferrer")
           }}
           onUnpublish={() => setUnpublishOpen(true)}
           onEditClosedState={() => setClosedModalOpen(true)}
@@ -729,10 +722,9 @@ export function StorefrontEditor() {
                   }
                   {...form.register("imprintName", {
                     onChange: () => {
-                      // Manual errors set by the publish gate persist until
-                      // explicitly cleared — drop the moment the seller
-                      // starts typing so the inline message doesn't linger.
-                      if (form.formState.errors.imprintName?.type === "manual") {
+                      if (
+                        form.formState.errors.imprintName?.type === "manual"
+                      ) {
                         form.clearErrors("imprintName")
                       }
                     },
@@ -788,7 +780,9 @@ export function StorefrontEditor() {
                           shouldDirty: true,
                         })
                       }
-                      if (form.formState.errors.imprintSlug?.type === "manual") {
+                      if (
+                        form.formState.errors.imprintSlug?.type === "manual"
+                      ) {
                         form.clearErrors("imprintSlug")
                       }
                     },
@@ -802,8 +796,8 @@ export function StorefrontEditor() {
                 </p>
                 {slugLocked ? (
                   <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground mt-1">
-                    — Your store URL is permanent. It can&apos;t be changed
-                    once set, and it&apos;s the same across every version.
+                    — Your store URL is permanent. It can&apos;t be changed once
+                    set, and it&apos;s the same across every version.
                   </p>
                 ) : (
                   <>

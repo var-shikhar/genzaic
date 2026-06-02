@@ -366,11 +366,7 @@ export function ProductForm({ product }: ProductFormProps) {
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 ) : (
-                  <Button
-                    type="submit"
-                    size="sm"
-                    disabled={isPending}
-                  >
+                  <Button type="submit" size="sm" disabled={isPending}>
                     {isPending ? "Saving…" : "Save Product"}
                   </Button>
                 )}
@@ -387,7 +383,8 @@ export function ProductForm({ product }: ProductFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                          Title <span className="text-flicker not-italic">*</span>
+                          Title{" "}
+                          <span className="text-flicker not-italic">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -408,7 +405,8 @@ export function ProductForm({ product }: ProductFormProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                            Price (₹) <span className="text-flicker not-italic">*</span>
+                            Price (₹){" "}
+                            <span className="text-flicker not-italic">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -431,7 +429,7 @@ export function ProductForm({ product }: ProductFormProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                            Was
+                            Original Price
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -440,7 +438,7 @@ export function ProductForm({ product }: ProductFormProps) {
                               min="0"
                               max="99999999.99"
                               step="0.01"
-                              placeholder="Strikethrough price"
+                              placeholder="0"
                               {...field}
                               value={field.value ?? ""}
                               className="font-display text-lg font-medium h-auto py-1.5"

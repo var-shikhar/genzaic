@@ -25,7 +25,11 @@ export function PushOptInBanner() {
     if (Notification.permission !== "default") return
 
     const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) ?? "0")
-    if (dismissedAt && Date.now() - dismissedAt < DISMISS_DAYS * 24 * 60 * 60 * 1000) return
+    if (
+      dismissedAt &&
+      Date.now() - dismissedAt < DISMISS_DAYS * 24 * 60 * 60 * 1000
+    )
+      return
 
     const t = setTimeout(() => setShouldShow(true), 30_000)
     return () => clearTimeout(t)
@@ -43,7 +47,9 @@ export function PushOptInBanner() {
       }
       const messaging = await getMessagingClient()
       if (!messaging) return
-      const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js")
+      const swReg = await navigator.serviceWorker.register(
+        "/firebase-messaging-sw.js",
+      )
       // register() resolves once the SW is registered, but the worker may
       // still be in "installing" or "waiting" state. getToken() immediately
       // calls pushManager.subscribe() which requires an *active* worker —
@@ -51,8 +57,12 @@ export function PushOptInBanner() {
       // active Service Worker". serviceWorker.ready resolves once a SW
       // controls this scope.
       await navigator.serviceWorker.ready
-      const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg })
-      if (token) await register({ fcmToken: token, userAgent: navigator.userAgent })
+      const token = await getToken(messaging, {
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: swReg,
+      })
+      if (token)
+        await register({ fcmToken: token, userAgent: navigator.userAgent })
       setShouldShow(false)
     } finally {
       setBusy(false)
@@ -68,12 +78,18 @@ export function PushOptInBanner() {
     <div className="flex items-center gap-3 px-4 py-2 bg-primary/10 border-b text-sm">
       <Bell className="h-4 w-4 text-primary shrink-0" />
       <p className="flex-1">
-        Get notified about orders, payouts and replies — even when this tab isn&apos;t open.
+        Get notified about orders, payouts and replies — even when this tab
+        isn&apos;t open.
       </p>
       <Button size="sm" onClick={handleEnable} disabled={busy}>
         {busy ? "Enabling…" : "Enable"}
       </Button>
-      <Button size="sm" variant="ghost" onClick={handleDismiss} aria-label="Dismiss">
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={handleDismiss}
+        aria-label="Dismiss"
+      >
         <X className="h-4 w-4" />
       </Button>
     </div>

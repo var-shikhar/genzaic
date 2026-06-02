@@ -19,10 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  useDrafts,
-  usePreviewToken,
-} from "@/lib/queries/storefront"
+import { useDrafts, usePreviewToken } from "@/lib/queries/storefront"
 import { DraftFormModal } from "@/components/dashboard/storefront/DraftFormModal"
 import { DeleteDraftDialog } from "@/components/dashboard/storefront/DeleteDraftDialog"
 import { cn } from "@/lib/utils"
@@ -54,7 +51,9 @@ export function DraftSwitcher({
   // The form modal toggles between "create new" (draft=null) and
   // "edit existing" (draft=<row>) — same component, two modes.
   const [formMode, setFormMode] = useState<
-    { kind: "closed" } | { kind: "create" } | { kind: "edit"; draft: StorefrontDraft }
+    | { kind: "closed" }
+    | { kind: "create" }
+    | { kind: "edit"; draft: StorefrontDraft }
   >({ kind: "closed" })
 
   // Delete dialog state — separate from the form so the warning copy can
@@ -72,8 +71,7 @@ export function DraftSwitcher({
   // True only when (a) the public store is currently published AND (b) the
   // active draft is the one mirrored onto that public row. Both gates have
   // to pass — an unpublished store should never show "Live" anywhere.
-  const activeIsLive =
-    storeIsPublished && !!active && active.id === liveDraftId
+  const activeIsLive = storeIsPublished && !!active && active.id === liveDraftId
 
   // The "next-most-recently-updated other draft" — what the delete dialog
   // shows as the successor when removing the live version.
@@ -261,7 +259,7 @@ function DraftRow({
             <Eye className="h-3.5 w-3.5" />
           </a>
         )}
-        <button
+        {/* <button
           type="button"
           onClick={async (e) => {
             e.stopPropagation()
@@ -291,7 +289,7 @@ function DraftRow({
           )}
         >
           <Link2 className="h-3.5 w-3.5" />
-        </button>
+        </button> */}
         <button
           type="button"
           onClick={(e) => {

@@ -127,7 +127,6 @@ export async function GET() {
   return NextResponse.json({ drafts })
 }
 
-
 // POST — create a new (non-default) draft
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -158,7 +157,9 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const live = parsed.data.seedFromLive ? await getStorefrontByUser(userId) : null
+  const live = parsed.data.seedFromLive
+    ? await getStorefrontByUser(userId)
+    : null
   const content = buildSeededContent(live, parsed.data.content ?? {})
 
   const [created] = await db
