@@ -60,18 +60,37 @@ const dmSerif = DM_Serif_Display({
 })
 
 export const metadata: Metadata = {
-  title: { default: "GenZaic - Sell Digital Products", template: "%s | GenZaic" },
-  description: "The creator marketplace for Gen Z. Sell ebooks, templates, courses, and more.",
-  keywords: ["digital products", "creator economy", "sell online", "ebooks", "templates"],
+  title: {
+    default: "GenZaic - Sell Digital Products",
+    template: "%s | GenZaic",
+  },
+  description:
+    "The creator marketplace for Gen Z. Sell ebooks, templates, courses, and more.",
+  keywords: [
+    "digital products",
+    "creator economy",
+    "sell online",
+    "ebooks",
+    "templates",
+  ],
   openGraph: {
     type: "website",
     siteName: "GenZaic",
     title: "GenZaic - Sell Digital Products",
     description: "The creator marketplace for Gen Z.",
   },
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon-16x16.png",
+    apple: "/apple-touch-icon.png",
+  },
 }
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   const session = await auth()
 
   const fontVariables = [

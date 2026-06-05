@@ -1,5 +1,7 @@
 import Link from "next/link"
 import { Star } from "lucide-react"
+import Image from "next/image"
+import logo from "../../public/logo-b.png"
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -18,9 +20,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Top — Logo */}
         <div className="relative z-10 p-8">
           <Link href="/" className="inline-flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/10">
-              <span className="text-white font-bold text-lg">G</span>
-            </div>
+            <Image src={logo} alt="Genzaic" className="w-9 h-9" />
             <span className="font-bold text-xl text-white">GenZaic</span>
           </Link>
         </div>
@@ -87,9 +87,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Mobile-only logo */}
         <div className="lg:hidden px-5 pt-4 pb-2 flex-shrink-0">
           <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center shadow-md shadow-primary/20">
-              <span className="text-white font-bold text-sm">G</span>
-            </div>
+            <Image src={logo} alt="Genzaic" className="w-8 h-8" />
             <span className="font-bold text-lg text-foreground">GenZaic</span>
           </Link>
         </div>

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { LayoutDashboard, Menu, X } from "lucide-react"
+import Image from "next/image"
+import logo from "../../public/logo-b.png"
 import { Button } from "@/components/ui/button"
 import { useLandingCta } from "@/hooks/use-landing-cta"
 
@@ -42,9 +44,7 @@ export default function LandingNav() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl gradient-primary flex items-center justify-center shadow-md shadow-primary/20">
-            <span className="text-white font-bold text-base sm:text-lg">G</span>
-          </div>
+          <Image src={logo} alt="Genzaic" className="w-8 h-8 sm:w-9 sm:h-9" />
           <span
             className={`font-display font-bold text-lg sm:text-xl transition-colors duration-300 ${scrolled ? "text-foreground" : "text-white"}`}
           >

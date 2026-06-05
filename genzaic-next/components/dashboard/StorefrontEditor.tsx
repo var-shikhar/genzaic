@@ -539,7 +539,30 @@ export function StorefrontEditor() {
         if (coverFile) fd.append("coverImage", coverFile)
         if (logoRemoved && !logoFile) fd.append("removeProfileImage", "true")
         if (coverRemoved && !coverFile) fd.append("removeCoverImage", "true")
-        await update.mutateAsync(fd)
+        const uploadResult = await update.mutateAsync(fd)
+
+        // Sync the uploaded image refs back into the draft so a subsequent
+        // publish copies the correct URLs/fileIds instead of stale refs.
+        if (uploadResult && targetDraftId) {
+          const imageRefs: Partial<DraftContent> = {
+            profileImage:
+              uploadResult.profileImageUrl && uploadResult.profileImageFileId
+                ? {
+                    url: uploadResult.profileImageUrl,
+                    fileId: uploadResult.profileImageFileId,
+                  }
+                : null,
+            coverImage:
+              uploadResult.coverImageUrl && uploadResult.coverImageFileId
+                ? {
+                    url: uploadResult.coverImageUrl,
+                    fileId: uploadResult.coverImageFileId,
+                  }
+                : null,
+          }
+          await updateDraft.mutateAsync({ content: imageRefs })
+        }
+
         setLogoFile(null)
         setCoverFile(null)
         setLogoPreview(null)

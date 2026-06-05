@@ -30,7 +30,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Tooltip,
@@ -93,11 +98,7 @@ function SidebarNav({
   }
 
   if (!collapsed) {
-    return (
-      <nav className="space-y-1">
-        {navItems.map(renderItem)}
-      </nav>
-    )
+    return <nav className="space-y-1">{navItems.map(renderItem)}</nav>
   }
 
   return (
@@ -267,9 +268,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   // Hydrate persisted preference once.
   useEffect(() => {
-    const stored = typeof window !== "undefined"
-      ? window.localStorage.getItem(SIDEBAR_PREF_KEY)
-      : null
+    const stored =
+      typeof window !== "undefined"
+        ? window.localStorage.getItem(SIDEBAR_PREF_KEY)
+        : null
     if (stored === "1") setCollapsed(true)
     else if (stored === "0") setCollapsed(false)
   }, [])
@@ -404,7 +406,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <PushOptInBanner />
+        {/* <PushOptInBanner /> */}
 
         {/* Main content. No overflow-auto here: the parent flex uses
             min-h-screen (not a fixed height), so overflow-auto would create
