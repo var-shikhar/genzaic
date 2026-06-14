@@ -1,58 +1,57 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { useForm, Controller } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useSession } from "next-auth/react"
-import { toast } from "sonner"
-import { z } from "zod"
-import Image from "next/image"
-import { Upload, X } from "lucide-react"
-import {
-  useStorefront,
-  useUpdateStorefront,
-  useCheckSlug,
-  useDraft,
-  useDrafts,
-  useCreateDraft,
-  useUpdateDraft,
-  usePublishDraft,
-} from "@/lib/queries/storefront"
-import { useProducts } from "@/lib/queries/products"
-import { useDebouncedValue } from "@/hooks/use-debounced-value"
-import { GenzaicLoader } from "@/components/ui/genzaic-loader"
-import { PublishToShareDialog } from "@/components/dashboard/PublishToShareDialog"
-import { HeaderStrip } from "@/components/dashboard/storefront/HeaderStrip"
-import { UnpublishDialog } from "@/components/dashboard/storefront/UnpublishDialog"
-import { ClosedStateModal } from "@/components/dashboard/storefront/ClosedStateModal"
-import { SlugStatusBadge } from "@/components/dashboard/storefront/SlugStatusBadge"
-import type { DraftContent } from "@/lib/validations/storefront"
-import {
-  imprintCoverPresetSchema,
-  imprintTypePairingSchema,
-  imprintAccentSchema,
-} from "@/lib/validations/storefront"
-import { ShowcaseFields } from "@/components/dashboard/storefront/ShowcaseFields"
-import type { StorefrontShowcase } from "@/lib/showcase/types"
-import { parseShowcaseUrl } from "@/lib/showcase/parse-url"
-import {
-  StorefrontPreview,
-  type PreviewProduct,
-  type PreviewStorefront,
-} from "@/components/store/StorefrontPreview"
 import type { CoverPreset, StoreAccent } from "@/components/brand/CoverPreview"
-import { presetToThemeId } from "@/lib/store/theme"
 import {
   EditorialSection,
   EditorsHeadline,
   EyebrowLabel,
 } from "@/components/brand/primitives"
+import { PublishToShareDialog } from "@/components/dashboard/PublishToShareDialog"
+import { ClosedStateModal } from "@/components/dashboard/storefront/ClosedStateModal"
+import { HeaderStrip } from "@/components/dashboard/storefront/HeaderStrip"
+import { ShowcaseFields } from "@/components/dashboard/storefront/ShowcaseFields"
+import { SlugStatusBadge } from "@/components/dashboard/storefront/SlugStatusBadge"
+import { UnpublishDialog } from "@/components/dashboard/storefront/UnpublishDialog"
+import {
+  StorefrontPreview,
+  type PreviewProduct,
+  type PreviewStorefront,
+} from "@/components/store/StorefrontPreview"
+import { GenzaicLoader } from "@/components/ui/genzaic-loader"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
+import { useProducts } from "@/lib/queries/products"
+import {
+  useCheckSlug,
+  useCreateDraft,
+  useDraft,
+  useDrafts,
+  usePublishDraft,
+  useStorefront,
+  useUpdateDraft,
+  useUpdateStorefront,
+} from "@/lib/queries/storefront"
+import { parseShowcaseUrl } from "@/lib/showcase/parse-url"
+import type { StorefrontShowcase } from "@/lib/showcase/types"
+import { presetToThemeId } from "@/lib/store/theme"
 import { cn } from "@/lib/utils"
+import type { DraftContent } from "@/lib/validations/storefront"
+import {
+  imprintAccentSchema,
+  imprintCoverPresetSchema,
+  imprintTypePairingSchema,
+} from "@/lib/validations/storefront"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Upload, X } from "lucide-react"
+import { useSession } from "next-auth/react"
+import Image from "next/image"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { Controller, useForm } from "react-hook-form"
+import { toast } from "sonner"
+import { z } from "zod"
 
 const HEX_RE = /^#([0-9A-Fa-f]{6})$/
 

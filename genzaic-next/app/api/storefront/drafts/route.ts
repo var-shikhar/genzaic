@@ -1,17 +1,17 @@
-import { NextRequest, NextResponse } from "next/server"
-import { and, asc, eq } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import { db, storefrontDrafts, type Storefront } from "@/lib/db"
-import {
-  draftCreateSchema,
-  draftContentSchema,
-  type DraftContent,
-} from "@/lib/validations/storefront"
 import {
   getDraftsByUser,
   getStorefrontByUser,
   isDraftNameTaken,
 } from "@/lib/db/storefront-helpers"
+import {
+  draftContentSchema,
+  draftCreateSchema,
+  type DraftContent,
+} from "@/lib/validations/storefront"
+import { asc, eq } from "drizzle-orm"
+import { NextRequest, NextResponse } from "next/server"
 
 /**
  * Produce a complete `DraftContent` blob. Starts from "all nulls + theme

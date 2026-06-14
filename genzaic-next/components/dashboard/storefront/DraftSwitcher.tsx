@@ -1,17 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { toast } from "sonner"
-import {
-  ChevronDown,
-  Plus,
-  Eye,
-  Link2,
-  Trash2,
-  Check,
-  Pencil,
-  Lock,
-} from "lucide-react"
+import { DeleteDraftDialog } from "@/components/dashboard/storefront/DeleteDraftDialog"
+import { DraftFormModal } from "@/components/dashboard/storefront/DraftFormModal"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,11 +9,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useDrafts, usePreviewToken } from "@/lib/queries/storefront"
-import { DraftFormModal } from "@/components/dashboard/storefront/DraftFormModal"
-import { DeleteDraftDialog } from "@/components/dashboard/storefront/DeleteDraftDialog"
-import { cn } from "@/lib/utils"
 import type { StorefrontDraft } from "@/lib/db/schema"
+import { useDrafts, usePreviewToken } from "@/lib/queries/storefront"
+import { cn } from "@/lib/utils"
+import {
+  Check,
+  ChevronDown,
+  Eye,
+  Lock,
+  Pencil,
+  Plus,
+  Trash2
+} from "lucide-react"
+import { useState } from "react"
 
 interface DraftSwitcherProps {
   activeDraftId: string | null

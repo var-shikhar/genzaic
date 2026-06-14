@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom"
 import { motion } from "framer-motion"
-import { Button } from "@/components/ui/button"
 import { ReactNode } from "react"
 
 interface AuthLayoutProps {
@@ -18,12 +17,7 @@ const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
 
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <span className="text-white font-bold text-xl">G</span>
-            </div>
-            <span className="font-display font-bold text-2xl text-white">
-              GenZaic
-            </span>
+            <img src="/logo.png" alt="Genzaic" width={120} height={24} />
           </Link>
 
           <div className="space-y-6">
@@ -85,14 +79,7 @@ const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
         >
           {/* Mobile Logo */}
           <Link to="/" className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">
-                G
-              </span>
-            </div>
-            <span className="font-display font-bold text-xl text-foreground">
-              GenZaic
-            </span>
+            <img src="/logo.png" alt="Genzaic" width={100} height={20} />
           </Link>
 
           <div className="mb-8">

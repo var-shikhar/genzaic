@@ -1,22 +1,3 @@
-import React, { useState } from "react"
-import { Link, useLocation, useNavigate } from "react-router-dom"
-import { motion, AnimatePresence } from "framer-motion"
-import {
-  LayoutDashboard,
-  Package,
-  Store,
-  TrendingUp,
-  Wallet,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  ChevronDown,
-  User,
-  Shield,
-} from "lucide-react"
-import { useAuth } from "@/contexts/AuthContext"
-import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +5,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useAuth } from "@/contexts/AuthContext"
+import { AnimatePresence, motion } from "framer-motion"
+import {
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Package,
+  Settings,
+  Shield,
+  Store,
+  TrendingUp,
+  User,
+  Wallet,
+  X
+} from "lucide-react"
+import React, { useState } from "react"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -61,10 +59,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <Menu className="w-6 h-6 text-foreground" />
         </button>
         <Link to="/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center bg-primary text-primary-foreground">
-            <span className="font-bold text-sm">G</span>
-          </div>
-          <span className="font-bold text-lg text-foreground">GenZaic</span>
+          <img src="/logo.png" alt="Genzaic" width={100} height={20} />
         </Link>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -109,12 +104,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             >
               <div className="flex items-center justify-between mb-8">
                 <Link to="/dashboard" className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center bg-primary text-primary-foreground">
-                    <span className="font-bold">G</span>
-                  </div>
-                  <span className="font-bold text-xl text-foreground">
-                    GenZaic
-                  </span>
+                  <img src="/logo.png" alt="Genzaic" width={110} height={22} />
                 </Link>
                 <button
                   onClick={() => setSidebarOpen(false)}
@@ -151,10 +141,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-[260px] bg-card border-r border-border flex-col p-4">
         <Link to="/dashboard" className="flex items-center gap-3 mb-8 px-2">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center bg-primary text-primary-foreground">
-            <span className="font-bold">G</span>
-          </div>
-          <span className="font-bold text-xl text-foreground">GenZaic</span>
+          <img src="/logo.png" alt="Genzaic" width={110} height={22} />
         </Link>
 
         <nav className="flex-1 space-y-1">

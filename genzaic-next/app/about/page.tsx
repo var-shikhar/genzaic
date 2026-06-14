@@ -2,6 +2,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowRight, Heart, Sparkles, Users, Zap } from "lucide-react"
+import Image from "next/image"
+import logoFull from "../../public/logo.png"
 import Footer from "@/components/layout/Footer"
 
 export const metadata = {
@@ -16,12 +18,7 @@ export default function AboutPage() {
       <nav className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">
-                G
-              </span>
-            </div>
-            <span className="font-bold text-xl text-foreground">GenZaic</span>
+            <Image src={logoFull} alt="Genzaic" width={100} height={20} />
           </Link>
           <div className="flex items-center gap-3">
             <Button variant="ghost" asChild>

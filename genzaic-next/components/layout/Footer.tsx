@@ -10,7 +10,6 @@ import {
   ArrowRight,
 } from "lucide-react"
 import Image from "next/image"
-import logo from "../../public/logo-b.png"
 import logoFull from "../../public/logo.png"
 
 const linkColumns = [
@@ -125,20 +124,12 @@ export default function Footer() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10">
           {/* Brand — spans 2 cols */}
           <div className="col-span-2">
-            {/* <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg shadow-purple-500/20">
-                <Image src={logo} alt="Genzaic" />
-              </div>
-              <span className="font-display font-bold text-xl text-white">
-                GenZaic
-              </span>
-            </div> */}
-            <div className="flex items-center gap-2.5 mb-4">
+            <div className="flex items-center gap-2.5 mb-2">
               <Image src={logoFull} alt="Genzaic" width={100} height={20} />
             </div>
             <p className="text-sm text-gray-400 leading-relaxed mb-5 max-w-xs">
-              India&apos;s digital storefront for creators — sell PDFs,
-              templates, code &amp; digital products with zero setup fees.
+              India&apos;s no. first digital storefront for creators — sell
+              PDFs, templates, code &amp; digital products with zero setup fees.
               UPI-ready, GST-ready.
             </p>
             <div className="flex items-center gap-2.5 mb-5">

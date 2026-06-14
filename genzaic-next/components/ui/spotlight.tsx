@@ -1,19 +1,18 @@
-"use client";
-import React from "react";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
+"use client"
+import React from "react"
+import { cn } from "@/lib/utils"
 
 type SpotlightProps = {
-  className?: string;
-  fill?: string;
-};
+  className?: string
+  fill?: string
+}
 
 export function Spotlight({ className, fill }: SpotlightProps) {
   return (
     <svg
       className={cn(
         "animate-spotlight pointer-events-none absolute z-[1] h-[169%] w-[138%] lg:w-[84%] opacity-0",
-        className
+        className,
       )}
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 3787 2842"
@@ -41,10 +40,18 @@ export function Spotlight({ className, fill }: SpotlightProps) {
           colorInterpolationFilters="sRGB"
         >
           <feFlood floodOpacity="0" result="BackgroundImageFix" />
-          <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-          <feGaussianBlur stdDeviation="151" result="effect1_foregroundBlur_1065_8" />
+          <feBlend
+            mode="normal"
+            in="SourceGraphic"
+            in2="BackgroundImageFix"
+            result="shape"
+          />
+          <feGaussianBlur
+            stdDeviation="151"
+            result="effect1_foregroundBlur_1065_8"
+          />
         </filter>
       </defs>
     </svg>
-  );
+  )
 }

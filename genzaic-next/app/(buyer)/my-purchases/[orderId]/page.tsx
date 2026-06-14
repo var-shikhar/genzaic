@@ -1,34 +1,34 @@
 "use client"
 
-import Image from "next/image"
-import Link from "next/link"
-import { useParams } from "next/navigation"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useMyOrder } from "@/lib/queries/buyer"
+import { formatCurrency } from "@/lib/utils"
 import { motion } from "framer-motion"
 import {
   ArrowLeft,
-  Download,
-  FileText,
-  Package,
-  ExternalLink,
   Calendar,
-  CreditCard,
-  Mail,
   CheckCircle2,
-  Link2,
-  Phone,
-  MessageCircle,
   Clock,
+  CreditCard,
+  Download,
+  ExternalLink,
+  FileText,
+  Link2,
+  Mail,
+  MessageCircle,
+  Package,
+  Phone,
 } from "lucide-react"
-import { toast } from "sonner"
 import { useSession } from "next-auth/react"
-import { useMyOrder } from "@/lib/queries/buyer"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Progress } from "@/components/ui/progress"
-import { Skeleton } from "@/components/ui/skeleton"
-import { formatCurrency, formatDate } from "@/lib/utils"
+import Image from "next/image"
+import Link from "next/link"
+import { useParams } from "next/navigation"
+import { toast } from "sonner"
 
 export default function PurchaseDetailsPage() {
   const params = useParams<{ orderId: string }>()
@@ -70,15 +70,12 @@ export default function PurchaseDetailsPage() {
       return
     }
     try {
-      const res = await fetch(
-        `/api/checkout/order/${order.id}/download`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          // Logged-in buyer — server authorises via session, no token needed.
-          body: JSON.stringify({ token: null }),
-        },
-      )
+      const res = await fetch(`/api/checkout/order/${order.id}/download`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // Logged-in buyer — server authorises via session, no token needed.
+        body: JSON.stringify({ token: null }),
+      })
       if (!res.ok) {
         const { error } = (await res.json().catch(() => ({}))) as {
           error?: string
@@ -112,7 +109,7 @@ export default function PurchaseDetailsPage() {
       if (phone) {
         const cleanNumber = phone.replace(/[^0-9]/g, "")
         const message = encodeURIComponent(
-          `Hi! I purchased ${order.productTitle} (Order ID: ${order.id}). Please help me with the delivery.`
+          `Hi! I purchased ${order.productTitle} (Order ID: ${order.id}). Please help me with the delivery.`,
         )
         window.open(`https://wa.me/${cleanNumber}?text=${message}`, "_blank")
       }
@@ -138,7 +135,10 @@ export default function PurchaseDetailsPage() {
             into one card so the seller sees what they bought and how to
             access it together, instead of the action floating in an empty
             sidebar. */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <Card>
             <CardContent className="p-6">
               <div className="flex flex-col sm:flex-row gap-6">
@@ -190,7 +190,9 @@ export default function PurchaseDetailsPage() {
                         </Badge>
                       )}
                   </div>
-                  <h1 className="text-xl font-bold mb-2">{order.productTitle}</h1>
+                  <h1 className="text-xl font-bold mb-2">
+                    {order.productTitle}
+                  </h1>
                   {order.productDescription && (
                     <p className="text-muted-foreground text-sm mb-4">
                       {order.productDescription}
@@ -224,7 +226,9 @@ export default function PurchaseDetailsPage() {
                   <>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Downloads Used</span>
+                        <span className="text-muted-foreground">
+                          Downloads Used
+                        </span>
                         <span className="font-medium">
                           {order.downloadCount} of {order.maxDownloads}
                         </span>
@@ -237,7 +241,8 @@ export default function PurchaseDetailsPage() {
                     {order.downloadCount >= order.maxDownloads && (
                       <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
                         <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                          Download limit reached. Contact support for more downloads.
+                          Download limit reached. Contact support for more
+                          downloads.
                         </p>
                       </div>
                     )}
@@ -254,31 +259,36 @@ export default function PurchaseDetailsPage() {
                   </>
                 )}
 
-                {order.deliveryType === "external_link" && order.externalUrl && (
-                  <>
-                    <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-                      <div className="flex items-start gap-3">
-                        <Link2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium mb-1">Product Link</p>
-                          <p className="text-sm text-muted-foreground break-all">
-                            {order.externalUrl}
-                          </p>
+                {order.deliveryType === "external_link" &&
+                  order.externalUrl && (
+                    <>
+                      <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+                        <div className="flex items-start gap-3">
+                          <Link2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium mb-1">Product Link</p>
+                            <p className="text-sm text-muted-foreground break-all">
+                              {order.externalUrl}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <Button
-                      className="w-full sm:w-auto gradient-primary text-white"
-                      size="lg"
-                      asChild
-                    >
-                      <a href={order.externalUrl} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="w-5 h-5 mr-2" />
-                        Access Product
-                      </a>
-                    </Button>
-                  </>
-                )}
+                      <Button
+                        className="w-full sm:w-auto gradient-primary text-white"
+                        size="lg"
+                        asChild
+                      >
+                        <a
+                          href={order.externalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <ExternalLink className="w-5 h-5 mr-2" />
+                          Access Product
+                        </a>
+                      </Button>
+                    </>
+                  )}
 
                 {order.deliveryType === "manual" && (
                   <>
@@ -365,7 +375,9 @@ export default function PurchaseDetailsPage() {
                     <Calendar className="w-5 h-5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground">Purchase Date</p>
+                    <p className="text-xs text-muted-foreground">
+                      Purchase Date
+                    </p>
                     <p className="font-medium">
                       {new Date(order.purchasedAt).toLocaleDateString("en-IN", {
                         day: "numeric",
@@ -394,7 +406,9 @@ export default function PurchaseDetailsPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs text-muted-foreground">Email</p>
-                    <p className="font-medium truncate">{session?.user?.email}</p>
+                    <p className="font-medium truncate">
+                      {session?.user?.email}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -465,7 +479,12 @@ export default function PurchaseDetailsPage() {
                   Issue with this order? We&apos;ll help.
                 </p>
               </div>
-              <Button variant="outline" size="sm" asChild className="sm:shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="sm:shrink-0"
+              >
                 <a href="mailto:support@genzaic.com">Contact</a>
               </Button>
             </CardContent>

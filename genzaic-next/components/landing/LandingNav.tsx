@@ -5,7 +5,7 @@ import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { LayoutDashboard, Menu, X } from "lucide-react"
 import Image from "next/image"
-import logo from "../../public/logo-b.png"
+import logoFull from "../../public/logo.png"
 import { Button } from "@/components/ui/button"
 import { useLandingCta } from "@/hooks/use-landing-cta"
 
@@ -44,12 +44,7 @@ export default function LandingNav() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <Image src={logo} alt="Genzaic" className="w-8 h-8 sm:w-9 sm:h-9" />
-          <span
-            className={`font-display font-bold text-lg sm:text-xl transition-colors duration-300 ${scrolled ? "text-foreground" : "text-white"}`}
-          >
-            GenZaic
-          </span>
+          <Image src={logoFull} alt="Genzaic" width={100} height={20} />
         </Link>
         <div className="hidden md:flex items-center gap-6 lg:gap-8">
           {navLinks.map((link) => (

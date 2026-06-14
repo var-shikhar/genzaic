@@ -1,17 +1,5 @@
 "use client"
 
-import { useFormContext } from "react-hook-form"
-import {
-  Upload,
-  X,
-  Link as LinkIcon,
-  FileText,
-  RefreshCw,
-  AlertCircle,
-} from "lucide-react"
-import type { ProductInput } from "@/lib/validations/product"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   FormControl,
   FormField,
@@ -19,13 +7,25 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
+import type { ProductInput } from "@/lib/validations/product"
+import {
+  AlertCircle,
+  FileText,
+  Link as LinkIcon,
+  RefreshCw,
+  Upload,
+  X,
+} from "lucide-react"
+import { useFormContext } from "react-hook-form"
 import { DeliveryTypeSelector } from "./DeliveryTypeSelector"
 import {
   GalleryUploader,
   type ExistingGalleryImage,
 } from "./GalleryUploader"
 import { TagsCombobox, type SelectedTag } from "./TagsCombobox"
-import { cn } from "@/lib/utils"
 
 export interface ProductFileLabel {
   name: string

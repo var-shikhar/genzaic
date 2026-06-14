@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
+import logoFull from "../../public/logo.png"
 import { usePathname, useRouter } from "next/navigation"
 import { signOut, useSession } from "next-auth/react"
 import {
@@ -45,7 +47,6 @@ import {
 } from "@/components/ui/tooltip"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { getInitials } from "@/lib/utils"
-import { Wordmark } from "@/components/brand/primitives"
 import { RouteLoadingOverlay } from "@/components/layout/RouteLoadingOverlay"
 import { NotificationBell } from "@/components/notifications/NotificationBell"
 import { PushOptInBanner } from "@/components/notifications/PushOptInBanner"
@@ -212,7 +213,7 @@ function Sidebar({
         >
           {navExpanded && (
             <Link href="/dashboard" className="flex items-center">
-              <Wordmark size="md" />
+              <Image src={logoFull} alt="Genzaic" width={110} height={22} />
             </Link>
           )}
           {!collapsed && (
@@ -337,7 +338,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     className="flex items-center"
                     onClick={() => setMobileOpen(false)}
                   >
-                    <Wordmark size="md" />
+                    <Image src={logoFull} alt="Genzaic" width={110} height={22} />
                   </Link>
                 </div>
                 <div className="p-4">

@@ -1,35 +1,32 @@
 "use client"
 
-import { useRef } from "react"
-import { motion, useScroll, useTransform, MotionValue } from "framer-motion"
+import { motion, MotionValue, useScroll, useTransform } from "framer-motion"
 import {
   BadgeCheck,
-  Star,
-  Heart,
-  Search,
-  ShoppingCart,
-  Download,
   CheckCircle2,
-  Shield,
-  FileText,
   ChevronLeft,
-  CreditCard,
-  Package,
   Clock,
-  IndianRupee,
-  MessageSquare,
-  ThumbsUp,
-  Tag,
-  Mail,
+  CreditCard,
+  Download,
   File,
+  FileText,
   HardDrive,
-  ChevronRight,
+  Heart,
+  IndianRupee,
+  Mail,
+  MessageSquare,
+  Package,
   Receipt,
-  CircleCheck,
-  Truck,
+  Search,
+  Shield,
+  ShoppingCart,
   Sparkles,
-  User,
+  Star,
+  Tag,
+  ThumbsUp,
+  User
 } from "lucide-react"
+import { useRef } from "react"
 
 const storeProducts = [
   {

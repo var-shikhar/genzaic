@@ -1,17 +1,16 @@
 "use client"
 
-import { useMemo } from "react"
-import { useCategories, type Category } from "@/lib/queries/categories"
 import {
   Select,
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useCategories, type Category } from "@/lib/queries/categories"
+import { useMemo } from "react"
 
 interface CategoryPickerProps {
   /** The leaf-most selected category id. Caller stores a single id; component
@@ -23,7 +22,11 @@ interface CategoryPickerProps {
 
 const CLEAR = "__clear__"
 
-export function CategoryPicker({ value, onChange, disabled }: CategoryPickerProps) {
+export function CategoryPicker({
+  value,
+  onChange,
+  disabled,
+}: CategoryPickerProps) {
   const { data: categories = [], isLoading } = useCategories()
 
   // Index parent → children
@@ -36,7 +39,12 @@ export function CategoryPicker({ value, onChange, disabled }: CategoryPickerProp
       m.set(key, arr)
     }
     for (const [k, arr] of m) {
-      m.set(k, [...arr].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)))
+      m.set(
+        k,
+        [...arr].sort(
+          (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
+        ),
+      )
     }
     return m
   }, [categories])
@@ -53,7 +61,8 @@ export function CategoryPicker({ value, onChange, disabled }: CategoryPickerProp
   // Using useMemo (vs useState+useEffect) avoids a race where `value` arrives
   // before categories load — once categories resolve, this re-derives cleanly.
   const { parentId, subId } = useMemo(() => {
-    if (!value) return { parentId: null as string | null, subId: null as string | null }
+    if (!value)
+      return { parentId: null as string | null, subId: null as string | null }
     const cat = byId.get(value)
     if (!cat) {
       // Value present but category map not loaded yet — assume it's a parent
@@ -95,19 +104,29 @@ export function CategoryPicker({ value, onChange, disabled }: CategoryPickerProp
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div className="space-y-1.5">
-        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Category</span>
-        <Select value={parentId ?? ""} onValueChange={handleParentChange} disabled={disabled}>
+        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+          Category
+        </span>
+        <Select
+          value={parentId ?? ""}
+          onValueChange={handleParentChange}
+          disabled={disabled}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select category" />
           </SelectTrigger>
           <SelectContent>
             {topLevel.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-muted-foreground">No categories.</div>
+              <div className="px-3 py-2 text-sm text-muted-foreground">
+                No categories.
+              </div>
             ) : (
               <SelectGroup>
                 {parentId && (
                   <SelectItem value={CLEAR}>
-                    <span className="text-muted-foreground">Clear selection</span>
+                    <span className="text-muted-foreground">
+                      Clear selection
+                    </span>
                   </SelectItem>
                 )}
                 {topLevel.map((c) => (
@@ -122,7 +141,9 @@ export function CategoryPicker({ value, onChange, disabled }: CategoryPickerProp
       </div>
 
       <div className="space-y-1.5">
-        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Subcategory</span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+          Subcategory
+        </span>
         <Select
           value={subId ?? ""}
           onValueChange={handleSubChange}
@@ -130,14 +151,22 @@ export function CategoryPicker({ value, onChange, disabled }: CategoryPickerProp
         >
           <SelectTrigger>
             <SelectValue
-              placeholder={!parentId ? "Pick a category first" : subOptions.length === 0 ? "No subcategories" : "Optional"}
+              placeholder={
+                !parentId
+                  ? "Pick a category first"
+                  : subOptions.length === 0
+                    ? "No subcategories"
+                    : "Optional"
+              }
             />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
               {subId && (
                 <SelectItem value={CLEAR}>
-                  <span className="text-muted-foreground">Clear subcategory</span>
+                  <span className="text-muted-foreground">
+                    Clear subcategory
+                  </span>
                 </SelectItem>
               )}
               {subOptions.map((c) => (

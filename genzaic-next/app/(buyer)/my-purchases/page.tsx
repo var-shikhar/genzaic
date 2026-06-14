@@ -1,15 +1,20 @@
 "use client"
 
-import Image from "next/image"
-import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useMyOrders } from "@/lib/queries/buyer"
 import { useCategories } from "@/lib/queries/categories"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { ShoppingBag, Download, ExternalLink, MessageSquare, Package } from "lucide-react"
 import { formatCurrency, formatDate } from "@/lib/utils"
+import {
+  Download,
+  ExternalLink,
+  MessageSquare,
+  Package,
+  ShoppingBag,
+} from "lucide-react"
+import Image from "next/image"
+import Link from "next/link"
 
 export default function MyPurchasesPage() {
   const { data: orders, isLoading } = useMyOrders()
@@ -20,7 +25,9 @@ export default function MyPurchasesPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="text-3xl font-bold">My Purchases</h1>
-        <p className="text-muted-foreground mt-1">{orders?.length ?? 0} purchases</p>
+        <p className="text-muted-foreground mt-1">
+          {orders?.length ?? 0} purchases
+        </p>
       </div>
 
       {isLoading ? (
@@ -34,7 +41,9 @@ export default function MyPurchasesPage() {
           <CardContent className="flex flex-col items-center justify-center py-16">
             <ShoppingBag className="h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-1">No purchases yet</h3>
-            <p className="text-muted-foreground text-sm mb-4">Browse our marketplace to find great products</p>
+            <p className="text-muted-foreground text-sm mb-4">
+              Browse our marketplace to find great products
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -45,7 +54,12 @@ export default function MyPurchasesPage() {
                 <div className="flex gap-4 p-4">
                   {order.productThumbnail ? (
                     <div className="relative w-20 h-20 rounded-lg overflow-hidden shrink-0">
-                      <Image src={order.productThumbnail} alt={order.productTitle} fill className="object-cover" />
+                      <Image
+                        src={order.productThumbnail}
+                        alt={order.productTitle}
+                        fill
+                        className="object-cover"
+                      />
                     </div>
                   ) : (
                     <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center shrink-0">
@@ -53,31 +67,59 @@ export default function MyPurchasesPage() {
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium truncate">{order.productTitle}</h3>
-                    <p className="text-sm text-muted-foreground">by {order.sellerName}</p>
+                    <h3 className="font-medium truncate">
+                      {order.productTitle}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      by {order.sellerName}
+                    </p>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-sm font-semibold">{formatCurrency(order.totalAmount)}</span>
+                      <span className="text-sm font-semibold">
+                        {formatCurrency(order.totalAmount)}
+                      </span>
                       <span className="text-xs text-muted-foreground">•</span>
-                      <span className="text-xs text-muted-foreground">{formatDate(order.purchasedAt)}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(order.purchasedAt)}
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {order.deliveryType === "download" && order.downloadLink && (
-                      <Button asChild size="sm" className="gradient-primary text-white gap-1">
-                        <Link href={`/my-purchases/${order.id}`}>
-                          <Download className="h-3.5 w-3.5" /> Download
-                        </Link>
-                      </Button>
-                    )}
-                    {order.deliveryType === "external_link" && order.externalUrl && (
-                      <Button asChild size="sm" variant="outline" className="gap-1">
-                        <a href={order.externalUrl} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="h-3.5 w-3.5" /> Access
-                        </a>
-                      </Button>
-                    )}
+                    {order.deliveryType === "download" &&
+                      order.downloadLink && (
+                        <Button
+                          asChild
+                          size="sm"
+                          className="gradient-primary text-white gap-1"
+                        >
+                          <Link href={`/my-purchases/${order.id}`}>
+                            <Download className="h-3.5 w-3.5" /> Download
+                          </Link>
+                        </Button>
+                      )}
+                    {order.deliveryType === "external_link" &&
+                      order.externalUrl && (
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="outline"
+                          className="gap-1"
+                        >
+                          <a
+                            href={order.externalUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" /> Access
+                          </a>
+                        </Button>
+                      )}
                     {order.deliveryType === "manual" && (
-                      <Button asChild size="sm" variant="outline" className="gap-1">
+                      <Button
+                        asChild
+                        size="sm"
+                        variant="outline"
+                        className="gap-1"
+                      >
                         <Link href={`/my-purchases/${order.id}`}>
                           <MessageSquare className="h-3.5 w-3.5" /> Details
                         </Link>
