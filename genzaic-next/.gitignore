@@ -5,6 +5,9 @@ node_modules
 public/sw.js
 public/sw.js.map
 public/swe-worker-*.js
+
+# Local responsiveness-QA artifacts
+qa-screenshots/
 *.tsbuildinfo
 .env.local
 .env*.local

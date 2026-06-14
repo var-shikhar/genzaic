@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
-import logoFull from "../../public/logo.png"
+import { Logo } from "@/components/ui/logo"
 import { usePathname, useRouter } from "next/navigation"
 import { signOut, useSession } from "next-auth/react"
 import {
@@ -213,7 +212,7 @@ function Sidebar({
         >
           {navExpanded && (
             <Link href="/dashboard" className="flex items-center">
-              <Image src={logoFull} alt="Genzaic" width={110} height={22} />
+              <Logo width={110} height={22} />
             </Link>
           )}
           {!collapsed && (
@@ -338,7 +337,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     className="flex items-center"
                     onClick={() => setMobileOpen(false)}
                   >
-                    <Image src={logoFull} alt="Genzaic" width={110} height={22} />
+                    <Logo width={110} height={22} />
                   </Link>
                 </div>
                 <div className="p-4">

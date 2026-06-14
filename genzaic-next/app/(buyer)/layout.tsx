@@ -2,10 +2,9 @@ import { BuyerProfileMenu } from "@/components/layout/BuyerProfileMenu"
 import { NotificationBell } from "@/components/notifications/NotificationBell"
 import { auth } from "@/lib/auth"
 import { ShoppingBag } from "lucide-react"
-import Image from "next/image"
+import { Logo } from "@/components/ui/logo"
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import logoFull from "../../public/logo.png"
 
 export default async function BuyerLayout({
   children,
@@ -31,7 +30,7 @@ export default async function BuyerLayout({
       <header className="border-b border-border/60 bg-background/80 backdrop-blur-xl sticky top-0 z-40">
         <div className="container mx-auto px-4 h-14 sm:h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Image src={logoFull} alt="Genzaic" width={100} height={20} />
+            <Logo width={100} height={20} />
           </Link>
           <nav className="flex items-center gap-2 sm:gap-3">
             <Link

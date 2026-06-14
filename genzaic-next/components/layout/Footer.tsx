@@ -9,8 +9,7 @@ import {
   MapPin,
   ArrowRight,
 } from "lucide-react"
-import Image from "next/image"
-import logoFull from "../../public/logo.png"
+import { Logo } from "@/components/ui/logo"
 
 const linkColumns = [
   {
@@ -125,7 +124,7 @@ export default function Footer() {
           {/* Brand — spans 2 cols */}
           <div className="col-span-2">
             <div className="flex items-center gap-2.5 mb-2">
-              <Image src={logoFull} alt="Genzaic" width={100} height={20} />
+              <Logo surface="onDark" width={100} height={20} />
             </div>
             <p className="text-sm text-gray-400 leading-relaxed mb-5 max-w-xs">
               India&apos;s no. first digital storefront for creators — sell

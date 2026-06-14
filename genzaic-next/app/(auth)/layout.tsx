@@ -1,7 +1,6 @@
 import Link from "next/link"
 import { Star } from "lucide-react"
-import Image from "next/image"
-import logoFull from "../../public/logo.png"
+import { Logo } from "@/components/ui/logo"
 
 export default function AuthLayout({
   children,
@@ -36,7 +35,7 @@ export default function AuthLayout({
         <div className="relative z-10 p-8">
           <Link href="/" className="inline-flex items-center gap-2.5">
             <div className="flex items-center gap-2.5">
-              <Image src={logoFull} alt="Genzaic" width={100} height={20} />
+              <Logo surface="onDark" width={100} height={20} />
             </div>
           </Link>
         </div>
@@ -115,7 +114,7 @@ export default function AuthLayout({
         {/* Mobile-only logo */}
         <div className="lg:hidden px-5 pt-4 pb-2 flex-shrink-0">
           <Link href="/" className="inline-flex items-center gap-2">
-            <Image src={logoFull} alt="Genzaic" width={100} height={20} />
+            <Logo width={100} height={20} />
           </Link>
         </div>
 

@@ -27,11 +27,10 @@ import {
   Sparkles,
   type LucideIcon,
 } from "lucide-react"
-import Image from "next/image"
+import { Logo } from "@/components/ui/logo"
 import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
 import { toast } from "sonner"
-import logoFull from "../../public/logo.png"
 
 type Plan = {
   id: string
@@ -208,7 +207,7 @@ export default function OnboardingPage() {
       >
         <div className="text-center">
           <div className="inline-flex items-center gap-2 mb-4">
-            <Image src={logoFull} alt="Genzaic" width={100} height={20} />
+            <Logo width={100} height={20} />
           </div>
           <Progress value={(step / 3) * 100} className="h-2 max-w-xs mx-auto" />
           <p className="text-sm text-muted-foreground mt-2">Step {step} of 3</p>

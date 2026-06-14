@@ -257,7 +257,14 @@ export default function StorePreviewSection() {
   const urlOpacities = [urlO0, urlO1, urlO2, urlO3, urlO4, urlO5]
 
   return (
-    <section ref={ref} className="relative z-20" style={{ height: "1400vh" }}>
+    // Scroll-jack length scales with viewport. On phones a 1400vh section is
+    // ~14 screens of mostly-empty scroll, so we compress the same 8-phase
+    // animation into far less scroll distance on small screens and only open
+    // it up to the full cinematic length on large screens.
+    <section
+      ref={ref}
+      className="relative z-20 h-[600vh] sm:h-[900vh] lg:h-[1400vh]"
+    >
       <div className="sticky top-0 h-screen flex flex-col items-center justify-center px-4 sm:px-6">
         {/* Phase labels */}
         <div className="absolute top-5 sm:top-7 left-1/2 -translate-x-1/2 z-30">

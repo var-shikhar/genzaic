@@ -1,8 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { RotateCcw } from "lucide-react"
-import Image from "next/image"
-import logoFull from "../../public/logo.png"
+import { Logo } from "@/components/ui/logo"
 import Footer from "@/components/layout/Footer"
 
 export const metadata = {
@@ -17,7 +16,7 @@ export default function RefundPolicyPage() {
       <nav className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Image src={logoFull} alt="Genzaic" width={100} height={20} />
+            <Logo width={100} height={20} />
           </Link>
           <div className="flex items-center gap-3">
             <Button variant="ghost" asChild>
