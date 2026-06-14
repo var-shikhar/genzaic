@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { LayoutDashboard, Menu, X } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
+import { HeaderGradientBorder } from "@/components/ui/header-gradient-border"
 import { useLandingCta } from "@/hooks/use-landing-cta"
 
 const navLinks = [
@@ -39,8 +40,9 @@ export default function LandingNav() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-background/95 backdrop-blur-xl border-b border-border/30 shadow-sm" : "bg-transparent border-b border-transparent"}`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-background/95 backdrop-blur-xl shadow-sm" : "bg-transparent"}`}
     >
+      {scrolled && <HeaderGradientBorder />}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <Logo surface={scrolled ? "auto" : "onDark"} width={100} height={20} />

@@ -1,7 +1,5 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { Shield } from "lucide-react"
-import { Logo } from "@/components/ui/logo"
+import PublicPageHeader from "@/components/layout/PublicPageHeader"
 import Footer from "@/components/layout/Footer"
 
 export const metadata = {
@@ -13,21 +11,7 @@ export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <nav className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Logo width={100} height={20} />
-          </Link>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" asChild>
-              <Link href="/login">Login</Link>
-            </Button>
-            <Button asChild className="gradient-primary hover:opacity-90 transition-opacity">
-              <Link href="/signup">Get Started</Link>
-            </Button>
-          </div>
-        </div>
-      </nav>
+      <PublicPageHeader />
 
       {/* Hero */}
       <section className="py-16 px-4 text-center relative overflow-hidden">
