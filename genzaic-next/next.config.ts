@@ -1,4 +1,5 @@
 import type { NextConfig } from "next"
+import withSerwistInit from "@serwist/next"
 
 /**
  * Security headers applied to every response. Tightened for a commerce
@@ -62,4 +63,14 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+// Serwist generates the service worker (public/sw.js) from app/sw.ts at
+// build time. Disabled in dev so HMR isn't shadowed by a cached SW.
+const withSerwist = withSerwistInit({
+  swSrc: "app/sw.ts",
+  swDest: "public/sw.js",
+  disable: process.env.NODE_ENV === "development",
+  // Reload open clients once a new SW takes control.
+  reloadOnOnline: true,
+})
+
+export default withSerwist(nextConfig)

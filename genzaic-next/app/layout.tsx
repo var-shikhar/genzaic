@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import {
   Fraunces,
   Inter_Tight,
@@ -84,6 +84,16 @@ export const metadata: Metadata = {
     shortcut: "/favicon-16x16.png",
     apple: "/apple-touch-icon.png",
   },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "GenZaic",
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
 }
 
 export default async function RootLayout({
