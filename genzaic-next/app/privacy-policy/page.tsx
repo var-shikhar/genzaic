@@ -43,7 +43,7 @@ export default function PrivacyPolicyPage() {
           <h1 className="font-bold text-4xl md:text-5xl text-foreground mb-4 leading-tight">
             Privacy Policy
           </h1>
-          <p className="text-muted-foreground">Last updated: April 2026</p>
+          <p className="text-muted-foreground">Last updated: 11 June 2026</p>
         </div>
       </section>
 
@@ -51,106 +51,286 @@ export default function PrivacyPolicyPage() {
       <section className="py-12 px-4">
         <div className="container mx-auto max-w-3xl">
           <div className="space-y-10">
-            <div className="bg-card rounded-2xl border border-border p-8">
-              <p className="text-muted-foreground leading-relaxed">
-                GenZaic (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) operates the GenZaic platform (genzaic.com). This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform. Please read this policy carefully. By using GenZaic, you agree to the collection and use of information in accordance with this policy.
+            <div className="bg-card rounded-2xl border border-border p-8 space-y-3 text-muted-foreground leading-relaxed">
+              <p>Welcome to GenZaic.</p>
+              <p>
+                At GenZaic, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains what information we collect, how we use it, how we protect it, and the choices and rights you have regarding your data.
+              </p>
+              <p>
+                By accessing or using GenZaic, you acknowledge that your personal information will be handled in accordance with this Privacy Policy.
               </p>
             </div>
 
             <section className="space-y-4">
-              <h2 className="text-xl font-semibold text-foreground">1. Information We Collect</h2>
+              <h2 className="text-xl font-semibold text-foreground">1. Who We Are</h2>
               <div className="space-y-3 text-muted-foreground leading-relaxed">
-                <p><strong className="text-foreground">Personal Information:</strong> When you register, we collect your name, email address, phone number, and payment details (UPI ID, bank account information for payouts).</p>
-                <p><strong className="text-foreground">KYC Information:</strong> For creators, we collect identity documents (PAN card, Aadhaar, GSTIN) as required by Indian regulations for payment processing and tax compliance.</p>
-                <p><strong className="text-foreground">Transaction Data:</strong> We record details of purchases, sales, downloads, and payment transactions processed through our platform.</p>
-                <p><strong className="text-foreground">Usage Data:</strong> We automatically collect information about how you interact with our platform, including IP address, browser type, pages visited, time spent, and device information.</p>
-                <p><strong className="text-foreground">Cookies & Tracking:</strong> We use cookies and similar technologies to maintain your session, remember preferences, and analyze platform usage.</p>
+                <p>GenZaic is a digital commerce platform that enables creators, educators, freelancers, businesses, and digital sellers to create online storefronts, sell digital products and services, receive payments, generate invoices, and manage their businesses.</p>
+                <p>We process personal information in accordance with applicable laws, including the Digital Personal Data Protection Act, 2023 (India), and other relevant legal requirements.</p>
+                <p>If you have questions regarding this Privacy Policy, you may contact us at:</p>
+                <p>
+                  <strong className="text-foreground">Privacy Email:</strong> <a href="mailto:privacy@genzaic.com" className="text-primary hover:underline">privacy@genzaic.com</a><br />
+                  <strong className="text-foreground">Business Email:</strong> <a href="mailto:business@genzaic.com" className="text-primary hover:underline">business@genzaic.com</a>
+                </p>
               </div>
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-xl font-semibold text-foreground">2. How We Use Your Information</h2>
-              <ul className="list-disc list-inside space-y-2 text-muted-foreground leading-relaxed">
-                <li>To create and manage your account and storefront</li>
-                <li>To process transactions, payouts, and generate GST invoices</li>
-                <li>To verify your identity (KYC) as required by Indian law</li>
-                <li>To send transactional emails (order confirmations, payout notifications)</li>
-                <li>To provide customer support and respond to inquiries</li>
-                <li>To improve and personalize your experience on the platform</li>
-                <li>To detect and prevent fraud, abuse, or unauthorized access</li>
-                <li>To comply with legal obligations and regulatory requirements</li>
-              </ul>
+              <h2 className="text-xl font-semibold text-foreground">2. Information We Collect</h2>
+              <div className="space-y-4 text-muted-foreground leading-relaxed">
+                <p>Depending on how you use our platform, we may collect the following categories of information.</p>
+
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-foreground">2.1 Identity and Contact Information</h3>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Full name</li>
+                    <li>Email address</li>
+                    <li>Phone number</li>
+                    <li>Business name or profile details</li>
+                    <li>Billing information, where applicable</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-foreground">2.2 Seller Verification Information</h3>
+                  <p>To verify sellers and facilitate payouts, we may collect:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>PAN details or other government identification where required</li>
+                    <li>Bank account information</li>
+                    <li>KYC-related information</li>
+                    <li>GST details, if provided</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-foreground">2.3 Transaction Information</h3>
+                  <p>We may collect:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Order history</li>
+                    <li>Purchase records</li>
+                    <li>Payment confirmations</li>
+                    <li>Invoice information</li>
+                    <li>Payout records</li>
+                    <li>Refund or dispute information</li>
+                  </ul>
+                  <p>Payments are processed by trusted third-party payment providers. We do not store your complete debit card details, credit card details, UPI PIN, or internet banking credentials.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-foreground">2.4 Product and Content Information</h3>
+                  <p>Sellers may upload:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Product titles and descriptions</li>
+                    <li>Images and thumbnails</li>
+                    <li>PDFs</li>
+                    <li>Videos</li>
+                    <li>Audio files</li>
+                    <li>Templates</li>
+                    <li>Courses</li>
+                    <li>Software</li>
+                    <li>Other digital content</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-foreground">2.5 Technical and Usage Information</h3>
+                  <p>When you use our platform, we may automatically collect:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>IP address</li>
+                    <li>Browser type</li>
+                    <li>Device information</li>
+                    <li>Operating system</li>
+                    <li>Log files</li>
+                    <li>Cookies</li>
+                    <li>Usage analytics</li>
+                    <li>Pages visited and interactions</li>
+                  </ul>
+                </div>
+              </div>
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-xl font-semibold text-foreground">3. Information Sharing & Disclosure</h2>
+              <h2 className="text-xl font-semibold text-foreground">3. Legal Basis for Processing</h2>
               <div className="space-y-3 text-muted-foreground leading-relaxed">
-                <p>We do <strong className="text-foreground">not</strong> sell your personal data to third parties. We may share information with:</p>
+                <p>We process personal information only where there is a valid reason to do so, including:</p>
                 <ul className="list-disc list-inside space-y-2">
-                  <li><strong className="text-foreground">Payment Processors:</strong> Razorpay and banking partners to process payments and payouts</li>
-                  <li><strong className="text-foreground">Service Providers:</strong> Cloud hosting (for file storage and delivery), email services, and analytics tools that help us operate the platform</li>
-                  <li><strong className="text-foreground">Legal Authorities:</strong> When required by law, court order, or government regulation</li>
-                  <li><strong className="text-foreground">Buyers & Sellers:</strong> Limited transaction-related information (e.g., buyer name on order details visible to sellers)</li>
+                  <li>Providing the services you request</li>
+                  <li>Creating and managing user accounts</li>
+                  <li>Processing payments and seller payouts</li>
+                  <li>Verifying identities and preventing fraud</li>
+                  <li>Complying with legal, accounting, tax, and regulatory obligations</li>
+                  <li>Improving platform performance and security</li>
+                  <li>Responding to customer support requests</li>
+                  <li>Where required, based on your consent</li>
                 </ul>
               </div>
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-xl font-semibold text-foreground">4. Data Storage & Security</h2>
+              <h2 className="text-xl font-semibold text-foreground">4. How We Use Your Information</h2>
               <div className="space-y-3 text-muted-foreground leading-relaxed">
-                <p>Your data is stored on secure servers. We use industry-standard security measures including SSL/TLS encryption for data in transit, encrypted storage for sensitive information, and secure access controls.</p>
-                <p>While we strive to protect your personal information, no method of electronic transmission or storage is 100% secure. We cannot guarantee absolute security but are committed to implementing best practices.</p>
-              </div>
-            </section>
-
-            <section className="space-y-4">
-              <h2 className="text-xl font-semibold text-foreground">5. Your Rights</h2>
-              <div className="space-y-3 text-muted-foreground leading-relaxed">
-                <p>Under applicable Indian data protection laws, you have the right to:</p>
+                <p>We may use your information to:</p>
                 <ul className="list-disc list-inside space-y-2">
-                  <li>Access and review the personal data we hold about you</li>
-                  <li>Request correction of inaccurate or incomplete data</li>
-                  <li>Request deletion of your account and associated data (subject to legal retention requirements)</li>
-                  <li>Withdraw consent for optional data processing (e.g., marketing emails)</li>
-                  <li>Request a copy of your data in a portable format</li>
+                  <li>Register and manage your account</li>
+                  <li>Verify seller identity and eligibility</li>
+                  <li>Process transactions and payouts</li>
+                  <li>Generate invoices and transaction records</li>
+                  <li>Deliver purchased digital products</li>
+                  <li>Detect and prevent fraud or abuse</li>
+                  <li>Provide customer support</li>
+                  <li>Improve platform features and user experience</li>
+                  <li>Send important service-related communications</li>
+                  <li>Enforce our Terms and policies</li>
+                  <li>Comply with applicable laws and regulatory requirements</li>
                 </ul>
-                <p>To exercise any of these rights, please contact us at <a href="mailto:support@genzaic.com" className="text-primary hover:underline">support@genzaic.com</a>.</p>
+                <p>We do not sell your personal information to third parties.</p>
               </div>
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-xl font-semibold text-foreground">6. Cookies</h2>
+              <h2 className="text-xl font-semibold text-foreground">5. Digital Products and Seller Content</h2>
               <div className="space-y-3 text-muted-foreground leading-relaxed">
-                <p>We use essential cookies to keep you logged in and maintain your session. We may also use analytics cookies to understand how users interact with GenZaic. You can control cookie preferences through your browser settings, but disabling essential cookies may affect platform functionality.</p>
+                <p>GenZaic allows sellers to upload digital products and related content.</p>
+                <p>Sellers retain ownership of the content they upload. By uploading content, sellers grant GenZaic a limited, non-exclusive license to host, store, display, distribute, and deliver that content solely for operating, maintaining, promoting, and improving the platform and fulfilling customer purchases.</p>
               </div>
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-xl font-semibold text-foreground">7. Third-Party Links</h2>
+              <h2 className="text-xl font-semibold text-foreground">6. AI-Powered Features</h2>
+              <div className="space-y-3 text-muted-foreground leading-relaxed">
+                <p>GenZaic may use artificial intelligence technologies to assist users by:</p>
+                <ul className="list-disc list-inside space-y-2">
+                  <li>Improving product descriptions</li>
+                  <li>Suggesting pricing strategies</li>
+                  <li>Analyzing marketplace performance</li>
+                  <li>Assisting with customer support</li>
+                  <li>Generating recommendations and insights</li>
+                </ul>
+                <p>AI-generated outputs are intended to assist users and should not be considered legal, financial, tax, accounting, or professional advice. Users remain responsible for reviewing and verifying AI-generated content before relying on it.</p>
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-xl font-semibold text-foreground">7. Cookies and Tracking Technologies</h2>
+              <div className="space-y-3 text-muted-foreground leading-relaxed">
+                <p>We use cookies and similar technologies to:</p>
+                <ul className="list-disc list-inside space-y-2">
+                  <li>Keep users logged in</li>
+                  <li>Remember preferences</li>
+                  <li>Improve platform functionality</li>
+                  <li>Analyze usage patterns</li>
+                  <li>Enhance security and performance</li>
+                </ul>
+                <p>Most web browsers allow you to manage or disable cookies through browser settings. Some features of the platform may not function properly if cookies are disabled.</p>
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-xl font-semibold text-foreground">8. Sharing of Information</h2>
+              <div className="space-y-3 text-muted-foreground leading-relaxed">
+                <p>We do not sell or rent your personal information.</p>
+                <p>We may share information only when necessary with:</p>
+                <ul className="list-disc list-inside space-y-2">
+                  <li><strong className="text-foreground">Payment Service Providers</strong> — to process payments, refunds, and payouts.</li>
+                  <li><strong className="text-foreground">Verification and KYC Providers</strong> — to verify identity, prevent fraud, and satisfy regulatory requirements.</li>
+                  <li><strong className="text-foreground">Service Providers</strong> — who assist with hosting, analytics, communications, infrastructure, or platform operations.</li>
+                  <li><strong className="text-foreground">Legal or Government Authorities</strong> — where disclosure is required by applicable law, court order, or lawful governmental request.</li>
+                  <li><strong className="text-foreground">Business Transfers</strong> — in connection with a merger, acquisition, restructuring, financing, or sale of all or part of our business.</li>
+                </ul>
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-xl font-semibold text-foreground">9. Data Security</h2>
+              <div className="space-y-3 text-muted-foreground leading-relaxed">
+                <p>We implement reasonable administrative, technical, and organizational safeguards designed to protect personal information against unauthorized access, misuse, disclosure, alteration, or destruction.</p>
+                <p>However, no online platform or method of electronic storage can guarantee absolute security. Users are responsible for protecting their account credentials and using strong passwords.</p>
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-xl font-semibold text-foreground">10. Data Breach Response</h2>
+              <div className="space-y-3 text-muted-foreground leading-relaxed">
+                <p>If we become aware of a data breach affecting personal information, we will investigate the incident and take appropriate corrective measures.</p>
+                <p>Where required by applicable law, we may notify affected users and relevant authorities within the timeframes prescribed by law.</p>
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-xl font-semibold text-foreground">11. Data Retention</h2>
+              <div className="space-y-3 text-muted-foreground leading-relaxed">
+                <p>We retain personal information only for as long as reasonably necessary to:</p>
+                <ul className="list-disc list-inside space-y-2">
+                  <li>Provide our services</li>
+                  <li>Maintain business and transaction records</li>
+                  <li>Process payments and payouts</li>
+                  <li>Resolve disputes</li>
+                  <li>Prevent fraud</li>
+                  <li>Enforce our agreements</li>
+                  <li>Comply with legal, tax, accounting, or regulatory obligations</li>
+                </ul>
+                <p>Some records, including invoices and financial records, may be retained for longer periods where required by law.</p>
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-xl font-semibold text-foreground">12. Your Rights</h2>
+              <div className="space-y-3 text-muted-foreground leading-relaxed">
+                <p>Subject to applicable law, you may have the right to:</p>
+                <ul className="list-disc list-inside space-y-2">
+                  <li>Access your personal information</li>
+                  <li>Request correction of inaccurate or incomplete information</li>
+                  <li>Request deletion of certain personal information</li>
+                  <li>Withdraw consent where processing is based on consent</li>
+                  <li>Object to or request restrictions on certain processing activities where permitted by law</li>
+                </ul>
+                <p>You may exercise these rights by contacting us using the details provided below. Certain requests may be limited where retention is required by law or for legitimate business purposes.</p>
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-xl font-semibold text-foreground">13. Children&apos;s Privacy</h2>
+              <div className="space-y-3 text-muted-foreground leading-relaxed">
+                <p>GenZaic is not intended for individuals under the age of 18.</p>
+                <p>We do not knowingly collect personal information from children. If we become aware that such information has been collected, we will take reasonable steps to remove it in accordance with applicable law.</p>
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-xl font-semibold text-foreground">14. Third-Party Services</h2>
+              <div className="space-y-3 text-muted-foreground leading-relaxed">
+                <p>Our platform may integrate with or contain links to third-party services, including payment gateways, analytics providers, cloud services, social media platforms, and external websites.</p>
+                <p>These third parties operate under their own privacy policies, and GenZaic is not responsible for their independent privacy practices.</p>
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-xl font-semibold text-foreground">15. International Data Processing</h2>
               <p className="text-muted-foreground leading-relaxed">
-                Our platform may contain links to third-party websites or services (e.g., creator storefronts, external payment pages). We are not responsible for the privacy practices of these third parties. We encourage you to review their privacy policies before providing any personal information.
+                As our services expand, personal information may be processed or stored in jurisdictions outside your state or country, subject to appropriate safeguards and applicable legal requirements.
               </p>
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-xl font-semibold text-foreground">8. Children&apos;s Privacy</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                GenZaic is not intended for use by individuals under 18 years of age. We do not knowingly collect personal information from minors. If we become aware that we have collected data from a minor, we will take steps to delete it promptly.
-              </p>
+              <h2 className="text-xl font-semibold text-foreground">16. Changes to This Privacy Policy</h2>
+              <div className="space-y-3 text-muted-foreground leading-relaxed">
+                <p>We may update this Privacy Policy from time to time to reflect changes in our services, legal requirements, or business practices.</p>
+                <p>The updated version will be published with a revised &quot;Last Updated&quot; date. Continued use of GenZaic after changes become effective constitutes acceptance of the revised Privacy Policy.</p>
+              </div>
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-xl font-semibold text-foreground">9. Changes to This Policy</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                We may update this Privacy Policy from time to time. Any changes will be posted on this page with a revised &quot;Last updated&quot; date. Continued use of GenZaic after changes constitutes acceptance of the updated policy. We will notify registered users via email for significant changes.
-              </p>
-            </section>
-
-            <section className="space-y-4">
-              <h2 className="text-xl font-semibold text-foreground">10. Contact Us</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                If you have questions or concerns about this Privacy Policy or our data practices, please contact us at <a href="mailto:support@genzaic.com" className="text-primary hover:underline">support@genzaic.com</a>.
-              </p>
+              <h2 className="text-xl font-semibold text-foreground">17. Contact and Grievance Redressal</h2>
+              <div className="space-y-3 text-muted-foreground leading-relaxed">
+                <p>If you have any questions, requests, or concerns regarding this Privacy Policy or our handling of personal information, please contact us:</p>
+                <p>
+                  <strong className="text-foreground">GenZaic</strong><br />
+                  <strong className="text-foreground">Privacy Email:</strong> <a href="mailto:privacy@genzaic.com" className="text-primary hover:underline">privacy@genzaic.com</a><br />
+                  <strong className="text-foreground">Business Email:</strong> <a href="mailto:business@genzaic.com" className="text-primary hover:underline">business@genzaic.com</a><br />
+                  <strong className="text-foreground">Website:</strong> <a href="https://www.genzaic.com" className="text-primary hover:underline">www.genzaic.com</a><br />
+                  <strong className="text-foreground">Address:</strong> Moradabad, Uttar Pradesh, India
+                </p>
+                <p>We will make reasonable efforts to acknowledge and respond to privacy-related inquiries in a timely manner and in accordance with applicable law.</p>
+              </div>
             </section>
           </div>
         </div>
