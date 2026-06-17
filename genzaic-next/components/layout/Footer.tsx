@@ -233,17 +233,6 @@ export default function Footer() {
               <span className="hidden sm:inline mx-1.5 text-gray-700">
                 &bull;
               </span>
-              <span>
-                Crafted by{" "}
-                <a
-                  href="https://shikharvarshney.netlify.app"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-purple-400 transition-colors"
-                >
-                  Shikhar
-                </a>
-              </span>
             </div>
             <div className="flex items-center gap-4 sm:gap-5">
               {legalLinks.map((link) => (

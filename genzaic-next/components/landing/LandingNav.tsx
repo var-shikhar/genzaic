@@ -1,14 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { motion, AnimatePresence } from "framer-motion"
-import { LayoutDashboard, Menu, X } from "lucide-react"
-import { Logo } from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
-import { HeaderGradientBorder } from "@/components/ui/header-gradient-border"
+import { Logo } from "@/components/ui/logo"
 import { useLandingCta } from "@/hooks/use-landing-cta"
-
+import { AnimatePresence, motion } from "framer-motion"
+import { LayoutDashboard, Menu, X } from "lucide-react"
+import Link from "next/link"
+import { useEffect, useState } from "react"
 const navLinks = [
   { label: "Features", id: "features" },
   { label: "How It Works", id: "how-it-works" },
@@ -42,10 +40,13 @@ export default function LandingNav() {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-background/95 backdrop-blur-xl shadow-sm" : "bg-transparent"}`}
     >
-      {scrolled && <HeaderGradientBorder />}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <Logo surface={scrolled ? "auto" : "onDark"} width={100} height={20} />
+          <Logo
+            surface={scrolled ? "auto" : "onDark"}
+            width={100}
+            height={20}
+          />
         </Link>
         <div className="hidden md:flex items-center gap-6 lg:gap-8">
           {navLinks.map((link) => (
@@ -78,7 +79,9 @@ export default function LandingNav() {
                 size="sm"
                 asChild
                 className={
-                  scrolled ? "" : "text-white hover:text-white hover:bg-white/10"
+                  scrolled
+                    ? ""
+                    : "text-white hover:text-white hover:bg-white/10"
                 }
               >
                 <Link href="/login">Login</Link>
