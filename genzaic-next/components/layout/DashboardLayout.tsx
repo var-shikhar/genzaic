@@ -1,28 +1,11 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import Link from "next/link"
-import { Logo } from "@/components/ui/logo"
-import { usePathname, useRouter } from "next/navigation"
-import { signOut, useSession } from "next-auth/react"
-import {
-  LayoutDashboard,
-  Package,
-  Store,
-  BarChart3,
-  Wallet,
-  FileCheck,
-  Settings,
-  LogOut,
-  Menu,
-  ChevronDown,
-  PanelLeftClose,
-  PanelLeftOpen,
-  ShoppingBag,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { RouteLoadingOverlay } from "@/components/layout/RouteLoadingOverlay"
+import { NotificationBell } from "@/components/notifications/NotificationBell"
+import { InstallAppMenuItem } from "@/components/pwa/InstallAppMenuItem"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,24 +14,40 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Logo } from "@/components/ui/logo"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Sheet,
   SheetContent,
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { getInitials } from "@/lib/utils"
-import { RouteLoadingOverlay } from "@/components/layout/RouteLoadingOverlay"
-import { NotificationBell } from "@/components/notifications/NotificationBell"
-import { PushOptInBanner } from "@/components/notifications/PushOptInBanner"
+import { cn, getInitials } from "@/lib/utils"
+import {
+  BarChart3,
+  ChevronDown,
+  FileCheck,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Package,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
+  ShoppingBag,
+  Store,
+  Wallet,
+} from "lucide-react"
+import { signOut, useSession } from "next-auth/react"
+import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
+import { useEffect, useRef, useState } from "react"
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -393,6 +392,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     Settings
                   </Link>
                 </DropdownMenuItem>
+                <InstallAppMenuItem />
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleLogout}

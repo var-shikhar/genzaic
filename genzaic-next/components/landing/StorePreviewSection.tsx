@@ -200,8 +200,10 @@ export default function StorePreviewSection() {
   const dl_done = useTransform(p, [0.72, 0.74], [0, 1])
   const dl_doneS = useTransform(p, [0.72, 0.74], [0.8, 1])
 
-  // ── 7. Review (0.75 → 0.87) — 12% ──
-  const s7o = useTransform(p, [0.75, 0.77, 0.85, 0.87], [0, 1, 1, 0])
+  // ── 7. Review (0.75 → 0.885) ──
+  // Hold at full opacity until 0.875 so every reveal below (stars → text →
+  // button, ending at 0.87) lands while the scene is fully visible, then fade.
+  const s7o = useTransform(p, [0.75, 0.77, 0.875, 0.885], [0, 1, 1, 0])
   const s7y = useTransform(p, [0.75, 0.78], [40, 0])
   const star0 = useTransform(p, [0.79, 0.80], [0, 1])
   const star1 = useTransform(p, [0.80, 0.81], [0, 1])
@@ -213,12 +215,10 @@ export default function StorePreviewSection() {
   const rv_btn = useTransform(p, [0.86, 0.87], [0, 1])
   const rv_btnS = useTransform(p, [0.86, 0.87], [0.9, 1])
 
-  // ── 8. Closing (0.88 → 1.0) — 12% ──
-  const s8o = useTransform(p, [0.88, 0.91, 0.97, 1], [0, 1, 1, 0])
-  const s8scale = useTransform(p, [0.88, 0.92], [0.9, 1])
+  // ── 8. Closing (0.885 → 1.0) — terminal state, holds at full opacity ──
+  const s8o = useTransform(p, [0.885, 0.895], [0, 1])
+  const s8scale = useTransform(p, [0.885, 0.91], [0.9, 1])
   const s8sparkle = useTransform(p, [0.92, 0.95], [0, 1])
-  const cardFadeOut = useTransform(p, [0.97, 1], [1, 0])
-  const cardScaleOut = useTransform(p, [0.97, 1], [1, 0.95])
 
   // Phase labels
   const phases = [
@@ -228,11 +228,9 @@ export default function StorePreviewSection() {
     { o: useTransform(p, [0.39, 0.41, 0.46, 0.48], [0, 1, 1, 0]), t: "Payment", c: "text-amber-600 bg-amber-50 border-amber-200" },
     { o: useTransform(p, [0.49, 0.51, 0.6, 0.62], [0, 1, 1, 0]), t: "Order Confirmed!", c: "text-emerald-600 bg-emerald-50 border-emerald-200" },
     { o: useTransform(p, [0.63, 0.65, 0.72, 0.74], [0, 1, 1, 0]), t: "Download Files", c: "text-blue-600 bg-blue-50 border-blue-200" },
-    { o: useTransform(p, [0.75, 0.77, 0.85, 0.87], [0, 1, 1, 0]), t: "Leave a Review", c: "text-purple-600 bg-purple-50 border-purple-200" },
-    { o: useTransform(p, [0.88, 0.91, 0.96, 0.98], [0, 1, 1, 0]), t: "You're all set!", c: "text-foreground bg-primary/10 border-primary/20" },
+    { o: useTransform(p, [0.75, 0.77, 0.875, 0.885], [0, 1, 1, 0]), t: "Leave a Review", c: "text-purple-600 bg-purple-50 border-purple-200" },
+    { o: useTransform(p, [0.885, 0.895], [0, 1]), t: "You're all set!", c: "text-foreground bg-primary/10 border-primary/20" },
   ]
-
-  const progressW = useTransform(p, [0, 1], ["0%", "100%"])
 
   // Download bar derived values (pre-computed at top level)
   const dl_barPercent = useTransform(dl_bar, (v) => `${Math.round(v)}%`)
@@ -278,14 +276,6 @@ export default function StorePreviewSection() {
             </motion.span>
           ))}
         </div>
-
-        {/* Progress */}
-        {/* <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 w-48 sm:w-64 z-30">
-          <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
-            <motion.div style={{ width: progressW }} className="h-full gradient-primary rounded-full" />
-          </div>
-          <p className="text-[10px] text-gray-400 text-center mt-1.5">Scroll to explore the journey</p>
-        </div> */}
 
         {/* ═══ BROWSER ═══ */}
         <motion.div

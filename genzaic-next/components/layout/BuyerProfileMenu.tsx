@@ -20,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { InstallAppMenuItem } from "@/components/pwa/InstallAppMenuItem"
 import { getInitials } from "@/lib/utils"
 
 interface BuyerProfileMenuProps {
@@ -96,6 +97,7 @@ export function BuyerProfileMenu({ user }: BuyerProfileMenuProps) {
             Settings
           </Link>
         </DropdownMenuItem>
+        <InstallAppMenuItem />
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleLogout}

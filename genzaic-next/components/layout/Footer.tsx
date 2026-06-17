@@ -127,8 +127,8 @@ export default function Footer() {
               <Logo surface="onDark" width={100} height={20} />
             </div>
             <p className="text-sm text-gray-400 leading-relaxed mb-5 max-w-xs">
-              India&apos;s no. first digital storefront for creators — sell
-              PDFs, templates, code &amp; digital products with zero setup fees.
+              India&apos;s no. 1 digital storefront for creators — sell PDFs,
+              templates, code &amp; digital products with zero setup fees.
               UPI-ready, GST-ready.
             </p>
             <div className="flex items-center gap-2.5 mb-5">
@@ -229,9 +229,6 @@ export default function Footer() {
               <span className="flex items-center gap-1">
                 Made with{" "}
                 <Heart className="w-3 h-3 text-red-400 fill-red-400" /> in India
-              </span>
-              <span className="hidden sm:inline mx-1.5 text-gray-700">
-                &bull;
               </span>
             </div>
             <div className="flex items-center gap-4 sm:gap-5">

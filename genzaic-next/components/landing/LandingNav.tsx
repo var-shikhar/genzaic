@@ -96,16 +96,42 @@ export default function LandingNav() {
             </>
           )}
         </div>
-        <button
-          className={`sm:hidden p-2 -mr-2 transition-colors duration-300 ${scrolled ? "text-muted-foreground" : "text-white"}`}
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {mobileMenuOpen ? (
-            <X className="w-5 h-5" />
+        {/* Mobile: the primary CTA lives OUTSIDE the hamburger so the main
+            action is always one tap away. The hamburger keeps the nav links
+            (and Login, when logged out). */}
+        <div className="flex sm:hidden items-center gap-1.5">
+          {cta.isAuthenticated ? (
+            <Button
+              size="sm"
+              asChild
+              className="gradient-primary hover:opacity-90 shadow-md shadow-primary/20"
+            >
+              <Link href={cta.href}>
+                <LayoutDashboard className="w-4 h-4 mr-1.5" />
+                {cta.navLabel}
+              </Link>
+            </Button>
           ) : (
-            <Menu className="w-5 h-5" />
+            <Button
+              size="sm"
+              asChild
+              className="gradient-primary hover:opacity-90 shadow-md shadow-primary/20"
+            >
+              <Link href="/signup?role=seller">Start Selling</Link>
+            </Button>
           )}
-        </button>
+          <button
+            className={`p-2 -mr-2 transition-colors duration-300 ${scrolled ? "text-muted-foreground" : "text-white"}`}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <Menu className="w-5 h-5" />
+            )}
+          </button>
+        </div>
       </div>
       <AnimatePresence>
         {mobileMenuOpen && (
@@ -126,38 +152,20 @@ export default function LandingNav() {
                   {link.label}
                 </a>
               ))}
-              <div className="pt-3 border-t border-border/30 flex gap-2">
-                {cta.isAuthenticated ? (
+              {/* Logged-out only: Login stays in the hamburger; the primary
+                  Start Selling / Dashboard CTA sits outside in the header. */}
+              {!cta.isAuthenticated && (
+                <div className="pt-3 border-t border-border/30">
                   <Button
+                    variant="outline"
                     size="sm"
                     asChild
-                    className="flex-1 gradient-primary hover:opacity-90"
+                    className="w-full"
                   >
-                    <Link href={cta.href}>
-                      <LayoutDashboard className="w-4 h-4 mr-1.5" />
-                      {cta.navLabel}
-                    </Link>
+                    <Link href="/login">Login</Link>
                   </Button>
-                ) : (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      asChild
-                      className="flex-1"
-                    >
-                      <Link href="/login">Login</Link>
-                    </Button>
-                    <Button
-                      size="sm"
-                      asChild
-                      className="flex-1 gradient-primary hover:opacity-90"
-                    >
-                      <Link href="/signup?role=seller">Start Selling</Link>
-                    </Button>
-                  </>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
