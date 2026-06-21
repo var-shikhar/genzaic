@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { PLATFORM_FEE_PERCENT } from "@/lib/config"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -62,7 +63,7 @@ export function calculateGST(amount: number, rate = 18): { gst: number; total: n
   return { gst, total: amount + gst }
 }
 
-export function calculatePlatformFee(amount: number, rate = 5): number {
+export function calculatePlatformFee(amount: number, rate = PLATFORM_FEE_PERCENT * 100): number {
   return Math.round((amount * rate) / 100 * 100) / 100
 }
 

@@ -1,56 +1,25 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Download, X } from "lucide-react"
+import { Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePwaInstall } from "./use-pwa-install"
-
-// When dismissed, suppress the banner for a few days instead of forever — this
-// is the whole point of rolling our own prompt: we control re-engagement rather
-// than letting Chrome go silent for ~90 days after a single dismissal.
-const DISMISS_KEY = "pwa_install_dismissed_at"
-const DISMISS_DAYS = 3
-// Don't pop the banner the instant the page paints — let the user settle first.
-const SHOW_DELAY_MS = 4000
 
 export function InstallAppBanner() {
   const { isInstallable, canPromptNative, install, openInstructions } =
     usePwaInstall()
-  const [visible, setVisible] = useState(false)
 
-  useEffect(() => {
-    if (!isInstallable) {
-      setVisible(false)
-      return
-    }
-    const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) ?? "0")
-    if (
-      dismissedAt &&
-      Date.now() - dismissedAt < DISMISS_DAYS * 24 * 60 * 60 * 1000
-    )
-      return
+  // The banner stays pinned for as long as the app can be installed. There's no
+  // dismiss — it only disappears once `isInstallable` flips to false, which
+  // happens when the `appinstalled` event fires (or the app launches in
+  // standalone mode).
+  if (!isInstallable) return null
 
-    const t = setTimeout(() => setVisible(true), SHOW_DELAY_MS)
-    return () => clearTimeout(t)
-  }, [isInstallable])
-
-  if (!visible) return null
-
-  // Engaged clicks don't write the suppression timestamp: if the user showed
-  // interest but didn't finish installing, it's fine to surface again next
-  // session. Only an explicit dismiss (the X) silences it for DISMISS_DAYS.
   const handleInstall = async () => {
     if (canPromptNative) {
       await install()
     } else {
       openInstructions()
     }
-    setVisible(false)
-  }
-
-  const handleDismiss = () => {
-    localStorage.setItem(DISMISS_KEY, String(Date.now()))
-    setVisible(false)
   }
 
   return (
@@ -67,14 +36,6 @@ export function InstallAppBanner() {
         </div>
         <Button size="sm" onClick={handleInstall}>
           {canPromptNative ? "Install" : "How?"}
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={handleDismiss}
-          aria-label="Dismiss"
-        >
-          <X className="h-4 w-4" />
         </Button>
       </div>
     </div>
