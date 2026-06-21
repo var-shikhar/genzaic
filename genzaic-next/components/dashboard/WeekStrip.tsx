@@ -63,11 +63,11 @@ function useWeekActivity() {
 export function WeekStrip() {
   const { data } = useWeekActivity()
   const days = data?.days ?? []
-  const orders = data?.orders ?? []
   const today = new Date().toISOString().slice(0, 10)
   const [selected, setSelected] = useState<string>(today)
 
   const ordersByDay = useMemo(() => {
+    const orders = data?.orders ?? []
     const map = new Map<string, WeekOrder[]>()
     for (const o of orders) {
       const key = new Date(o.createdAt).toISOString().slice(0, 10)
@@ -76,7 +76,7 @@ export function WeekStrip() {
       map.set(key, list)
     }
     return map
-  }, [orders])
+  }, [data?.orders])
 
   const selectedOrders = ordersByDay.get(selected) ?? []
   const selectedDate = new Date(selected)

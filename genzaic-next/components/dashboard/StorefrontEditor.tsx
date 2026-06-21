@@ -54,6 +54,11 @@ import { toast } from "sonner"
 import { z } from "zod"
 
 const HEX_RE = /^#([0-9A-Fa-f]{6})$/
+// Strict format for NEW slugs: lowercase letters + underscore only. Legacy
+// slugs (with hyphens or digits) live behind `slugLocked` and bypass this
+// entirely — the form field is read-only when locked so this regex never
+// runs against historical data.
+const SLUG_STRICT_RE = /^[a-z][a-z_]*$/
 
 const editorSchema = z.object({
   imprintName: z.string().max(255).optional(),
@@ -276,8 +281,9 @@ export function StorefrontEditor() {
 
   // Cleanup blob URLs on unmount.
   useEffect(() => {
+    const urls = blobUrls.current
     return () => {
-      blobUrls.current.forEach((u) => URL.revokeObjectURL(u))
+      urls.forEach((u) => URL.revokeObjectURL(u))
     }
   }, [])
 
@@ -354,12 +360,6 @@ export function StorefrontEditor() {
   // free; this just stops issuing checks for transient prefixes.
   const debouncedSlug = useDebouncedValue((watch.imprintSlug ?? "").trim(), 600)
   const persistedSlug = sf?.imprintSlug ?? sf?.storeUrl ?? ""
-
-  // Strict format for NEW slugs: lowercase letters + underscore only. Legacy
-  // slugs (with hyphens or digits) live behind `slugLocked` and bypass this
-  // entirely — the form field is read-only when locked so this regex never
-  // runs against historical data.
-  const SLUG_STRICT_RE = /^[a-z][a-z_]*$/
 
   useEffect(() => {
     if (!debouncedSlug || debouncedSlug === persistedSlug) {

@@ -73,7 +73,6 @@ interface DeliverySectionProps {
 export function DeliverySection({
   productFile,
   onPickProductFile,
-  removeProductFile,
   onRemoveProductFile,
   productFileLabel,
   initialGallery,

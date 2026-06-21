@@ -135,7 +135,6 @@ export function ProductForm({ product }: ProductFormProps) {
     },
   })
 
-  const deliveryType = form.watch("deliveryType")
   const isActive = form.watch("isActive")
   const liveTitle = form.watch("title")
 

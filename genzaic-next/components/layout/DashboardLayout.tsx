@@ -128,12 +128,10 @@ function Sidebar({
   // wins, so a quick in-and-out won't leave the panel stuck open.
   const peekTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Two independent flags: the header (logo + toggle) only ever expands
-  // when the user has the sidebar fully open via the toggle. The nav
-  // (ScrollArea) additionally expands during a hover peek. This keeps the
-  // toggle button at the same pixel position whether peeking or not, and
-  // avoids the wordmark sliding under the page header on overlay.
-  const headerExpanded = !collapsed
+  // The nav (ScrollArea) expands when the sidebar is open via the toggle, or
+  // during a hover peek. This keeps the toggle button at the same pixel
+  // position whether peeking or not, and avoids the wordmark sliding under
+  // the page header on overlay.
   const navExpanded = !collapsed || peeking
   const overlaying = collapsed && peeking
 

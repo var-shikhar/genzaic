@@ -20,7 +20,6 @@ export function BuyButton({ productId, sellerId }: BuyButtonProps) {
       <div
         className="w-full h-12 px-4 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 flex items-center justify-center gap-2 cursor-not-allowed select-none"
         role="status"
-        aria-disabled="true"
       >
         <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
         <span className="text-sm font-medium text-amber-900 dark:text-amber-100">

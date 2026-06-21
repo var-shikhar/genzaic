@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import type { StorefrontDraft } from "@/lib/db/schema"
-import { useDrafts, usePreviewToken } from "@/lib/queries/storefront"
+import { useDrafts } from "@/lib/queries/storefront"
 import { cn } from "@/lib/utils"
 import {
   Check,
@@ -204,8 +204,6 @@ function DraftRow({
   onEdit,
   onDelete,
 }: DraftRowProps) {
-  const togglePreview = usePreviewToken(draft.id)
-
   return (
     <div
       className={cn(

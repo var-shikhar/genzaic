@@ -5,7 +5,6 @@ const {
   insertReturning,
   insertNotificationsValues,
   insertOutboxValues,
-  insertPrefsValues,
   insert,
   select,
   transaction,

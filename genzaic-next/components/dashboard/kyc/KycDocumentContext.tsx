@@ -57,8 +57,9 @@ export function KycDocumentProvider({
   const blobUrls = useRef<string[]>([])
 
   useEffect(() => {
+    const urls = blobUrls.current
     return () => {
-      blobUrls.current.forEach((u) => URL.revokeObjectURL(u))
+      urls.forEach((u) => URL.revokeObjectURL(u))
     }
   }, [])
 

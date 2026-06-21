@@ -322,6 +322,7 @@ function BankPicker({ value, onChange, invalid }: BankPickerProps) {
         <button
           type="button"
           role="combobox"
+          aria-controls="bank-picker-list"
           aria-expanded={open}
           aria-invalid={invalid}
           className={cn(
@@ -338,6 +339,7 @@ function BankPicker({ value, onChange, invalid }: BankPickerProps) {
         </button>
       </PopoverTrigger>
       <PopoverContent
+        id="bank-picker-list"
         className="w-[--radix-popover-trigger-width] p-0"
         align="start"
       >
