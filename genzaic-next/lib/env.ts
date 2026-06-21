@@ -35,9 +35,15 @@ const envSchema = z.object({
   // ─── Google AI (product-text extraction) ─────────────────────────────────
   GOOGLE_AI_API_KEY: z.string().min(1),
 
-  // ─── Razorpay (KYC penny-drop + VPA validation) ──────────────────────────
+  // ─── Razorpay (KYC penny-drop + VPA validation + buyer checkout) ──────────
   RAZORPAY_KEY_ID: z.string().min(1),
   RAZORPAY_KEY_SECRET: z.string().min(1),
+  // Webhook signature secret — set this to the same value configured on the
+  // Razorpay dashboard webhook. Used to verify payment.captured callbacks.
+  // The key *id* (RAZORPAY_KEY_ID) is not secret and is sent to the browser
+  // checkout modal via the create-order API response, so no NEXT_PUBLIC_ copy
+  // is needed.
+  RAZORPAY_WEBHOOK_SECRET: z.string().min(1),
 
   // ─── Firebase (Cloud Messaging) — optional until provisioned, made required at rollout ───
   FIREBASE_SERVICE_ACCOUNT_KEY: z.string().optional(),

@@ -27,8 +27,14 @@ const publicPrefixes = [
   "/api/storefront/public",
   "/api/checkout/product",
   "/api/checkout/create-order",
+  // Guest buyers (not logged in) must be able to confirm their payment.
+  // Secured by the Razorpay HMAC signature, not the session.
+  "/api/checkout/verify-payment",
   "/api/checkout/order",
   "/api/checkout/record-download",
+  // Razorpay's servers call this and are never authenticated — it is secured
+  // by the webhook signature. Must bypass session auth or it 307s to /login.
+  "/api/webhooks",
 ]
 // `/onboarding` is intentionally NOT in this list — it doubles as the
 // buyer-to-seller upgrade entry point. `POST /api/onboarding/plan` is what

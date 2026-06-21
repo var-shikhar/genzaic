@@ -65,9 +65,38 @@ export interface CreateOrderInput {
   paymentMethod?: string
 }
 
+export interface CreateOrderResponse {
+  orderId: string
+  orderNumber: string
+  razorpayOrderId: string
+  amount: number // paise
+  currency: string
+  keyId: string
+  createdNewBuyer?: boolean
+}
+
 export function useCreateOrder() {
   return useMutation({
-    mutationFn: (input: CreateOrderInput) => postJSON<CreateOrderInput, Order>("/api/checkout/create-order", input),
+    mutationFn: (input: CreateOrderInput) =>
+      postJSON<CreateOrderInput, CreateOrderResponse>("/api/checkout/create-order", input),
+  })
+}
+
+export interface VerifyPaymentInput {
+  razorpay_order_id: string
+  razorpay_payment_id: string
+  razorpay_signature: string
+}
+
+export interface VerifyPaymentResponse {
+  orderId: string
+  accessToken: string
+}
+
+export function useVerifyPayment() {
+  return useMutation({
+    mutationFn: (input: VerifyPaymentInput) =>
+      postJSON<VerifyPaymentInput, VerifyPaymentResponse>("/api/checkout/verify-payment", input),
   })
 }
 

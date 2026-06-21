@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { useForm } from "react-hook-form"
@@ -9,14 +9,29 @@ import { toast } from "sonner"
 import Image from "next/image"
 import { ShoppingCart, Package, Loader2 } from "lucide-react"
 import { checkoutSchema, type CheckoutInput } from "@/lib/validations/checkout"
-import { useCheckoutProduct, useCreateOrder } from "@/lib/queries/checkout"
+import {
+  useCheckoutProduct,
+  useCreateOrder,
+  useVerifyPayment,
+} from "@/lib/queries/checkout"
+import {
+  loadRazorpayCheckout,
+  type RazorpaySuccessResponse,
+} from "@/lib/razorpay/checkout-script"
 import { getApiErrorMessage } from "@/lib/api-error"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 import { formatCurrency, calculateGST, calculatePlatformFee } from "@/lib/utils"
 import { ikThumb } from "@/lib/image"
 
@@ -24,13 +39,20 @@ export default function CheckoutPage() {
   const { productId } = useParams<{ productId: string }>()
   const router = useRouter()
   const { data: session } = useSession()
-  const user = session?.user as { name?: string | null; email?: string | null } | undefined
+  const user = session?.user as
+    | { name?: string | null; email?: string | null }
+    | undefined
   const { data: product, isLoading } = useCheckoutProduct(productId)
   const { mutateAsync: createOrder, isPending: isCreating } = useCreateOrder()
+  const { mutateAsync: verifyPayment } = useVerifyPayment()
+
+  const [isProcessing, setIsProcessing] = useState(false)
+  const processingRef = useRef(false)
 
   const price = product ? parseFloat(product.price) : 0
   const gst = product ? calculateGST(price) : { gst: 0, total: 0 }
-  const platformFee = product?.platformFeeMode === "buyer" ? calculatePlatformFee(price) : 0
+  const platformFee =
+    product?.platformFeeMode === "buyer" ? calculatePlatformFee(price) : 0
   // Seller mode: buyer pays price + GST. Buyer mode: buyer pays price + GST + platform fee.
   const total = gst.total + platformFee
 
@@ -53,43 +75,104 @@ export default function CheckoutPage() {
     void form.trigger()
   }, [form, user?.name, user?.email])
 
+  const stopProcessing = () => {
+    processingRef.current = false
+    setIsProcessing(false)
+  }
+
   const onSubmit = async (values: CheckoutInput) => {
+    // Re-entry guard: ignore a submit while one is already in flight.
+    if (processingRef.current) return
+    processingRef.current = true
+    setIsProcessing(true)
+
     try {
-      const order = await createOrder({
+      const created = await createOrder({
         productId: productId,
         buyerName: values.buyerName,
         buyerEmail: values.buyerEmail,
         buyerPhone: values.buyerPhone || undefined,
         buyerGstin: values.buyerGstin || undefined,
       })
-      toast.success("Order placed successfully!")
-      // Hand the buyer a short-lived access token in the URL so the
-      // confirmation page can show the download. They'll also get a
-      // longer-lived link in their email for later.
-      const tokenParam = order.accessToken ? `?t=${order.accessToken}` : ""
-      router.push(`/order/${order.id}${tokenParam}`)
+
+      await loadRazorpayCheckout()
+      if (!window.Razorpay) throw new Error("Razorpay unavailable")
+
+      const rzp = new window.Razorpay({
+        key: created.keyId,
+        amount: created.amount,
+        currency: created.currency,
+        order_id: created.razorpayOrderId,
+        name: product?.seller.name ?? "Genzaic",
+        description: product?.title,
+        prefill: {
+          name: values.buyerName,
+          email: values.buyerEmail,
+          contact: values.buyerPhone || undefined,
+        },
+        theme: { color: "#6d28d9" },
+        handler: async (res: RazorpaySuccessResponse) => {
+          try {
+            const verified = await verifyPayment({
+              razorpay_order_id: res.razorpay_order_id,
+              razorpay_payment_id: res.razorpay_payment_id,
+              razorpay_signature: res.razorpay_signature,
+            })
+            toast.success("Payment successful!")
+            const tokenParam = verified.accessToken
+              ? `?t=${verified.accessToken}`
+              : ""
+            // replace (not push) so the back button can't return to this
+            // checkout form and start a second payment for an already-paid
+            // order. We intentionally do NOT clear the processing flag here —
+            // the button stays disabled until this page unmounts on navigation.
+            router.replace(`/order/${verified.orderId}${tokenParam}`)
+          } catch (err) {
+            // Payment went through but verification/fulfillment failed on our
+            // side. The webhook backstop will still fulfill; reassure the buyer.
+            stopProcessing()
+            toast.info(
+              getApiErrorMessage(
+                err,
+                "Payment received — finalizing your order. Check your email shortly.",
+              ),
+            )
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            // Buyer closed the modal without paying — re-enable the button.
+            stopProcessing()
+            toast.message("Payment cancelled. You can try again.")
+          },
+        },
+      })
+      rzp.open()
     } catch (err) {
+      stopProcessing()
       toast.error(getApiErrorMessage(err, "Checkout failed"))
     }
   }
 
-  if (isLoading) return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="w-full max-w-4xl p-6 space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Skeleton className="h-96" />
-          <Skeleton className="h-96" />
+  if (isLoading)
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-full max-w-4xl p-6 space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Skeleton className="h-96" />
+            <Skeleton className="h-96" />
+          </div>
         </div>
       </div>
-    </div>
-  )
+    )
 
-  if (!product) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-muted-foreground">Product not found</p>
-    </div>
-  )
+  if (!product)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Product not found</p>
+      </div>
+    )
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -101,47 +184,94 @@ export default function CheckoutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Form */}
           <Card>
-            <CardHeader><CardTitle>Your Details</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Your Details</CardTitle>
+            </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField control={form.control} name="buyerName" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name *</FormLabel>
-                      <FormControl><Input placeholder="John Doe" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="buyerEmail" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email *</FormLabel>
-                      <FormControl><Input type="email" placeholder="you@example.com" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="buyerPhone" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone (optional)</FormLabel>
-                      <FormControl><Input placeholder="9876543210" {...field} value={field.value ?? ""} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="buyerGstin" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>GSTIN (optional)</FormLabel>
-                      <FormControl><Input placeholder="For business invoices" {...field} value={field.value ?? ""} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={form.control}
+                    name="buyerName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Full Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="John Doe" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="buyerEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email *</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="you@example.com"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="buyerPhone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone (optional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="9876543210"
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="buyerGstin"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>GSTIN (optional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="For business invoices"
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <Button
                     type="submit"
                     size="lg"
                     className="w-full gradient-primary text-white mt-6"
-                    disabled={isCreating || !form.formState.isValid}
+                    disabled={
+                      isProcessing || isCreating || !form.formState.isValid
+                    }
                   >
-                    {isCreating && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                    {isCreating ? "Processing..." : `Pay ${formatCurrency(total)}`}
+                    {(isProcessing || isCreating) && (
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    )}
+                    {isProcessing || isCreating
+                      ? "Processing..."
+                      : `Pay ${formatCurrency(total)}`}
                   </Button>
                   <p className="text-xs text-center text-muted-foreground">
                     By purchasing you agree to our Terms of Service
@@ -173,8 +303,12 @@ export default function CheckoutPage() {
                   )}
                   <div>
                     <h3 className="font-medium">{product.title}</h3>
-                    <p className="text-sm text-muted-foreground">by {product.seller.name}</p>
-                    <p className="font-bold mt-1">{formatCurrency(product.price)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      by {product.seller.name}
+                    </p>
+                    <p className="font-bold mt-1">
+                      {formatCurrency(product.price)}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -194,7 +328,9 @@ export default function CheckoutPage() {
                   </div>
                   {platformFee > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Platform fee</span>
+                      <span className="text-muted-foreground">
+                        Platform fee
+                      </span>
                       <span>{formatCurrency(platformFee)}</span>
                     </div>
                   )}

@@ -1,17 +1,13 @@
-import { NextRequest, NextResponse, after } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { randomBytes } from "crypto"
-import { db, products, storefronts, orders, orderItems, users } from "@/lib/db"
+import { db, products, storefronts, orders, orderItems, users, payments } from "@/lib/db"
 import { eq, and } from "drizzle-orm"
 import { checkoutSchema } from "@/lib/validations/checkout"
 import { auth } from "@/lib/auth"
 import { enforceRateLimit } from "@/lib/rate-limit"
-import { cache, cacheKeys } from "@/lib/cache"
 import { PLATFORM_FEE_PERCENT, GST_RATE } from "@/lib/config"
-import { issueOrderAccessToken } from "@/lib/order-access"
-import { sendOrderConfirmationEmail } from "@/lib/email"
-import { sendEmailWithRetry } from "@/lib/email/send-with-retry"
 import { env } from "@/lib/env"
-import { notifyEvent } from "@/lib/notifications/notify"
+import { createRazorpayOrder } from "@/lib/razorpay/orders"
 
 // POST /api/checkout/create-order
 export async function POST(req: NextRequest) {
@@ -142,17 +138,44 @@ export async function POST(req: NextRequest) {
     // Generate a unique order number
     const orderNumber = `GZ-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
 
-    // Atomic: order + orderItem + stock decrement all succeed together or
-    // none do. Without this, a stock decrement failure (network blip after
-    // the order insert) would leave a phantom paid order with un-decremented
-    // inventory; or worse, two concurrent checkouts could oversell.
-    const { order, item } = await db.transaction(async (tx) => {
+    // Create the Razorpay order first (authoritative amount, in paise). If
+    // Razorpay is unreachable we fail BEFORE writing a half-born order.
+    const rzp = await createRazorpayOrder({
+      amountRupees: totalAmount,
+      receipt: orderNumber,
+      notes: { productId, sellerId: storefront.userId },
+    })
+    if (!rzp.ok) {
+      console.error("[create-order] Razorpay order creation failed:", rzp.error)
+      return NextResponse.json(
+        { error: "Could not start payment. Please try again." },
+        { status: 502 },
+      )
+    }
+
+    // Atomic: payment row + order + item all succeed together. Stock is NOT
+    // decremented here — that happens in fulfillOrder once payment is captured,
+    // so an abandoned payment never consumes inventory.
+    const { order } = await db.transaction(async (tx) => {
+      const [createdPayment] = await tx
+        .insert(payments)
+        .values({
+          buyerId,
+          buyerEmail,
+          razorpayOrderId: rzp.id,
+          amount: String(totalAmount),
+          currency: "INR",
+          status: "created",
+        })
+        .returning()
+
       const [createdOrder] = await tx
         .insert(orders)
         .values({
           orderNumber,
+          paymentId: createdPayment.id,
           sellerId: storefront.userId,
-          buyerId: buyerId,
+          buyerId,
           buyerEmail,
           buyerName,
           buyerPhone: buyerPhone ?? null,
@@ -166,118 +189,36 @@ export async function POST(req: NextRequest) {
         })
         .returning()
 
-      const [createdItem] = await tx
-        .insert(orderItems)
-        .values({
-          orderId: createdOrder.id,
-          productId,
-          productTitle: product.title,
-          productThumbnail: product.coverImageUrl,
-          productDescription: product.description,
-          price: String(baseAmount),
-          quantity: 1,
-          deliveryType: product.deliveryType,
-          deliveryStatus: "pending",
-          externalUrl: product.externalUrl,
-          downloadLink,
-          maxDownloads: 5,
-          downloadCount: 0,
-        })
-        .returning()
+      await tx.insert(orderItems).values({
+        orderId: createdOrder.id,
+        productId,
+        productTitle: product.title,
+        productThumbnail: product.coverImageUrl,
+        productDescription: product.description,
+        price: String(baseAmount),
+        quantity: 1,
+        deliveryType: product.deliveryType,
+        deliveryStatus: "pending",
+        externalUrl: product.externalUrl,
+        downloadLink,
+        maxDownloads: 5,
+        downloadCount: 0,
+      })
 
-      if (product.stock !== null) {
-        await tx
-          .update(products)
-          .set({ stock: product.stock - 1 })
-          .where(eq(products.id, productId))
-      }
-
-      return { order: createdOrder, item: createdItem }
+      return { order: createdOrder }
     })
 
-    // Bust cached aggregations so the seller's dashboard reflects the new
-    // order within 1 dashboard refresh instead of waiting for the 30s TTL.
-    cache.delete(cacheKeys.salesStats(storefront.userId))
-    cache.delete(cacheKeys.recentOrders(storefront.userId))
-
-    // Mint two access tokens:
-    //  - `checkout` (10 min): handed back in the response so the frontend
-    //    can redirect the buyer straight to `/order/[id]?t=...`. Short-
-    //    lived because they're standing on the success screen *right now*.
-    //  - `email` (24 h): embedded in the confirmation email so they can
-    //    come back later from their inbox. We send the email
-    //    fire-and-forget with retry so a Resend hiccup doesn't fail the
-    //    order, but a transient failure still gets retried 3x with backoff.
-    const [checkoutToken, emailToken] = await Promise.all([
-      issueOrderAccessToken(order.id, "checkout"),
-      issueOrderAccessToken(order.id, "email"),
-    ])
-
-    const accessUrl = `${env.NEXT_PUBLIC_APP_URL}/order/${order.id}?t=${emailToken.token}`
-    const passwordSetupUrl = passwordSetupToken
-      ? `${env.NEXT_PUBLIC_APP_URL}/reset-password?token=${passwordSetupToken}`
-      : undefined
-
-    after(() =>
-      sendEmailWithRetry(
-        () =>
-          sendOrderConfirmationEmail({
-            buyerEmail,
-            buyerName,
-            productTitle: product.title,
-            orderNumber: order.orderNumber,
-            accessUrl,
-            passwordSetupUrl,
-          }),
-        { label: "order-confirmation", to: buyerEmail },
-      ).catch(() => {
-        /* terminal failure already logged inside helper */
-      }),
-    )
-
-    // Notify seller (new order) and buyer (purchase ready). Buyer email is
-    // suppressed because the order-confirmation email above already covered it.
-    try {
-      await notifyEvent({
-        userId: storefront.userId,
-        type: "order_placed",
-        title: "New order received",
-        message: `Order #${order.orderNumber} for ${product.title}`,
-        link: `/dashboard/sales/${order.id}`,
-        metadata: { orderId: order.id, productId, amount: totalAmount },
-      })
-    } catch (err) {
-      console.error("[notifications] order_placed emit failed:", err)
-    }
-    if (buyerId) {
-      try {
-        await notifyEvent({
-          userId: buyerId,
-          type: "order_completed",
-          title: "Your purchase is ready",
-          message: `${product.title} — order #${order.orderNumber}`,
-          link: `/order/${order.id}`,
-          suppress: { email: true },
-          metadata: { orderId: order.id },
-        })
-      } catch (err) {
-        console.error("[notifications] order_completed emit failed:", err)
-      }
-    }
-
-    // Return a response shape that matches the frontend expectations
     return NextResponse.json(
       {
-        id: order.id,
+        orderId: order.id,
         orderNumber: order.orderNumber,
-        totalAmount: order.totalAmount,
-        status: order.status,
-        deliveryType: item.deliveryType,
-        items: [item],
-        accessToken: checkoutToken.token,
+        razorpayOrderId: rzp.id,
+        amount: rzp.amount, // paise — feed straight into the checkout modal
+        currency: "INR",
+        keyId: env.RAZORPAY_KEY_ID, // public key id — safe to send to the browser modal
         createdNewBuyer,
       },
-      { status: 201 }
+      { status: 201 },
     )
   } catch (error) {
     console.error("POST /api/checkout/create-order error:", error)
