@@ -1,15 +1,6 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { signOut } from "next-auth/react"
-import {
-  ChevronDown,
-  LayoutDashboard,
-  LogOut,
-  Settings,
-  Store,
-} from "lucide-react"
+import { InstallAppMenuItem } from "@/components/pwa/InstallAppMenuItem"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -20,8 +11,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { InstallAppMenuItem } from "@/components/pwa/InstallAppMenuItem"
 import { getInitials } from "@/lib/utils"
+import {
+  Bug,
+  ChevronDown,
+  LayoutDashboard,
+  Lightbulb,
+  LogOut,
+  Settings,
+  Store,
+} from "lucide-react"
+import { signOut } from "next-auth/react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 interface BuyerProfileMenuProps {
   user: {
@@ -50,10 +52,7 @@ export function BuyerProfileMenu({ user }: BuyerProfileMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2 h-9 px-2"
-        >
+        <Button variant="ghost" className="flex items-center gap-2 h-9 px-2">
           <Avatar className="h-7 w-7">
             <AvatarImage src={user.image ?? undefined} />
             <AvatarFallback className="text-xs gradient-primary text-white">
@@ -98,6 +97,19 @@ export function BuyerProfileMenu({ user }: BuyerProfileMenuProps) {
           </Link>
         </DropdownMenuItem>
         <InstallAppMenuItem />
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/feedback?type=feature">
+            <Lightbulb className="mr-2 h-4 w-4" />
+            Request a feature
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/feedback?type=bug">
+            <Bug className="mr-2 h-4 w-4" />
+            Report a bug
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleLogout}

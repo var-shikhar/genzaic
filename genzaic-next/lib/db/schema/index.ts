@@ -1,26 +1,49 @@
 // ─── Re-exports ───────────────────────────────────────────────────────────────
-export * from "./enums"
-export * from "./users"
-export * from "./storefronts"
-export * from "./storefront-drafts"
 export * from "./catalog"
 export * from "./commerce"
-export * from "./social"
-export * from "./notifications"
+export * from "./enums"
+export * from "./feedback"
 export * from "./kyc"
+export * from "./notifications"
 export * from "./payouts"
 export * from "./relations"
+export * from "./social"
+export * from "./storefront-drafts"
+export * from "./storefronts"
+export * from "./users"
 
 // ─── Type Exports ─────────────────────────────────────────────────────────────
-import { users, sessions } from "./users"
-import { storefronts } from "./storefronts"
-import { storefrontDrafts } from "./storefront-drafts"
-import { categories, tags, products, productVariants, productImages, productTags } from "./catalog"
-import { carts, cartItems, coupons, orders, orderItems, payments, couponUsages, orderAccessTokens } from "./commerce"
-import { reviews, follows, wishlists } from "./social"
-import { notifications, notificationPreferences, userDevices, notificationOutbox } from "./notifications"
+import {
+  categories,
+  productImages,
+  products,
+  productTags,
+  productVariants,
+  tags,
+} from "./catalog"
+import {
+  cartItems,
+  carts,
+  coupons,
+  couponUsages,
+  orderAccessTokens,
+  orderItems,
+  orders,
+  payments,
+} from "./commerce"
+import { feedbackSubmissions } from "./feedback"
 import { kyc } from "./kyc"
-import { payouts, downloadLogs } from "./payouts"
+import {
+  notificationOutbox,
+  notificationPreferences,
+  notifications,
+  userDevices,
+} from "./notifications"
+import { downloadLogs, payouts } from "./payouts"
+import { follows, reviews, wishlists } from "./social"
+import { storefrontDrafts } from "./storefront-drafts"
+import { storefronts } from "./storefronts"
+import { sessions, users } from "./users"
 
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
@@ -64,3 +87,5 @@ export type Kyc = typeof kyc.$inferSelect
 export type NewKyc = typeof kyc.$inferInsert
 export type Payout = typeof payouts.$inferSelect
 export type DownloadLog = typeof downloadLogs.$inferSelect
+export type FeedbackSubmission = typeof feedbackSubmissions.$inferSelect
+export type NewFeedbackSubmission = typeof feedbackSubmissions.$inferInsert

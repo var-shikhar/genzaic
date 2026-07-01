@@ -31,6 +31,8 @@ const envSchema = z.object({
   // ─── Email (Resend) ──────────────────────────────────────────────────────
   RESEND_API_KEY: z.string().min(1),
   EMAIL_FROM: z.string().email().default("noreply@genzaic.com"),
+  // Inbox that receives feature-request / bug-report submissions.
+  FEEDBACK_NOTIFY_EMAIL: z.string().email().default("support@genzaic.com"),
 
   // ─── Google AI (product-text extraction) ─────────────────────────────────
   GOOGLE_AI_API_KEY: z.string().min(1),

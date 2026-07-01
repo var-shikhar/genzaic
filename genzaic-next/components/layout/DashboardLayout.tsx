@@ -31,9 +31,11 @@ import {
 import { cn, getInitials } from "@/lib/utils"
 import {
   BarChart3,
+  Bug,
   ChevronDown,
   FileCheck,
   LayoutDashboard,
+  Lightbulb,
   LogOut,
   Menu,
   Package,
@@ -391,6 +393,19 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   </Link>
                 </DropdownMenuItem>
                 <InstallAppMenuItem />
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/feedback?type=feature">
+                    <Lightbulb className="mr-2 h-4 w-4" />
+                    Request a feature
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/feedback?type=bug">
+                    <Bug className="mr-2 h-4 w-4" />
+                    Report a bug
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleLogout}

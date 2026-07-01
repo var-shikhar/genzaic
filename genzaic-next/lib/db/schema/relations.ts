@@ -1,28 +1,34 @@
 import { relations } from "drizzle-orm"
-import { users, sessions } from "./users"
-import { storefronts } from "./storefronts"
-import { storefrontDrafts } from "./storefront-drafts"
 import {
   categories,
-  tags,
+  productImages,
   products,
   productTags,
   productVariants,
-  productImages,
+  tags,
 } from "./catalog"
 import {
-  coupons,
-  carts,
   cartItems,
-  payments,
-  orders,
-  orderItems,
+  carts,
+  coupons,
   couponUsages,
+  orderItems,
+  orders,
+  payments,
 } from "./commerce"
-import { reviews, follows, wishlists } from "./social"
-import { notifications, notificationPreferences, userDevices, notificationOutbox } from "./notifications"
+import { feedbackSubmissions } from "./feedback"
 import { kyc } from "./kyc"
-import { payouts, downloadLogs } from "./payouts"
+import {
+  notificationOutbox,
+  notificationPreferences,
+  notifications,
+  userDevices,
+} from "./notifications"
+import { downloadLogs, payouts } from "./payouts"
+import { follows, reviews, wishlists } from "./social"
+import { storefrontDrafts } from "./storefront-drafts"
+import { storefronts } from "./storefronts"
+import { sessions, users } from "./users"
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // USERS & AUTH
@@ -49,6 +55,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   devices: many(userDevices),
   sellerCoupons: many(coupons),
   storefrontDrafts: many(storefrontDrafts),
+  feedbackSubmissions: many(feedbackSubmissions),
 
   // follows (bidirectional)
   followers: many(follows, { relationName: "following" }),
@@ -272,13 +279,16 @@ export const wishlistsRelations = relations(wishlists, ({ one }) => ({
 // NOTIFICATIONS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export const notificationsRelations = relations(notifications, ({ one, many }) => ({
-  user: one(users, {
-    fields: [notifications.userId],
-    references: [users.id],
+export const notificationsRelations = relations(
+  notifications,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [notifications.userId],
+      references: [users.id],
+    }),
+    outboxRows: many(notificationOutbox),
   }),
-  outboxRows: many(notificationOutbox),
-}))
+)
 
 export const notificationPreferencesRelations = relations(
   notificationPreferences,
@@ -322,3 +332,17 @@ export const downloadLogsRelations = relations(downloadLogs, ({ one }) => ({
     references: [orderItems.id],
   }),
 }))
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FEEDBACK
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const feedbackSubmissionsRelations = relations(
+  feedbackSubmissions,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [feedbackSubmissions.userId],
+      references: [users.id],
+    }),
+  }),
+)

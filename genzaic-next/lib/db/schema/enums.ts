@@ -96,6 +96,18 @@ export const notificationOutboxStatusEnum = pgEnum(
   ["pending", "sent", "failed", "skipped"],
 )
 
+// ─── Feedback (feature requests + bug reports) ───────────────────────────────
+export const feedbackKindEnum = pgEnum("feedback_kind", [
+  "feature_request",
+  "bug_report",
+])
+export const feedbackStatusEnum = pgEnum("feedback_status", [
+  "open",
+  "in_review",
+  "resolved",
+  "closed",
+])
+
 // ─── Imprint customization (Editorial OS) ────────────────────────────────────
 export const coverPresetEnum = pgEnum("cover_preset", [
   "ink",

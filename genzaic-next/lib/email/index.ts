@@ -1,5 +1,9 @@
 import { Resend } from "resend"
 import { env } from "@/lib/env"
+import {
+  buildFeedbackAdminEmail,
+  type FeedbackEmailParams,
+} from "./feedback-email"
 
 const resend = new Resend(env.RESEND_API_KEY)
 
@@ -113,6 +117,25 @@ export {
   deriveKycRazorpayEmailOutcome,
   type KycRazorpayEmailOutcome,
 } from "./kyc-email"
+
+// Re-export the pure feedback-email builder alongside its sender.
+export { buildFeedbackAdminEmail, type FeedbackEmailParams } from "./feedback-email"
+
+/**
+ * Alert the team about a new feature request / bug report. Sent to the
+ * configured FEEDBACK_NOTIFY_EMAIL inbox. The submitter's email is set as
+ * `replyTo` so a team member can respond to them directly.
+ */
+export async function sendFeedbackAdminEmail(params: FeedbackEmailParams) {
+  const { subject, html } = buildFeedbackAdminEmail(params)
+  return resend.emails.send({
+    from: FROM,
+    to: env.FEEDBACK_NOTIFY_EMAIL,
+    replyTo: params.submitterEmail,
+    subject,
+    html,
+  })
+}
 
 /**
  * Email sent at the end of the background Razorpay phase. Two variants based
