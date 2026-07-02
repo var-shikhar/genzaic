@@ -81,7 +81,10 @@ export default async function FeedbackPage({
 
       <section className="px-4 pb-16">
         <div className="container mx-auto max-w-2xl">
-          <FeedbackForm defaultTab={defaultTab} />
+          <FeedbackForm
+            defaultTab={defaultTab}
+            dashboardHref={isSeller ? "/dashboard" : "/my-purchases"}
+          />
         </div>
       </section>
 

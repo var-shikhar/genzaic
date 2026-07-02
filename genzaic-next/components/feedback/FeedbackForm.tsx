@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   MAX_ATTACHMENTS,
   MAX_ATTACHMENT_BYTES,
+  MIN_DESCRIPTION_LENGTH,
   type FeedbackKind,
 } from "@/lib/feedback/schema"
 import {
@@ -16,11 +17,25 @@ import {
 } from "@/lib/imagekit/upload-client"
 import { cn } from "@/lib/utils"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Bug, FileText, Lightbulb, Loader2, Upload, X } from "lucide-react"
+import {
+  Bug,
+  CheckCircle2,
+  FileText,
+  LayoutDashboard,
+  Lightbulb,
+  Loader2,
+  RotateCcw,
+  Upload,
+  X,
+} from "lucide-react"
+import { useRouter } from "next/navigation"
 import * as React from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
+
+/** Seconds before the success screen auto-redirects to the dashboard. */
+const REDIRECT_SECONDS = 10
 
 const ACCEPT = "image/png,image/jpeg,image/gif,image/webp,application/pdf"
 
@@ -29,7 +44,10 @@ const fieldsSchema = z.object({
   description: z
     .string()
     .trim()
-    .min(1, "Please describe it a little.")
+    .min(
+      MIN_DESCRIPTION_LENGTH,
+      `Please add at least ${MIN_DESCRIPTION_LENGTH} characters so we have enough detail.`,
+    )
     .max(5000),
 })
 type FieldValues = z.infer<typeof fieldsSchema>
@@ -42,8 +60,30 @@ interface UploadItem {
   result?: ImageKitUploadResult
 }
 
-export function FeedbackForm({ defaultTab }: { defaultTab: FeedbackKind }) {
+export function FeedbackForm({
+  defaultTab,
+  dashboardHref,
+}: {
+  defaultTab: FeedbackKind
+  dashboardHref: string
+}) {
   const [tab, setTab] = React.useState<FeedbackKind>(defaultTab)
+  // Which kind was just submitted, or null while the form is being filled.
+  // When set, the whole tabs + form UI is replaced by the confirmation screen.
+  const [submitted, setSubmitted] = React.useState<FeedbackKind | null>(null)
+
+  if (submitted) {
+    return (
+      <FeedbackSuccess
+        kind={submitted}
+        dashboardHref={dashboardHref}
+        onSendAnother={() => {
+          setTab(submitted)
+          setSubmitted(null)
+        }}
+      />
+    )
+  }
 
   return (
     <div className="bg-card rounded-2xl border border-border p-6 sm:p-8 shadow-sm">
@@ -71,6 +111,7 @@ export function FeedbackForm({ defaultTab }: { defaultTab: FeedbackKind }) {
             descriptionLabel="Tell us more"
             descriptionPlaceholder="Describe the feature and how it would help you…"
             allowAttachments={false}
+            onSubmitted={() => setSubmitted("feature_request")}
           />
         </TabsContent>
 
@@ -82,9 +123,90 @@ export function FeedbackForm({ defaultTab }: { defaultTab: FeedbackKind }) {
             descriptionLabel="Steps to reproduce / details"
             descriptionPlaceholder="What did you do, what happened, and what did you expect?"
             allowAttachments
+            onSubmitted={() => setSubmitted("bug_report")}
           />
         </TabsContent>
       </Tabs>
+    </div>
+  )
+}
+
+function FeedbackSuccess({
+  kind,
+  dashboardHref,
+  onSendAnother,
+}: {
+  kind: FeedbackKind
+  dashboardHref: string
+  onSendAnother: () => void
+}) {
+  const router = useRouter()
+  const [seconds, setSeconds] = React.useState(REDIRECT_SECONDS)
+
+  React.useEffect(() => {
+    if (seconds <= 0) {
+      router.push(dashboardHref)
+      return
+    }
+    const t = setTimeout(() => setSeconds((s) => s - 1), 1000)
+    return () => clearTimeout(t)
+  }, [seconds, router, dashboardHref])
+
+  const isBug = kind === "bug_report"
+
+  return (
+    <div className="relative overflow-hidden bg-card rounded-2xl border border-border p-8 sm:p-12 shadow-sm text-center">
+      {/* Soft green glow behind the badge */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-emerald-500/10 to-transparent" />
+
+      <div className="relative mx-auto mb-6 flex h-20 w-20 items-center justify-center">
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 rounded-full bg-emerald-400/35 animate-ping motion-reduce:hidden"
+        />
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 rounded-full bg-emerald-400/45 animate-ping motion-reduce:hidden"
+          style={{ animationDelay: "700ms" }}
+        />
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30">
+          <CheckCircle2 className="h-8 w-8 text-white" strokeWidth={2.5} />
+        </div>
+      </div>
+
+      <h2 className="relative text-2xl font-bold text-foreground mb-3">
+        {isBug ? "Thanks for the heads-up!" : "Thanks for the idea!"}
+      </h2>
+
+      <p className="relative text-muted-foreground max-w-md mx-auto leading-relaxed">
+        {isBug
+          ? "Your report just landed with our team. GenZaic is built by creators, for creators — and squashing bugs like this is how we keep your storefront running smoothly. We're on it."
+          : "Your idea just reached our team. GenZaic grows with its community — every request you send helps shape what we build next. Keep them coming; the best features start exactly like this."}
+      </p>
+
+      <div className="relative mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <Button
+          onClick={() => router.push(dashboardHref)}
+          className="w-full sm:w-auto"
+        >
+          <LayoutDashboard className="w-4 h-4 mr-2" />
+          Go to Dashboard
+          <span className="ml-1.5 opacity-75 tabular-nums">({seconds}s)</span>
+        </Button>
+        <Button
+          variant="outline"
+          onClick={onSendAnother}
+          className="w-full sm:w-auto"
+        >
+          <RotateCcw className="w-4 h-4 mr-2" />
+          {isBug ? "Report another bug" : "Send another request"}
+        </Button>
+      </div>
+
+      <p className="relative mt-5 text-xs text-muted-foreground/70">
+        Redirecting to your dashboard in {seconds} second
+        {seconds === 1 ? "" : "s"}…
+      </p>
     </div>
   )
 }
@@ -96,6 +218,7 @@ function FeedbackPanel({
   descriptionLabel,
   descriptionPlaceholder,
   allowAttachments,
+  onSubmitted,
 }: {
   kind: FeedbackKind
   titleLabel: string
@@ -103,16 +226,26 @@ function FeedbackPanel({
   descriptionLabel: string
   descriptionPlaceholder: string
   allowAttachments: boolean
+  onSubmitted: () => void
 }) {
   const {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FieldValues>({
     resolver: zodResolver(fieldsSchema),
+    mode: "onChange",
     defaultValues: { title: "", description: "" },
   })
+
+  // Watch the fields live so we can gate the submit button and show a counter.
+  const title = watch("title")
+  const description = watch("description")
+  const descriptionLength = description.trim().length
+  const canSubmit =
+    title.trim().length > 0 && descriptionLength >= MIN_DESCRIPTION_LENGTH
 
   const [uploads, setUploads] = React.useState<UploadItem[]>([])
   const inputId = React.useId()
@@ -225,13 +358,11 @@ function FeedbackPanel({
         toast.error("Something went wrong. Please try again.")
         return
       }
-      toast.success(
-        kind === "bug_report"
-          ? "Thanks — your bug report is in. We'll take a look."
-          : "Thanks for the idea — it's been sent to the team!",
-      )
+      // Clear the fields so an unmount→remount (via "Send another") starts
+      // fresh, then hand off to the parent to show the confirmation screen.
       reset()
       setUploads([])
+      onSubmitted()
     } catch {
       toast.error("Network error. Please try again.")
     }
@@ -259,11 +390,31 @@ function FeedbackPanel({
           placeholder={descriptionPlaceholder}
           {...register("description")}
         />
-        {errors.description && (
-          <p className="text-sm text-destructive">
-            {errors.description.message}
-          </p>
-        )}
+        <div className="flex items-center justify-between gap-3">
+          {errors.description ? (
+            <p className="text-sm text-destructive">
+              {errors.description.message}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground/70">
+              {descriptionLength < MIN_DESCRIPTION_LENGTH
+                ? `Add ${MIN_DESCRIPTION_LENGTH - descriptionLength} more character${
+                    MIN_DESCRIPTION_LENGTH - descriptionLength === 1 ? "" : "s"
+                  } for a more detailed report.`
+                : "Thanks — that's plenty of detail."}
+            </p>
+          )}
+          <span
+            className={cn(
+              "text-xs tabular-nums shrink-0",
+              descriptionLength < MIN_DESCRIPTION_LENGTH
+                ? "text-muted-foreground/70"
+                : "text-emerald-600 dark:text-emerald-400",
+            )}
+          >
+            {descriptionLength}/{MIN_DESCRIPTION_LENGTH}
+          </span>
+        </div>
       </div>
 
       {allowAttachments && (
@@ -342,7 +493,7 @@ function FeedbackPanel({
       <Button
         type="submit"
         className="w-full"
-        disabled={isSubmitting || isUploading}
+        disabled={!canSubmit || isSubmitting || isUploading}
       >
         {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
         {kind === "bug_report" ? "Submit bug report" : "Submit request"}

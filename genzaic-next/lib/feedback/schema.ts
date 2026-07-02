@@ -12,6 +12,7 @@ export type FeedbackKind = (typeof FEEDBACK_KINDS)[number]
 
 /** Max attachments per bug report. Mirrors the dropzone cap in the UI. */
 export const MAX_ATTACHMENTS = 5
+export const MIN_DESCRIPTION_LENGTH = 20
 
 /** Max attachment size accepted by the UI (10 MB). */
 export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
@@ -27,7 +28,7 @@ export const feedbackSubmissionSchema = z
   .object({
     kind: z.enum(FEEDBACK_KINDS),
     title: z.string().trim().min(1).max(200),
-    description: z.string().trim().min(1).max(5000),
+    description: z.string().trim().min(MIN_DESCRIPTION_LENGTH).max(5000),
     attachments: z.array(attachmentSchema).max(MAX_ATTACHMENTS).default([]),
     pageUrl: z.string().max(2000).optional(),
     userAgent: z.string().max(1000).optional(),
