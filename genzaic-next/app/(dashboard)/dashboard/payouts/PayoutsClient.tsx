@@ -26,6 +26,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet"
 import { formatCurrency } from "@/lib/utils"
+import { MIN_WITHDRAWAL_AMOUNT } from "@/lib/config"
 import { EditorsHeadline, EyebrowLabel } from "@/components/brand/primitives"
 import { Pinstripe } from "@/components/brand/motifs"
 
@@ -171,6 +172,7 @@ export function PayoutsClient() {
             <p className="text-sm text-muted-foreground">
               Your earnings are processed within 1 business day after successful payment.
               Payouts are automatically transferred to your verified bank account within 7 days.
+              A minimum balance of {formatCurrency(MIN_WITHDRAWAL_AMOUNT)} is required for a payout.
             </p>
           </div>
         </div>
